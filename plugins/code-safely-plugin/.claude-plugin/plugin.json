@@ -1,0 +1,8 @@
+{
+  "name": "code-safely-plugin",
+  "version": "0.1.0",
+  "description": "Safety guardrails and convenience auto-approvals for Claude Code: blocks destructive commands, protects critical dotfiles and credentials, prevents secret leaks and force-pushes, and auto-approves read-only/test/build commands.",
+  "author": {
+    "name": "Steve Bennett"
+  }
+}
