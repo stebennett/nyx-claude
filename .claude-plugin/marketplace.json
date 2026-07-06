@@ -8,6 +8,11 @@
       "name": "code-safely-plugin",
       "source": "./plugins/code-safely-plugin",
       "description": "Safety guardrails and convenience auto-approvals for Claude Code: blocks destructive commands, protects critical dotfiles and credentials, prevents secret leaks and force-pushes, and auto-approves read-only/test/build commands."
+    },
+    {
+      "name": "kanban-flow",
+      "source": "./plugins/kanban-flow",
+      "description": "Autonomous, card-driven kanban development: an orchestrator and specialist agents that run each backlog card through slice → design → implement → test → review, shipping design and implementation as two reviewable PRs per card."
     }
   ]
 }
