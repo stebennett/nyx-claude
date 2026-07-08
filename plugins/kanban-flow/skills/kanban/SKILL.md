@@ -57,7 +57,7 @@ Advance every in-flight card **as far as it can go this pump**. Work in waves: d
 - slice right-sized (or start with `right_sized: true`) → **design transition:** create branch `<type>/NNN-slug-design` + worktree off `main` via **superpowers:using-git-worktrees** (e.g. `../<repo>-worktrees/CARD-NNN`), set `branch`/`worktree`, write `slice.md` into the worktree's `docs/cards/CARD-NNN-slug/` and commit it on the branch, `status: design`.
 - `status: design` + `design.md` absent → dispatch card-designer.
 - `status: design` + `design.md` present + design stop pending per policy → present the stop (Section 3).
-- `status: design` + gate passed + `design_pr_url` empty → **open the design PR:** persist `design.md` (and any `feedback.md`) to the branch; route `proposed_adrs` (below) so ADR files land on the branch; assemble the design PR body from `.design-pr-template.md`; dispatch `card-deliverer` in **design mode** (push + open PR titled `CARD-NNN — design: <title>`). On return, record `design_pr_url`; the card now awaits merge (Section 6 CI/triage apply).
+- `status: design` + gate passed + `design_pr_url` empty → **open the design PR:** persist `design.md` (and any `feedback.md`) to the branch; route `proposed_adrs` (below) so ADR files land on the branch; assemble the design PR body from `.design-pr-template.md`; dispatch `card-deliverer` in **design mode** (push + open PR titled `CARD-NNN — design: <title>`). On return, record `design_pr_url`; the card now awaits merge (Section 6 CI/addressing apply).
 - Design PR merged → handled by Reconcile (Section 0 step 2): implementation branch/worktree created, `status: implement`.
 - `status: implement|test|review` → dispatch per the table; on `complete` advance (implement→test→review→deliver), committing each returned phase doc to the **implementation branch**.
 - `status: deliver` → deliver gate (Section 3) → card-deliverer in **implementation mode** → record `pr_url` → Section 6.
@@ -96,7 +96,7 @@ In the dispatch prompt include: `card_id`, `card_dir`, the full `card.md`, and *
 A card with an open PR (design or implementation) holds its WIP slot until merged.
 
 ### 6a. CI gate — nothing else happens on the PR until checks pass
-Every pump, before panel or triage, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
+Every pump, before panel or addressing, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
 - **No checks configured** → proceed. The gate requires that no check is failing, not that checks exist — docs-only design PRs and pre-CI-pipeline PRs are reviewable.
 - **Pending / running** → do nothing for this card this pump; report "CI running". The pump loop is the wait.
 - **All green** → proceed to 6b/6c.
