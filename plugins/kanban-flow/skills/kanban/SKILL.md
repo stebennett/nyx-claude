@@ -130,10 +130,10 @@ Nothing is actioned until the human signals the review is **complete**; then eve
    No signal → do nothing on this PR this pump; report "awaiting review". The pump loop is the wait.
 
 2. **Assemble the actionable set** — skip any item already carrying a `[kanban]` reply/marker (that reply is the idempotent addressed-marker):
-   - **every human-authored inline comment** (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`) — no 👍 needed;
+   - **every human-authored inline comment the signal authorises** (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`) — no 👍 needed (see *scope by signal* below);
    - **each human-submitted review's summary body** when non-empty (idempotency keyed to the review id via a top-level `[kanban]` marker naming the review);
    - **panel `[lens]` comments only if 👍'd**.
-   "App" = the identity the flow posts as (its comments carry the `[lens]`/`[kanban]` prefix or its App login); everything else is human. Exclude the `REVIEWED` comment itself. A submitted review's inline comments and body are one atomic unit; for loose inline comments cleared by a `REVIEWED` comment, take those created at/before the newest `REVIEWED` timestamp.
+   "App" = the identity the flow posts as (its comments carry the `[lens]`/`[kanban]` prefix or its App login); everything else is human. Exclude the `REVIEWED` comment itself. **Scope by signal:** a submitted review authorises only its own inline comments and body (one atomic unit); a `REVIEWED` comment authorises every loose inline comment (one not attached to a submitted review) created at/before its timestamp. A human comment reached by neither signal waits for one.
 
 3. **Dispatch. Implementation PR:** dispatch `card-implementer` in PR-comment mode with the items verbatim (id, path, line, body; review-body items flagged as summary) — it fixes exactly those (test-first for behaviour), runs the fast gates, commits (one commit per comment or a tight cluster), pushes. **Design PR:** re-dispatch `card-designer` with the items verbatim; commit its revised `design.md` (and any superseding ADR proposals via the `adr` routing) to the design branch and push.
 
