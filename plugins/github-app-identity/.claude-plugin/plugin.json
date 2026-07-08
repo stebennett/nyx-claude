@@ -1,0 +1,8 @@
+{
+  "name": "github-app-identity",
+  "description": "Give local automation a dedicated GitHub App identity: a directory-aware `gh` shim, a token minter, and a git credential helper make commits, pushes, and gh/API calls act as the App inside opted-in repos — never falling back to personal credentials.",
+  "version": "0.1.0",
+  "author": { "name": "Steve Bennett" },
+  "license": "MIT",
+  "keywords": ["github-app", "identity", "gh", "credentials", "automation", "bot"]
+}
