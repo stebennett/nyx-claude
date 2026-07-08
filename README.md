@@ -21,6 +21,7 @@ Once added, plugins appear in `/plugin` and update when the marketplace is refre
 |---|---|
 | [`code-safely-plugin`](plugins/code-safely-plugin/) | Safety guardrails + convenience auto-approvals: blocks destructive commands, protects dotfiles/credentials, keeps secrets out of git, prevents force-pushes, and auto-approves provably read-only/test/build commands. See its [README](plugins/code-safely-plugin/README.md). |
 | [`kanban-flow`](plugins/kanban-flow/) | Autonomous, card-driven kanban development: an orchestrator and specialist agents run each backlog card through slice → design → implement → test → review, shipping design and implementation as two reviewable PRs per card. See its [README](plugins/kanban-flow/README.md). |
+| [`github-app-identity`](plugins/github-app-identity/) | Give local automation a dedicated GitHub App identity: a global directory-aware `gh` shim (plus a git credential helper and per-repo git config) makes commits, pushes, and `gh`/API calls act as the App inside opted-in repos — never falling back to personal credentials. See its [README](plugins/github-app-identity/README.md). |
 
 ## Repository layout
 
