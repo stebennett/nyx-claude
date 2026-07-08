@@ -29,7 +29,7 @@ enabled=false
 if [[ "${GH_APP_ENABLED_OVERRIDE:-}" == "true" ]]; then
   enabled=true
 elif git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-     && [[ "$(git config --get gh-app.enabled 2>/dev/null || true)" == "true" ]]; then
+     && [[ "$(git config --local --get gh-app.enabled 2>/dev/null || true)" == "true" ]]; then
   enabled=true
 fi
 

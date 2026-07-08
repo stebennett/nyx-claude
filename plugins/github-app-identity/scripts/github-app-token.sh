@@ -46,7 +46,7 @@ signing_input="${header_b64}.${payload_b64}"
 signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign "$GITHUB_APP_PRIVATE_KEY_PATH" | b64url)"
 jwt="${signing_input}.${signature}"
 
-response="$(curl -sS -X POST \
+response="$(curl -sS --max-time 30 -X POST \
   -H "Authorization: Bearer $jwt" \
   -H "Accept: application/vnd.github+json" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -65,7 +65,9 @@ print(d["token"], exp)
 
 umask 077
 mkdir -p "$(dirname "$cache_file")"
-printf '{"token":"%s","expires_at_epoch":%s}\n' "$token" "$exp_epoch" > "$cache_file"
-chmod 600 "$cache_file"
+tmp_cache="$(mktemp "${cache_file}.XXXXXX")"
+printf '{"token":"%s","expires_at_epoch":%s}\n' "$token" "$exp_epoch" > "$tmp_cache"
+chmod 600 "$tmp_cache"
+mv -f "$tmp_cache" "$cache_file"
 
 printf '%s\n' "$token"
