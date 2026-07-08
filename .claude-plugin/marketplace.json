@@ -13,6 +13,11 @@
       "name": "kanban-flow",
       "source": "./plugins/kanban-flow",
       "description": "Autonomous, card-driven kanban development: an orchestrator and specialist agents that run each backlog card through slice → design → implement → test → review, shipping design and implementation as two reviewable PRs per card."
+    },
+    {
+      "name": "github-app-identity",
+      "source": "./plugins/github-app-identity",
+      "description": "Give local automation a dedicated GitHub App identity: a directory-aware gh shim, token minter, and git credential helper make commits/pushes/gh act as the App inside opted-in repos, never falling back to personal credentials."
     }
   ]
 }
