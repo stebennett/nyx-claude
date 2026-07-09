@@ -23,9 +23,11 @@ target repo, on a migration branch, and you never modify the plugin.
 1. **Resolve + detect.** Read `<board_dir>/config.md`: its `kanban_flow_version` (empty
    on a pre-versioning repo) and its `template_overrides`. Read the installed plugin
    version. Scan `<board_dir>` for leftover plugin-owned copies: `AGENT-PROTOCOL.md`,
-   `REVIEW-LENSES.md`, `card-template.md`, `pr-template.md`, `design-pr-template.md`. **If
-   the version is already current AND no copy is present → report "already migrated" and
-   stop** (do nothing destructive).
+   `REVIEW-LENSES.md`, `card-template.md`, `pr-template.md`, `design-pr-template.md` — but
+   a template file already registered in `template_overrides` (pointing at that path) is a
+   deliberately-preserved override, **not** a leftover; only an *unregistered* copy counts.
+   **If the version is already current AND no unregistered copy is present → report
+   "already migrated" and stop** (do nothing destructive).
 
 2. **Branch.** Create `task/migrate-<plugin-version>` off the current branch — every
    change rides one PR. Never commit migration changes straight to `main`.
