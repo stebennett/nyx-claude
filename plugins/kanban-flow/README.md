@@ -17,4 +17,4 @@ Add this repo as a plugin marketplace, then install `kanban-flow`.
 
 - **Skills:** `kanban` (orchestrator), `refine` (backlog intake), `retro` (process improvement), `adr` (ADR persistence), `kanban-init` (project scaffolder).
 - **Agents:** `card-slicer`, `card-designer`, `card-implementer`, `card-tester`, `card-reviewer`, `card-deliverer`, `pr-expert-reviewer`.
-- **Templates:** the doctrine (`AGENT-PROTOCOL.md`), review lenses, card/PR templates, `config.md`, and empty board starters that `/kanban-init` copies into your repo.
+- **Templates:** the plugin-owned doctrine (`AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, and the card/PR templates) that agents read **live from the plugin** — never copied into your repo, so a plugin update reaches every project. `/kanban-init` copies only `config.md`, an empty `PROTOCOL-ADDENDUM.md` (where `/retro` layers project-specific doctrine), and empty board starters.
