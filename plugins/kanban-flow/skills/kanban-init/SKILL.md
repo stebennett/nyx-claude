@@ -5,8 +5,9 @@ description: Scaffold a repository for the kanban-flow system. Copies config, an
 
 # /kanban-init — scaffold a project for kanban-flow
 
-Set up the current repository to use the kanban-flow system. You copy bundled
-templates into the repo; you never modify the plugin.
+Set up the current repository to use the kanban-flow system. You copy config
+and empty board starters into the repo; doctrine and templates stay
+plugin-owned and are read live. You never modify the plugin.
 
 ## Steps
 
