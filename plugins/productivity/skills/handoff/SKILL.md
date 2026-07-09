@@ -1,120 +1,98 @@
 ---
 name: handoff
-description: Distil the current Claude Code session into a single self-contained handoff document that a fresh session can read to continue the work. Invoke MANUALLY when the context window is shrinking below a comfortable level and you want to hand the work off before detail is lost. Captures the session's goal, work done, outstanding work with recommended next steps, and which skills/agents/workflows to reach for — while pointing at (never copying) spec/plan files already on disk. Writes the document OUTSIDE the git repo. A future 'continue' skill reads it back.
+description: Distil the current Claude Code session into a single self-contained handoff document that a fresh session can read to continue the work. Invoke MANUALLY when the context window is shrinking below a comfortable level and you want to hand the work off before detail is lost. Captures the session's goal, work done, outstanding work with recommended next steps, and which skills/agents/workflows to reach for — while pointing at (never copying) spec/plan files already on disk. Writes the document OUTSIDE the git repo, conforming to the handoff format contract. A future 'continue' skill reads it back.
 ---
 
 # handoff — hand this session off to a fresh one
 
-You are being invoked, by hand, to write a **handoff document**: a single Markdown
-file that lets a *different* Claude session resume this exact work with everything it
-needs and nothing it doesn't. The usual trigger is a context window that has shrunk
-below a comfortable level — capture the state now, while you still remember it clearly,
-so the detail isn't lost to compaction.
+You are being invoked, by hand, to write a **handoff document**: a single Markdown file
+that lets a *different* Claude session resume this exact work with everything it needs
+and nothing it doesn't. The usual trigger is a context window that has shrunk below a
+comfortable level — capture the state now, while you still remember it clearly, so the
+detail isn't lost to compaction.
 
-The reader of this document is another instance of you: intelligent, capable, and
-starting cold in this same repository. Write for that reader. Give it the *situation*
-and let it decide *how* to act — do not script its keystrokes.
+The reader is another instance of you — but a *machine* reader (the future `continue`
+skill), starting cold in this same repository, that parses the document to pick up the
+work. So the document has two obligations at once:
 
-## What the document must contain
+- **Conform exactly to the format contract** so `continue` can find and parse it. The
+  contract — file location, filename, frontmatter schema, the fixed set of required
+  sections, and the content rules — lives in
+  **[`references/handoff-format.md`](references/handoff-format.md)**. Read it first and
+  follow it to the letter; this SKILL does not restate the schema.
+- **Read well for that reader.** Give it the *situation* and let it decide *how* to act.
+  The sections below are the judgement — what makes each part of the document actually
+  useful — that the contract's structure can't capture on its own.
 
-Draw all of this from the actual conversation and work so far — never invent state.
+## Before you write: gather real state
 
-1. **The over-arching goal.** What is this session ultimately trying to achieve? The
-   why, not just the what. Enough that the reader understands success when they see it.
-2. **Work completed so far.** What has actually been done — decisions made, files
-   created or changed, approaches tried (including dead ends and *why* they were
-   abandoned, so the reader doesn't repeat them). Be concrete and honest: if something
-   was attempted but not verified, say so.
-3. **Outstanding work + recommended next steps.** What remains, and the sequence you'd
-   take next. Frame next steps as *intent and direction* ("get the failing auth test
-   green, then wire the handler"), not as literal commands to paste. Flag anything
-   blocked, uncertain, or awaiting a decision.
-4. **Skills, agents, and workflows to use.** Name the specific skills, subagents, slash
-   commands, or workflows that fit the remaining work (e.g. a project's `/verify`,
-   a domain skill, a specialist agent) and *when* each applies. The reader may not
-   discover these on its own — point the way.
-5. **Anything else that ensures a clean pickup.** Current git branch, dirty working
-   tree, running processes/servers, environment quirks, credentials or access already
-   set up, conventions the repo enforces, gotchas hit this session, links to relevant
-   PRs/issues — whatever a cold-starting reader would otherwise have to rediscover.
+Do not write from memory alone — the session that triggers a handoff has often already
+lost detail to compaction. Ground the document in observable state:
 
-## What the document must NOT contain
+- **Git footing** for the frontmatter and `## Starting state`: current branch
+  (`git branch --show-current`), `HEAD` SHA (`git rev-parse HEAD`), whether that commit
+  is pushed, working-tree status (`git status --porcelain`), and files changed this
+  session.
+- **Work-in-progress:** if the tree is dirty, decide per the contract's WIP policy. The
+  recommended move is to **checkpoint-commit the WIP first** so it travels to a fresh
+  checkout and `head_sha` anchors it; then record the (now clean) state. If you
+  deliberately leave WIP uncommitted, list every dirty file *with the intent of its
+  change* so `continue` can reconstruct it — never rely on an embedded diff.
+- **On-disk docs** worth referencing (specs, plans, ADRs) and the exact sections that matter.
+- **Live artifacts:** open PRs/issues, running servers, environment set up this session.
 
-- **Do not reproduce documents already on disk.** Spec files, plan files, design docs,
-  ADRs, READMEs already in the repo — reference them by **path** (and the specific
-  section that matters) and let the reader open them into its own context. Copying them
-  wastes space and goes stale. The handoff is the *connective tissue* between those
-  documents and the live state, not a duplicate of them.
+## What each section is really for
+
+The contract names the required sections; this is how to fill them so the pickup succeeds.
+
+- **Goal** — the *why*, not just the what. Enough that `continue` recognises success when it arrives.
+- **Starting state** — the verifiable footing. Make it checkable (branch, SHA, pushed?,
+  dirty files + intent), because this is what lets `continue` confirm it is standing
+  where the rest of the document assumes before it touches anything.
+- **Completed** — be concrete and honest. Include **dead ends and *why* they were
+  abandoned** so the reader doesn't repeat them, and flag anything attempted but not
+  yet verified.
+- **Outstanding & next steps** — the sequence you'd take next, as *intent and direction*
+  ("get the failing auth test green, then wire the handler"), never keystrokes to paste.
+  Name the exact test id / file / branch, but leave the method open.
+- **Definition of done** — the acceptance criteria plus the concrete way to verify them,
+  so `continue` can tell when it is finished rather than guessing.
+- **Decisions made** vs **Open questions** — separate what is settled (don't let the
+  reader relitigate it) from what genuinely needs a human (make the reader stop and ask,
+  not decide unilaterally). Miscategorising here is the difference between a smooth
+  pickup and a wrong turn.
+- **Skills / agents / workflows** — the reader may not discover these on its own; name
+  the specific tools (a project's `/verify`, a domain skill, a specialist agent) and
+  *when* each applies.
+- **References** — point at on-disk docs by path + section; **do not paste their
+  contents.** Copying wastes space and goes stale; the handoff is the connective tissue,
+  not a duplicate.
+- **Environment** — split what *survives* a fresh session (committed/pushed code, PRs)
+  from what the reader must *re-establish* (dev servers, exported env vars, local auth).
+  Otherwise `continue` assumes a server is up that isn't.
+- **Notes & gotchas** — conventions the repo enforces, traps hit this session, PR/issue links.
+
+## The two hard rules (from the contract — do not break them)
+
+- **Do not reproduce documents already on disk.** Reference them by path and section.
 - **Do not script exact prompts or commands to run next.** Trust the reader's judgement
-  and creativity to choose *how* to accomplish each next task. Describe the goal and the
-  constraints; leave the method to them. (Concrete facts — a branch name, a test id, a
-  file path, a URL — are fine and welcome; a prescriptive command line to paste is not.)
-
-## Where to write it
-
-The document lives **outside the git repository** so it never gets committed and doesn't
-clutter the tree — this session's repo is a checkout the reader also has.
-
-1. Determine the repo root and a project name:
-   - `root="$(git rev-parse --show-toplevel 2>/dev/null)"`
-   - project name = the basename of `$root` (fall back to the basename of the current
-     directory if not in a git repo).
-2. Choose the output directory `~/.claude/handoffs` and create it:
-   `mkdir -p "$HOME/.claude/handoffs"`. (This is a stable, predictable location the
-   future `continue` skill can look in.)
-3. Build a filename from the project and a timestamp:
-   `ts="$(date +%Y%m%d-%H%M%S)"` → `"$HOME/.claude/handoffs/<project>-<ts>.md"`.
-   Example: `~/.claude/handoffs/nyx-claude-20260709-143005.md`.
-
-Keep the shell portable (Linux + macOS, bash 3.2): use `date +%Y%m%d-%H%M%S`, avoid
-GNU-only flags. If `$HOME` is unavailable for any reason, fall back to the system temp
-dir (`${TMPDIR:-/tmp}/claude-handoffs`) rather than writing inside the repo.
-
-## Format
-
-Markdown, optimised for another Claude to read fast. Lead with a short header block —
-project, timestamp, git branch, one-line goal — then the sections above under clear
-`##` headings. A suggested skeleton (adapt to the session; drop sections that truly
-don't apply):
-
-```markdown
-# Handoff — <project>
-
-- **Created:** <ISO timestamp>
-- **Repo / branch:** <root> @ <branch>
-- **Working tree:** <clean | dirty — summary>
-
-## Goal
-<the over-arching objective>
-
-## Completed
-<what's done, with file paths and decisions; note anything unverified>
-
-## Outstanding & next steps
-<what remains, in the order you'd tackle it; direction not commands>
-
-## Skills / agents / workflows to use
-<named tools that fit the remaining work, and when each applies>
-
-## References (already on disk — read these, don't re-read here)
-<paths to specs/plans/docs + the sections that matter>
-
-## Notes & gotchas
-<environment, running processes, conventions, traps, PR/issue links>
-```
+  and creativity for *how*. Concrete facts — a branch, a test id, a file path, a SHA, a
+  URL — are welcome and must be exact; a prescriptive command line to paste is not.
 
 ## Procedure
 
-1. **Gather state before writing.** Check the live context you can observe, not just
-   your memory: current branch and working-tree status (`git status`, `git branch
-   --show-current`), any files changed this session, and the on-disk docs worth
-   referencing. This grounds the document in reality.
-2. **Draft the document** from the conversation and that gathered state, honouring the
-   contains / must-not-contain rules above. Be complete but tight — every line should
-   earn its place for the reader.
-3. **Write the file** to the computed path.
-4. **Report back** to the user: the full path to the handoff file and a 2–3 line
-   summary of what it captures, so they can eyeball it and hand it to the next session.
+1. **Read the contract** (`references/handoff-format.md`) so the output conforms.
+2. **Gather real state** as above — git footing, WIP decision, docs to reference, live artifacts.
+3. **Draft the document** to the contract's structure, filling each section per the
+   guidance above. Complete but tight — every line earns its place for the reader.
+4. **Compute the path and write the file** exactly where and how the contract specifies
+   (canonical `~/.claude/handoffs/`, `<project>-<timestamp>.md`, frontmatter + fixed
+   sections). Keep the shell portable — Linux + macOS, bash 3.2; use
+   `date +%Y%m%d-%H%M%S` for the filename and `date +%Y-%m-%dT%H:%M:%S%z` for the
+   `created` timestamp, and avoid GNU-only flags.
+5. **Report back** to the user: the full path to the handoff file and a 2–3 line summary
+   of what it captures, so they can eyeball it and hand it to the next session.
 
-Do not commit the file, and do not open a PR — the handoff is a working artifact, not a
-deliverable.
+Do not commit the handoff document itself, and do not open a PR — it is a working
+artifact, not a deliverable. (Checkpoint-committing the *code* WIP in step 2 is
+separate and expected.)
