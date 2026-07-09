@@ -55,9 +55,10 @@ wait.
 
 Once a signal exists, the pump assembles the set of items to address:
 
-- **Human inline comments** — every inline review comment
+- **Human inline comments** — every inline review comment the signal authorises
   (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`) authored by a
   non-app account with no `[kanban]` reply already in its thread. No 👍 required.
+  See *Timing* below for which comments a given signal authorises.
 - **Review summary bodies** — the body text of each human-submitted review, when
   non-empty. Idempotency keyed to the review id (a top-level `[kanban]` marker
   comment that names the review).
@@ -76,6 +77,8 @@ Timing:
 - For loose inline comments cleared by a `REVIEWED` **comment** (comments not
   attached to a submitted review), process those created at or before the newest
   `REVIEWED` comment's timestamp.
+- A submitted-review signal authorises only its own atomic unit — it does **not**
+  sweep loose comments; a human comment reached by neither signal waits for one.
 
 ### 3. Address & reply
 

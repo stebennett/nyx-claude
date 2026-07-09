@@ -42,7 +42,7 @@ calibration bar for depth and comment shape.
    to a temp file and `{gh_command} api repos/{owner}/{repo}/pulls/{n}/reviews --input <file>`.
    **Zero findings → post nothing** and say so in your result.
 5. Never approve, never request changes, never reply to or resolve a thread, never react. The
-   human triages: a 👍 reaction marks a comment for the orchestrator to action; untouched comments
+   human triages: a 👍 reaction marks a panel comment for the orchestrator to action; untouched comments
    are theirs to answer or ignore.
 
 ## Return

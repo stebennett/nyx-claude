@@ -59,7 +59,7 @@ Advance every in-flight card **as far as it can go this pump**. Work in waves: d
 - slice right-sized (or start with `right_sized: true`) → **design transition:** create branch `<type>/NNN-slug-design` + worktree off `main` via **superpowers:using-git-worktrees** (e.g. `../<repo>-worktrees/CARD-NNN`), set `branch`/`worktree`, write `slice.md` into the worktree's `docs/cards/CARD-NNN-slug/` and commit it on the branch, `status: design`.
 - `status: design` + `design.md` absent → dispatch card-designer.
 - `status: design` + `design.md` present + design stop pending per policy → present the stop (Section 3).
-- `status: design` + gate passed + `design_pr_url` empty → **open the design PR:** persist `design.md` (and any `feedback.md`) to the branch; route `proposed_adrs` (below) so ADR files land on the branch; assemble the design PR body from the `design-pr-template.md` template (resolved per Section 1's template-resolution rule); dispatch `card-deliverer` in **design mode** (push + open PR titled `CARD-NNN — design: <title>`). On return, record `design_pr_url`; the card now awaits merge (Section 6 CI/triage apply).
+- `status: design` + gate passed + `design_pr_url` empty → **open the design PR:** persist `design.md` (and any `feedback.md`) to the branch; route `proposed_adrs` (below) so ADR files land on the branch; assemble the design PR body from the `design-pr-template.md` template (resolved per Section 1's template-resolution rule); dispatch `card-deliverer` in **design mode** (push + open PR titled `CARD-NNN — design: <title>`). On return, record `design_pr_url`; the card now awaits merge (Section 6 CI/addressing apply).
 - Design PR merged → handled by Reconcile (Section 0 step 2): implementation branch/worktree created, `status: implement`.
 - `status: implement|test|review` → dispatch per the table; on `complete` advance (implement→test→review→deliver), committing each returned phase doc to the **implementation branch**.
 - `status: deliver` → deliver gate (Section 3) → card-deliverer in **implementation mode** → record `pr_url` → Section 6.
@@ -93,12 +93,12 @@ In the dispatch prompt include: `card_id`, `card_dir`, the full `card.md`, and *
    - `complete` from **deliverer** → record the PR url into `design_pr_url` (design mode) or `pr_url` (implementation mode); the card awaits merge; Section 6.
 5. Commit state changes (`card.md`, `BOARD.md`, `KNOWLEDGE.md`) to `main` with a Conventional Commit (`chore(kanban): …` matching what happened), ending with the project `Co-Authored-By` trailer, and **push** (`git push origin main`; on rejection retry after `git pull --rebase origin main`). If pushes to `main` are refused by branch protection, say so in the report — Reconcile keeps lifecycle state recoverable from merged PRs, and phase docs/ADRs are safe on their branches regardless.
 
-## 6. PR open — CI gate, panel, 👍 triage
+## 6. PR open — CI gate, panel, review-complete addressing
 
 A card with an open PR (design or implementation) holds its WIP slot until merged.
 
 ### 6a. CI gate — nothing else happens on the PR until checks pass
-Every pump, before panel or triage, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
+Every pump, before panel or addressing, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
 - **No checks configured** → proceed. The gate requires that no check is failing, not that checks exist — docs-only design PRs and pre-CI-pipeline PRs are reviewable.
 - **Pending / running** → do nothing for this card this pump; report "CI running". The pump loop is the wait.
 - **All green** → proceed to 6b/6c.
@@ -121,16 +121,27 @@ Design PRs are prose the human reviews directly — no panel. For an **implement
 | python | diff touches `*.py` | sonnet |
 | typescript | diff touches `*.ts` / `*.tsx` | sonnet |
 
-Each expert posts one `COMMENT` review with `[lens]`-prefixed inline comments (nothing when it finds nothing). Concatenate the returned phase docs into `card_dir/pr-review.md` (committed to `main` — the PR is already open), route `knowledge`, commit `chore(kanban): CARD-NNN PR review seeded`, and tell the driver the PR awaits their 👍 triage.
+Each expert posts one `COMMENT` review with `[lens]`-prefixed inline comments (nothing when it finds nothing). Concatenate the returned phase docs into `card_dir/pr-review.md` (committed to `main` — the PR is already open), route `knowledge`, commit `chore(kanban): CARD-NNN PR review seeded`, and tell the driver the PR awaits their review (👍 any panel comment to have it addressed too).
 
-### 6c. Triage loop (every pump per open PR, CI green)
-The human marks any comment **actionable** with a 👍 reaction; everything else is theirs to answer or ignore — never act without the 👍.
-1. Fetch inline review comments: `{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments` (reactions included).
-2. Actionable = 👍 **and** no `[kanban]` reply in its thread yet (the reply is the idempotent addressed-marker).
-3. **Implementation PR:** dispatch `card-implementer` in PR-comment mode with the actionable comments verbatim (id, path, line, body) — it fixes exactly those (test-first for behaviour), runs the fast gates, commits, pushes. **Design PR:** re-dispatch `card-designer` with the comments verbatim; commit its revised `design.md` (and any superseding ADR proposals via the `adr` routing) to the design branch and push.
-4. Reply to each addressed comment (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments/{id}/replies`) with `[kanban] Addressed in <short-sha> — <one line>`. **Never resolve threads**, never approve or dismiss — resolution and the merge are the human's.
+### 6c. Address loop (every pump per open PR, CI green)
+Nothing is actioned until the human signals the review is **complete**; then every comment they authored is addressed, plus any panel comment they 👍'd. Never act before the signal.
 
-PR-comment fixes are human-directed and don't consume the `reworks` budget. Merge detection stays with Reconcile (Section 0). A healthy card needs exactly three human actions: merge the design PR, optional 👍 triage, merge the implementation PR.
+1. **Detect the review-complete signal** — either one satisfies it:
+   - a **submitted review** by a non-app user (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/reviews`) with state `COMMENTED` / `CHANGES_REQUESTED` / `APPROVED` (`PENDING` never counts); or
+   - a top-level PR comment whose trimmed body equals `REVIEWED` (case-insensitive) by a non-app user (`{gh_command} api repos/{owner}/{repo}/issues/{n}/comments`).
+   No signal → do nothing on this PR this pump; report "awaiting review". The pump loop is the wait.
+
+2. **Assemble the actionable set** — skip any item already carrying a `[kanban]` reply/marker (that reply is the idempotent addressed-marker):
+   - **every human-authored inline comment the signal authorises** (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`) — no 👍 needed (see *scope by signal* below);
+   - **each human-submitted review's summary body** when non-empty (idempotency keyed to the review id via a top-level `[kanban]` marker naming the review);
+   - **panel `[lens]` comments only if 👍'd**.
+   "App" = the identity the flow posts as (its comments carry the `[lens]`/`[kanban]` prefix or its App login); everything else is human. Exclude the `REVIEWED` comment itself. **Scope by signal:** a submitted review authorises only its own inline comments and body (one atomic unit); a `REVIEWED` comment authorises every loose inline comment (one not attached to a submitted review) created at/before its timestamp. A human comment reached by neither signal waits for one.
+
+3. **Dispatch. Implementation PR:** dispatch `card-implementer` in PR-comment mode with the items verbatim (id, path, line, body; review-body items flagged as summary) — it fixes exactly those (test-first for behaviour), runs the fast gates, commits (one commit per comment or a tight cluster), pushes. **Design PR:** re-dispatch `card-designer` with the items verbatim; commit its revised `design.md` (and any superseding ADR proposals via the `adr` routing) to the design branch and push.
+
+4. **Reply once per item** — in its thread (inline, `{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments/{id}/replies`) or as a top-level `[kanban]` comment (review body): `[kanban] Addressed in <commit-url> — <one-line explanation>`, where `<commit-url>` is the full `https://github.com/{owner}/{repo}/commit/<sha>`. For an item the agent returned in `blockers` (a question, or a change it judged wrong/infeasible), reply `[kanban] Not actioned — <reason>` and surface it to the driver. Every item in the set gets exactly one reply. **Never resolve threads**, never approve or dismiss — resolution and the merge are the human's.
+
+These fixes are human-directed and don't consume the `reworks` budget. Merge detection stays with Reconcile (Section 0). A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment `REVIEWED`), merge the implementation PR.
 
 ## 7. Report
 Print a concise digest: what advanced (and how far it chained), design PRs opened/merged, implementation PRs opened, what was auto-reworked (card, findings, `reworks`), what awaits a gate/input/merge, splits, blocks, free slots, and per-milestone progress. Flow metrics per finished card: `started → delivered` elapsed and `reworks`. List **ADRs written this pump** (`ADR-NNNN — title → CARD-NNN`, and which PR carries each). Warn on `MILESTONES.md` drift (a `/refine` fix — surface, don't edit). If `migration_needed` (Section 1), warn prominently: **"Un-migrated doctrine copies or a stale `kanban_flow_version` detected — run `/migrate`."** **Every 5 cards done**, suggest `/retro`.
@@ -142,6 +153,6 @@ Print a concise digest: what advanced (and how far it chained), design PRs opene
 - A card cannot reach `design` until `right_sized: true`. Never re-slice a right-sized card. No branch/worktree during `slice`; a `split` parent never gets one.
 - Never exceed the WIP limit. Never start a card with unmet dependencies. Prefer the earliest incomplete milestone, but never idle a free slot.
 - Auto-rework only for actionable findings (failing tests, blocking review findings, branch-caused CI failures); max 2 loops per card, then the driver decides.
-- PR comments are actioned only on the human's 👍; the system replies `[kanban] Addressed in <sha>` but never resolves threads, never approves, never dismisses. Panel experts post `COMMENT` reviews only, on implementation PRs only.
+- PR comments are actioned only after a review-complete signal (a submitted review or a `REVIEWED` comment): then every human-authored comment is addressed, plus any 👍'd panel comment. The system replies `[kanban] Addressed in <commit-url>` (or `[kanban] Not actioned — <reason>`) but never resolves threads, never approves, never dismisses. Panel experts post `COMMENT` reviews only, on implementation PRs only.
 - Code review happens only on green CI (no-checks PRs count as reviewable). Branch-caused failures are fixed from the real logs; infrastructure failures are flagged, rerun, re-checked (max 3), then parked.
 - All branches off `main`; all PRs target `main`. Phase docs ride their half's PR: slice/design/ADRs/early feedback in the design PR; implement/test/review in the implementation PR.
