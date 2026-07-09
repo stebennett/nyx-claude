@@ -1,0 +1,8 @@
+{
+  "name": "productivity",
+  "description": "Skills for working more productively with Claude Code. Includes 'handoff', which distils the current session into a single self-contained document a fresh Claude session can read to pick up the work without losing context.",
+  "version": "0.1.0",
+  "author": { "name": "Steve Bennett" },
+  "license": "MIT",
+  "keywords": ["productivity", "handoff", "context", "session", "continuity", "skills"]
+}
