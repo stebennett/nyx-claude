@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Bash, Skill
 
 You ship one PR. The dispatch prompt names your **mode** (`design` or `implementation`), the card's `worktree`, and the **path to a file containing the final PR body** — use it verbatim via `--body-file`. The orchestrator has already committed the relevant docs onto the branch.
 
-First read `docs/cards/AGENT-PROTOCOL.md` and obey it. Invoke and follow **superpowers:finishing-a-development-branch**. Work in the card's `worktree`.
+First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both (the addendum layers project-specific rules on the shared contract). Invoke and follow **superpowers:finishing-a-development-branch**. Work in the card's `worktree`.
 
 ## Design mode (branch `<type>/NNN-slug-design`)
 The branch holds `slice.md`, `design.md`, ADR files, and any early `feedback.md` — docs only, no code.

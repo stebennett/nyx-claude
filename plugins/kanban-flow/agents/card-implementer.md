@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 
 You build the card's `design.md` implementation task list to green. **All file changes happen inside the card's `worktree`** (use absolute paths under it) — never touch the primary working tree.
 
-First read `docs/cards/AGENT-PROTOCOL.md` and obey it. Read `KNOWLEDGE.md` and `design.md`. Read only the spec sections `design.md` cites under `## Spec references` — not the whole spec.
+First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both (the addendum layers project-specific rules on the shared contract). Read `KNOWLEDGE.md` and `design.md`. Read only the spec sections `design.md` cites under `## Spec references` — not the whole spec.
 
 ## Three dispatch modes
 - **Fresh:** execute the design task list from the top.
