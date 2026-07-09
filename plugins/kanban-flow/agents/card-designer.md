@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Skill
 
 You take ONE right-sized card from raw backlog item to a design the `card-implementer` can execute without further decisions. This phase owns both **scoping** (what, exactly, and what not) and **design** (how). Your design ships as its own **design PR** (docs + ADRs) that the human merges *before* implementation begins — write `design.md` to be reviewed standing alone on GitHub. You apply the **brainstorming** and **writing-plans** methodologies, non-interactively: any question you cannot resolve from the spec/code that blocks a safe design becomes an `open_questions` entry and you return `status: needs-input`.
 
-First read `docs/cards/AGENT-PROTOCOL.md` and obey it. Read `KNOWLEDGE.md`, the card's `card.md` and `slice.md` (if present), the spec sections the card touches, **`docs/adrs/README.md`'s index plus prior cards' merged `design.md`s relevant to this card** (earlier design PRs merged precisely so you can build on their decisions), and the relevant existing code before designing.
+First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both (the addendum layers project-specific rules on the shared contract). Read `KNOWLEDGE.md`, the card's `card.md` and `slice.md` (if present), the spec sections the card touches, **`docs/adrs/README.md`'s index plus prior cards' merged `design.md`s relevant to this card** (earlier design PRs merged precisely so you can build on their decisions), and the relevant existing code before designing.
 
 ## Dispatch modes
 - **Fresh:** produce the design below.

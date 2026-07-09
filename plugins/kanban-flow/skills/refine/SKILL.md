@@ -9,7 +9,7 @@ Turn the spec into a backlog of right-sized cards. You propose; the driver appro
 
 ## Steps
 
-1. **Read context.** Read `{board_dir}/config.md` for `spec_path` and `layers` first. Read the spec at `spec_path`, any referenced material it points to, `{board_dir}/KNOWLEDGE.md`, and `{board_dir}/card-template.md`. Read every existing `docs/cards/CARD-*/card.md` so you don't duplicate or renumber over existing cards.
+1. **Read context.** Read `{board_dir}/config.md` for `spec_path` and `layers` first. Read the spec at `spec_path`, any referenced material it points to, `{board_dir}/KNOWLEDGE.md`, and the `card-template.md` template (resolved as `config.md`'s `template_overrides["card-template.md"]` if set, else `${CLAUDE_PLUGIN_ROOT}/templates/card-template.md`). Read every existing `docs/cards/CARD-*/card.md` so you don't duplicate or renumber over existing cards.
 
 2. **Determine the next card number.** Scan existing `CARD-NNN-*` directory names; the next id is `max + 1`, zero-padded to three digits. If none exist, start at `CARD-001`.
 
@@ -27,7 +27,7 @@ Turn the spec into a backlog of right-sized cards. You propose; the driver appro
 
 9. **Present the proposal** to the driver: the **card table** (id, type, layer, title, depends_on, one-line why, 2–4 acceptance criteria each) **and** the **milestone plan** (ordered `M1…Mn` with title, goal, and member ids). Ask for approval, edits, or removals; iterate the cards and milestones together until approved.
 
-10. **On approval, write the cards and the milestone plan.** For each approved card, create `docs/cards/CARD-NNN-slug/card.md` from `card-template.md` with `status: backlog`, `phase: backlog`, the chosen `layer`, empty `branch`/`worktree`, `reworks: 0`, and today's date (slug = short kebab-case of the title). Set `right_sized: true` when the card is **obviously atomic** (a single small change you cannot imagine splitting — this lets `/kanban` skip its slice check entirely); otherwise `right_sized: ""` and the slice phase decides. Then create/update `docs/cards/MILESTONES.md` in its documented format — one `## M<N> — <title>` heading per milestone (in order), each with `**Goal:**`, `**Exit criteria:**`, and a `**Cards:**` line listing its member ids. When re-slicing an existing backlog, place new cards into the right milestone and keep the step-8 invariants holding across the whole set.
+10. **On approval, write the cards and the milestone plan.** For each approved card, create `docs/cards/CARD-NNN-slug/card.md` from the `card-template.md` template (resolved as `config.md`'s `template_overrides["card-template.md"]` if set, else `${CLAUDE_PLUGIN_ROOT}/templates/card-template.md`) with `status: backlog`, `phase: backlog`, the chosen `layer`, empty `branch`/`worktree`, `reworks: 0`, and today's date (slug = short kebab-case of the title). Set `right_sized: true` when the card is **obviously atomic** (a single small change you cannot imagine splitting — this lets `/kanban` skip its slice check entirely); otherwise `right_sized: ""` and the slice phase decides. Then create/update `docs/cards/MILESTONES.md` in its documented format — one `## M<N> — <title>` heading per milestone (in order), each with `**Goal:**`, `**Exit criteria:**`, and a `**Cards:**` line listing its member ids. When re-slicing an existing backlog, place new cards into the right milestone and keep the step-8 invariants holding across the whole set.
 
 11. **Tell the driver to run `/kanban`** to render the board and begin scheduling. Do not modify `BOARD.md` yourself — `/kanban` renders it.
 
