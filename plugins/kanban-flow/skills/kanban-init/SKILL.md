@@ -1,12 +1,13 @@
 ---
 name: kanban-init
-description: Scaffold a repository for the kanban-flow system. Copies the doctrine, templates, config, and empty board starters into the target repo's board directory (default docs/cards/). Idempotent — never clobbers an existing board. Run once per project, before /refine.
+description: Scaffold a repository for the kanban-flow system. Copies config, an empty project-doctrine addendum, and empty board starters into the target repo's board directory (default docs/cards/); doctrine and templates stay plugin-owned and are read live. Idempotent — never clobbers an existing board. Run once per project, before /refine.
 ---
 
 # /kanban-init — scaffold a project for kanban-flow
 
-Set up the current repository to use the kanban-flow system. You copy bundled
-templates into the repo; you never modify the plugin.
+Set up the current repository to use the kanban-flow system. You copy config
+and empty board starters into the repo; doctrine and templates stay
+plugin-owned and are read live. You never modify the plugin.
 
 ## Steps
 
@@ -19,13 +20,22 @@ templates into the repo; you never modify the plugin.
    do nothing destructive. Never overwrite an existing board, config, or cards.
 
 3. **Scaffold.** Create `<board_dir>/` and copy from `${CLAUDE_PLUGIN_ROOT}/templates/`:
-   - `config.md`, `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `card-template.md`,
-     `pr-template.md`, `design-pr-template.md` → `<board_dir>/`
+   - `config.md` → `<board_dir>/config.md`, then stamp its `kanban_flow_version`
+     to the installed plugin version (read `version` from the plugin's
+     `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`).
+   - `PROTOCOL-ADDENDUM.md` → `<board_dir>/` (the empty project-doctrine stub
+     `/retro` will append project-specific rules to).
    - `board/BOARD.md`, `board/KNOWLEDGE.md`, `board/MILESTONES.md` → `<board_dir>/`
    - Create the ADR directory (`adr_dir`, default `docs/adrs/`). Only if
      `<adr_dir>/README.md` does not already exist, create it as a stub containing
      an empty ADR index heading — a repo with pre-existing ADRs must not have its
      index clobbered.
+
+   **Do not copy** `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `card-template.md`,
+   `pr-template.md`, or `design-pr-template.md`. These are **plugin-owned** and
+   read live at runtime (the orchestrator injects their absolute paths into every
+   dispatch); copying them into the repo would re-create the per-repo doctrine
+   drift this design removes.
 
 4. **Report next steps.** Tell the user to:
    - Edit `<board_dir>/config.md` — set `spec_path` to their spec, adjust `layers`

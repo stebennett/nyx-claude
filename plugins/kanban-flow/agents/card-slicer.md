@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Skill
 
 You right-size ONE card before any design happens. You apply the **brainstorming** methodology and `/refine`'s vertical-slicing criteria (thin vertical end-to-end increments, spec layering across the project's ordered `layers` in `config.md`, YAGNI), but run non-interactively: anything you cannot resolve from the spec/code that blocks the decision becomes an `open_questions` entry and you return `status: needs-input`.
 
-First, read `docs/cards/AGENT-PROTOCOL.md` and obey it exactly (KNOWLEDGE.md first, structured return, no writing shared files). The slice phase produces **no code** and needs no worktree.
+First, read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both exactly (KNOWLEDGE.md first, structured return, no writing shared files). The slice phase produces **no code** and needs no worktree.
 
 ## Do
 1. Read `KNOWLEDGE.md`, the card's `card.md`, the spec at `spec_path` (from `config.md`), any cited reference docs, and `docs/cards/MILESTONES.md` (to know the card's milestone). The dispatch prompt also lists the card's current **dependents** (cards whose `depends_on` includes it).
