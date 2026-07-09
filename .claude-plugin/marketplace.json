@@ -22,7 +22,7 @@
     {
       "name": "productivity",
       "source": "./plugins/productivity",
-      "description": "Skills for working more productively with Claude Code. Includes 'handoff', which distils the current session into a single self-contained document a fresh Claude session can read to continue the work without losing context."
+      "description": "Skills for working more productively with Claude Code. 'handoff' distils the current session into a single self-contained document; 'continue' reads it back in a fresh session and proposes an approved plan to resume the work — preserving context across sessions."
     }
   ]
 }
