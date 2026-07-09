@@ -48,7 +48,7 @@ Present the retro to the driver: metrics table (per card: elapsed, reworks), the
 ## 4. Apply
 - Append approved KNOWLEDGE entries (prefix `[retro-YYYY-MM-DD]`).
 - Write `docs/cards/RETRO.md` (append a `## Retro YYYY-MM-DD` section: cards covered, the per-card **human-input channel coverage** table from step 1, metrics, the four answers, changes made — including changes proposed-but-rejected, so they aren't re-proposed) so the next retro knows where to start and a skipped channel is auditable.
-- Apply approved process edits **on a branch** (`task/retro-YYYY-MM-DD`), commit with Conventional Commits, push, and open a PR against `main` via `{gh_command} pr create` — process changes get the same human review as code.
+- Apply approved **in-repo** process edits — `PROTOCOL-ADDENDUM.md` appends and `BOARD.md` tunables — **on a branch** (`task/retro-YYYY-MM-DD`), commit with Conventional Commits, push, and open a PR against this project's `main` via `{gh_command} pr create` — process changes get the same human review as code. **Universal lessons** (the plugin's `AGENT-PROTOCOL.md`/`REVIEW-LENSES.md`/templates/agents/skills) are **not** committed or PR'd here — they are only recorded in `RETRO.md` and surfaced in the retro output as a proposed **plugin PR** for the human to raise against the plugin repo.
 
 ## Rules
 - Evidence first: every proposed change cites the cards/docs/comments that motivated it.
