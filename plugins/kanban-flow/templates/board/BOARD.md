@@ -25,4 +25,6 @@ _last rendered: never_
 
 ## Split
 
+## Superseded
+
 ## Milestones

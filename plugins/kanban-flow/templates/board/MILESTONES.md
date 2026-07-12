@@ -1,6 +1,6 @@
 # Milestones
 
-Ordered delivery milestones, authored by `/refine`. Document order = delivery order.
+Ordered delivery milestones, authored by `/refine` and `/requirement`. Document order = delivery order.
 `/kanban` reads this file and never writes it.
 
 <!-- Example:
