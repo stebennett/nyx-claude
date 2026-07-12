@@ -2,8 +2,9 @@
 id: CARD-000
 type: task            # feature | task | defect
 layer: <one of config.layers>    # primary architectural layer; read from config.md
+reqs: []              # REQ ids this card implements, e.g. [REQ-012]. Empty = unknown (a card written before this field), NOT "unaffected".
 title: Short imperative title
-status: backlog       # backlog | slice | design | implement | test | review | deliver | done | blocked | split
+status: backlog       # backlog | slice | design | implement | test | review | deliver | done | blocked | split | superseded
 phase: backlog        # mirrors status; the phase the card is currently in
 right_sized: ""       # `true` once confirmed an indivisible vertical slice (by /refine at intake, the slice phase, a split carve-out, or a keep-as-one override); guards re-slicing. `true` at intake skips the slice phase entirely.
 depends_on: []        # list of card ids that must be `done` before this starts, e.g. [CARD-001]
@@ -27,3 +28,5 @@ One paragraph: the user-facing intent and why this card exists.
 
 ## Notes
 Free-form context. Phase docs (slice.md, design.md, …) live beside this file and hold the detail. Split lineage is recorded here as prose (e.g. "Split out of CARD-NNN" on a child, "Split into CARD-XXX, CARD-YYY" on a `split` parent).
+
+A `superseded` card is terminal: `/requirement` retired it because the requirement it implemented was superseded. The reason is recorded here.
