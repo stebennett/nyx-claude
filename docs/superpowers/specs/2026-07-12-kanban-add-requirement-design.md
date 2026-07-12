@@ -66,9 +66,8 @@ this convention lives.)
 1. **Load context** — `{board_dir}/config.md` (for `spec_path`, `layers`,
    `board_dir`), the spec, `MILESTONES.md`, every `docs/cards/CARD-*/card.md`,
    `KNOWLEDGE.md`, and the plugin's `INTAKE.md` doctrine.
-2. **Id the spec, once** — if the spec has no `REQ-NNN` headings, offer a one-time
-   pass that assigns ids to the existing prose, presented as a diff for approval.
-   Idempotent: a no-op on an already-id'd spec.
+2. **Ensure the spec is id'd** — invoke `req-ids` (below). If the spec has no
+   `REQ-NNN` headings it backfills them; otherwise it is a no-op.
 3. **Elicit** — interview the user **one question at a time**: the intent and who
    it serves, what is explicitly out of scope, edge cases, and the observable
    criteria that would prove it done. Stop as soon as the requirement is testable —
@@ -81,13 +80,42 @@ this convention lives.)
    type, layer, title, `depends_on`, `reqs`, acceptance criteria); edits and
    deletions to backlog cards; milestone placement; and the amendment records to be
    queued, with the action chosen for each.
-6. **On approval, write and commit** — the spec, cards, `MILESTONES.md`, and
-   `AMENDMENTS.md`, as one Conventional Commit (`chore(kanban): add REQ-NNN — …`).
-   Then tell the driver to run `/kanban` to drain the queue and schedule.
+6. **On approval, write and commit** — persist the requirement into the spec via
+   `req-ids` (which allocates the id and writes any supersede markers), then write
+   the cards, `MILESTONES.md`, and `AMENDMENTS.md`, as one Conventional Commit
+   (`chore(kanban): add REQ-NNN — …`). Then tell the driver to run `/kanban` to
+   drain the queue and schedule.
+
+## The `req-ids` skill — sole authority for REQ identity
+
+Both intake skills need requirement ids, so id-ing is **externalised into its own
+skill** rather than duplicated. `req-ids` is the single authority for the `REQ`
+format, numbering, and supersede handling — exactly as the existing `adr` skill is
+the single authority for ADR format, numbering, supersede handling, and its index.
+The parallel is deliberate: callers compose requirement *prose*; `req-ids` persists
+it with correct identity.
+
+It is invoked by `/refine` and `/requirement`, and may also be run directly. It
+carries the same **"Run under Opus"** note — deciding what constitutes a discrete
+requirement in existing prose is judgement, not string manipulation.
+
+Three operations:
+
+- **backfill** — scan `spec_path`. If requirements are unnumbered, propose an id'd
+  version as a diff for approval and write it on approval. **Idempotent**: a no-op
+  on an already-id'd spec. This is what `/refine` calls on its first pass, and what
+  `/requirement` calls before it does anything else.
+- **allocate** — given requirement prose and its placement, insert it under the next
+  free id with `**Status:** active`, and return the id to the caller.
+- **supersede** — mark `REQ-A` as `**Status:** superseded by REQ-B`. Never deletes.
+
+Consequence worth stating plainly: **`/refine` gains the ability to write to
+`spec_path`**, which it could not do before. That write is confined to backfilling
+ids onto existing prose — `/refine` never authors or changes requirement content.
 
 ## Spec format
 
-Requirements become addressable headings in `spec_path`:
+Owned by `req-ids`. Requirements become addressable headings in `spec_path`:
 
 ```markdown
 ## Boards
@@ -168,9 +196,8 @@ rules would drift, so they move into a new **plugin-owned doctrine file read liv
 in the same pattern as `AGENT-PROTOCOL.md` and `REVIEW-LENSES.md` (never copied into
 the consuming repo).
 
-`INTAKE.md` holds:
+`INTAKE.md` holds the **card** doctrine only — REQ identity belongs to `req-ids`:
 
-- the `REQ` id and spec-heading format (above);
 - vertical slicing — each card independently shippable and testable, YAGNI applied;
 - `type` classification (`feature` | `task` | `defect`);
 - `layer` annotation from `config.layers`, tagging a vertical slice by the *lowest*
@@ -182,9 +209,10 @@ the consuming repo).
 - milestone invariants — every card in exactly one milestone; no card `depends_on`
   a card in a **later** milestone.
 
-`/refine` keeps what is genuinely its own: reading the whole spec, proposing the
-*entire* backlog, and owning its approval loop. It delegates the rules above to
-`INTAKE.md`. `/requirement` applies the same rules **scoped to one requirement**.
+`/refine` keeps what is genuinely its own: backfilling ids via `req-ids` on its first
+pass, reading the whole spec, proposing the *entire* backlog, and owning its approval
+loop. It delegates the card rules above to `INTAKE.md`. `/requirement` applies the
+same rules **scoped to one requirement**.
 
 `MILESTONES.md` ownership becomes **shared between the two intake skills** —
 previously `/refine` alone. `/kanban` still never writes it, except for the existing
@@ -195,12 +223,13 @@ mechanical parent→children swap on an applied split.
 **New**
 
 - `plugins/kanban-flow/skills/requirement/SKILL.md`
+- `plugins/kanban-flow/skills/req-ids/SKILL.md`
 - `plugins/kanban-flow/templates/INTAKE.md`
 
 **Edited**
 
-- `plugins/kanban-flow/skills/refine/SKILL.md` — delegate slicing rules to
-  `INTAKE.md`; populate `reqs`.
+- `plugins/kanban-flow/skills/refine/SKILL.md` — invoke `req-ids` on the first pass;
+  delegate slicing rules to `INTAKE.md`; populate `reqs`.
 - `plugins/kanban-flow/skills/kanban/SKILL.md` — drain `AMENDMENTS.md`; render the
   `Superseded` column; update the sole-writer rule.
 - `plugins/kanban-flow/templates/card-template.md` — add `reqs: []`; add
@@ -230,5 +259,8 @@ results rather than asserting success:
    branch, closes the PR, and lands the card in `Superseded`.
 4. **`revisit`** — the card reaches `blocked` with the `REQ` named in the blocker,
    and `/kanban`'s blocked-card conversation offers the usual choices.
-5. **Un-id'd spec** — the one-time id-ing pass is offered, applied on approval, and
-   is a no-op on the second run.
+5. **Un-id'd spec, via `/requirement`** — `req-ids` backfill is offered, applied on
+   approval, and is a no-op on the second run.
+6. **Un-id'd spec, via `/refine`** — the first `/refine` pass backfills ids through
+   the same `req-ids` skill, and the cards it proposes cite those ids in `reqs`.
+   Running `/refine` again re-ids nothing.
