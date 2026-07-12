@@ -72,8 +72,16 @@ holds one `## M<N> — <title>` heading per milestone **in delivery order**, eac
 
 Two invariants, validated **before** you present a proposal:
 
-1. **Coverage** — every card, new and existing, belongs to **exactly one** milestone.
-   None orphaned, none in two.
+1. **Coverage** — every **live** card, new and existing, belongs to **exactly one**
+   milestone. None orphaned, none in two.
+
+   **Terminal cards belong to no milestone.** `/kanban` computes a milestone's progress as
+   `done members / total members`, and a `split` or `superseded` card can never be `done` —
+   leaving one on a `**Cards:**` line makes that milestone permanently unreachable. When a
+   card becomes terminal it **leaves** its milestone's `**Cards:**` line, and its
+   successor(s) — the split children, or the replacement card — take its place. (`/kanban`
+   does this swap itself for splits; for supersedes, `/requirement` does it at the moment
+   it queues the amendment.)
 2. **Dependency consistency** — no card may `depends_on` a card in a **later** milestone.
    Same or earlier is fine.
 

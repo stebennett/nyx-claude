@@ -50,10 +50,18 @@ pass; `/requirement` calls it before it does anything else.
 3. Otherwise, identify the discrete requirements in the existing prose. A requirement
    is a statement of something the system must do that is observable and independently
    checkable. Exclude non-normative prose (above).
-4. Where one paragraph bundles several requirements, split it into separate REQs.
-   **Preserve the author's wording verbatim** — reuse their sentences unchanged and add
-   only the `### REQ-NNN — <title>` heading and the `**Status:** active` line. Err
-   toward keeping the author's structure; you are numbering their spec, not rewriting it.
+4. Where prose bundles several requirements, split it into separate REQs.
+   **Preserve the author's wording** — wherever the bundle breaks cleanly along sentence
+   boundaries, reuse their sentences unchanged and add only the `### REQ-NNN — <title>`
+   heading and the `**Status:** active` line.
+
+   Where a bundle sits **inside a single sentence** (`Users can create a board and add
+   cards to it.`), splitting it necessarily rewrites it. Then: make the **smallest edit**
+   that leaves each REQ a standalone statement, and **call out every such rewrite
+   explicitly** in the diff you present at step 6, so the driver sees exactly which words
+   you changed and can veto the split. Never rewrite prose you did not have to split.
+
+   You are numbering the author's spec, not rewriting it.
 5. Number in document order, starting at `REQ-001`.
 6. **Present the full diff** and the count (`n requirements identified`). Ask the driver
    to `approve` or `revise`. **Never write without approval.**

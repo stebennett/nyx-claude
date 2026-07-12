@@ -96,7 +96,11 @@ You respect that boundary absolutely. Classify every existing card by `status` a
       id), then `supersede` for any it replaces. Never edit the spec by hand.
    2. Create the new cards from the card template, and apply the approved edits, deletions
       and `depends_on` rewires to `backlog` cards.
-   3. Update `{board_dir}/MILESTONES.md`.
+   3. Update `{board_dir}/MILESTONES.md` — place each new card, and **remove from its
+      milestone's `**Cards:**` line every card you queued for `supersede`**, putting its
+      replacement card (if any) in its place. A superseded card can never be `done`, so
+      leaving it there would make that milestone's progress permanently unreachable. Both
+      `INTAKE.md` invariants must still hold across the whole board afterwards.
    4. Append the approved amendments to `{board_dir}/AMENDMENTS.md` (format below),
       creating the file if it does not exist.
    5. Commit everything as **one** Conventional Commit:

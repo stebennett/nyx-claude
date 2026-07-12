@@ -31,7 +31,7 @@ plugin-owned and are read live. You never modify the plugin.
      an empty ADR index heading — a repo with pre-existing ADRs must not have its
      index clobbered.
 
-   **Do not copy** `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `card-template.md`,
+   **Do not copy** `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `INTAKE.md`, `card-template.md`,
    `pr-template.md`, or `design-pr-template.md`. These are **plugin-owned** and
    read live at runtime (the orchestrator injects their absolute paths into every
    dispatch); copying them into the repo would re-create the per-repo doctrine
