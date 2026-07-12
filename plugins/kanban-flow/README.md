@@ -12,12 +12,13 @@ Add this repo as a plugin marketplace, then install `kanban-flow`.
 2. Edit `docs/cards/config.md` — set `spec_path`, adjust `layers`, set `gh_command` if you use a bot identity.
 3. Run `/refine` to populate the backlog from your spec.
 4. Run `/kanban` to drive cards through the board (safe under `/loop`).
+5. When a new requirement lands mid-project, run `/requirement` — it interviews you, writes the requirement to your spec with a stable `REQ-NNN` id, slices it into cards, and reports what it invalidates on the board. Then run `/kanban` to apply it.
 
 ## Contents
 
-- **Skills:** `kanban` (orchestrator), `refine` (backlog intake), `retro` (process improvement), `adr` (ADR persistence), `kanban-init` (project scaffolder), `migrate` (one-time upgrade of an existing repo to plugin-owned doctrine).
+- **Skills:** `kanban` (orchestrator), `refine` (whole-backlog intake), `requirement` (add/amend/supersede a single requirement on a running project), `req-ids` (sole authority for REQ ids in the spec), `retro` (process improvement), `adr` (ADR persistence), `kanban-init` (project scaffolder), `migrate` (one-time upgrade of an existing repo to plugin-owned doctrine).
 - **Agents:** `card-slicer`, `card-designer`, `card-implementer`, `card-tester`, `card-reviewer`, `card-deliverer`, `pr-expert-reviewer`.
-- **Templates:** the plugin-owned doctrine (`AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, and the card/PR templates) that agents read **live from the plugin** — never copied into your repo, so a plugin update reaches every project. `/kanban-init` copies only `config.md`, an empty `PROTOCOL-ADDENDUM.md` (where `/retro` layers project-specific doctrine), and empty board starters.
+- **Templates:** the plugin-owned doctrine (`AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `INTAKE.md` — the card doctrine shared by `refine` and `requirement` — and the card/PR templates) that agents read **live from the plugin** — never copied into your repo, so a plugin update reaches every project. `/kanban-init` copies only `config.md`, an empty `PROTOCOL-ADDENDUM.md` (where `/retro` layers project-specific doctrine), and empty board starters.
 
 ## Upgrading an existing repo
 
