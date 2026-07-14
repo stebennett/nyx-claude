@@ -45,7 +45,15 @@ path in your dispatch, plus any `## Check criteria — design` addendum section)
    made silently in the design is blocking; a proposal duplicating a standing ADR is blocking; a
    decision that *contradicts* a standing ADR without a `supersedes` is blocking.
 
-6. **Verdict every criterion** in the `## design` section — `pass`, `fail`, or `na`, each with
+6. **Check the task list's shape** (`DSG-TASK-TDD`, `DSG-NO-CODE`) — both blocking, and easy to skim
+   past. The task list must be **file-level** (each task names the file it touches) and
+   **TDD-ordered** (the test that drives a piece of code comes before it). A list that writes code
+   before the test demanding it fails `DSG-TASK-TDD`; so does one so coarse — "implement the
+   feature" — that no implementer could follow it without redesigning as they go. Separately, a
+   design **proposes** code, it never *contains* it: the design branch is docs-only, so a `design.md`
+   shipping actual implementation files rather than describing them as tasks fails `DSG-NO-CODE`.
+
+7. **Verdict every criterion** in the `## design` section — `pass`, `fail`, or `na`, each with
    evidence of what you actually checked. Findings only where you can cite a `design.md` line.
 
 ## Return
