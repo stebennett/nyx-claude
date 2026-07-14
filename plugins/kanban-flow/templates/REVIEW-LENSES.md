@@ -186,6 +186,20 @@ assert too weakly, or skip the boundaries are worse than missing — they certif
    formula's edge, 20th/21st order).
 5. Hypothesis check: strategies constrained to valid domain ranges; asserts real invariants
    (bounds, monotonicity, idempotency), not just "doesn't raise"; fixed profile/seed for CI.
+6. **Branch & outcome coverage (esp. UI and adapter code).** Enumerate the distinct outcomes and
+   render variants the unit under test can take, and confirm each has its own test:
+   - **Every failure OUTCOME gets its own stub.** A handler that branches on *why* it failed has
+     more outcomes than "ok vs not-ok" — e.g. a fetch wrapper with a distinct not-found path has
+     three (not-found, other-error, network-reject), and a single not-found stub leaves the
+     generic error branch unexercised.
+   - **Render EVERY variant, not one representative.** Both sides of a two-way split, each
+     status/state a row can render, each visual mark — a variant no test renders is a mutation
+     that survives.
+   - **Pick DISCRIMINATING fixtures and assertions.** No substring assertion whose negative case
+     contains the positive (`"inactive".includes("active")`); no fixture symmetric across the very
+     branch the test means to distinguish (both branches computing the same number). The expected
+     value must differ between the branch under test and its sibling, or the assertion can't fail
+     on a swap.
 
 **Ask of every hunk (of test code):** What bug slips through this assertion? Where did this
 expected value come from? What happens at the boundary ±1?
@@ -195,7 +209,9 @@ differential == round((100/factor)*(total-reference), 1)` proves nothing); `pyte
 tolerance on money values (they're exact `Decimal`s); asserting only types/lengths/"is not None";
 mocking pure domain functions; tests asserting private call order (implementation-coupled); a
 single happy-path test for a function full of branches; `@settings(deadline=None)` hiding a slow
-strategy.
+strategy; a `toContain`/substring assertion whose negative case contains the positive; a fixture
+symmetric across the very branch it means to discriminate; only one of a component's render
+variants exercised; a multi-outcome error handler tested with a single failure stub.
 
 **Don't flag:** coverage % by itself (card-tester owns the number — you own whether the tests
 *mean* anything); E2E gaps when the card's test strategy explicitly defers them.
