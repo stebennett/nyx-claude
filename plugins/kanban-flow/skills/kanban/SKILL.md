@@ -7,7 +7,7 @@ description: Orchestrate a project's kanban board. Reconciles state from merged 
 
 You drive cards through the board. The intake skills `/refine` and `/requirement` create and edit cards **while they are in `backlog`**; from the moment a card leaves backlog you are its **sole writer** — as you are of `docs/cards/BOARD.md` and `docs/cards/KNOWLEDGE.md` throughout. `/requirement` reaches cards beyond backlog only by queueing an amendment for you to apply (Section 0). No phase agent ever writes these files. Phase agents only return structured `result` blocks; you persist everything they produce.
 
-**Every card ships as two PRs.** The **design PR** (branch `<type>/NNN-slug-design`) carries the pre-implementation artifacts — `slice.md`, `design.md`, ADRs, gate feedback — so decisions land on `main` early and feed future cards' design thinking. The **implementation PR** (branch `<type>/NNN-slug`, cut from `main` *after* the design PR merges) carries the code plus `implement.md`/`test.md`/`review.md`. The human merging each PR is the review gate for that half. Consequence for doc flow: **phase docs live on the card's current branch, not on `main` directly** — your direct-to-main commits are limited to, exhaustively: `card.md`/`BOARD.md`/`KNOWLEDGE.md` state, the milestone swap on splits, a split parent's terminal `slice.md` **and `slice-check.md`**, the **deliver check docs** (`deliver-check-design.md` and `deliver-check.md`), **`deliver.md`**, and post-PR artifacts (`pr-review.md`, later `feedback.md` entries). Nothing else goes direct to `main`. The last three share one reason: **every one of them is produced *after* its PR is open**, and committing to a branch under review would mutate the PR the human is reading. `deliver.md` is the deliverer's own record of opening the implementation PR — it cannot exist before the PR does, so it commits to `main` exactly like the check doc that follows it.
+**Every card ships as two PRs.** The **design PR** (branch `<type>/NNN-slug-design`) carries the pre-implementation artifacts — `slice.md`, `design.md`, ADRs, gate feedback — so decisions land on `main` early and feed future cards' design thinking. The **implementation PR** (branch `<type>/NNN-slug`, cut from `main` *after* the design PR merges) carries the code plus `implement.md`/`test.md`/`review.md`. The human merging each PR is the review gate for that half. Consequence for doc flow: **phase docs live on the card's current branch, not on `main` directly** — your direct-to-main commits are limited to, exhaustively: `card.md`/`BOARD.md`/`KNOWLEDGE.md` state, the milestone swap on splits, a split parent's terminal `slice.md` **and `slice-check.md`**, the **deliver check docs** (`deliver-check-design.md` and `deliver-check.md`), **`deliver.md`**, and post-PR artifacts (later `feedback.md` entries). Nothing else goes direct to `main`. The last three share one reason: **every one of them is produced *after* its PR is open**, and committing to a branch under review would mutate the PR the human is reading. `deliver.md` is the deliverer's own record of opening the implementation PR — it cannot exist before the PR does, so it commits to `main` exactly like the check doc that follows it.
 
 Each invocation runs one **pump cycle**: reconcile → load state → render → resolve gates/blockers with the driver → schedule & advance (in waves, as far as cards can go) → re-render → report. A card only stops mid-lifecycle at a manual gate, `needs-input`, an exhausted rework budget, an open PR awaiting merge, or `done`. This makes the skill safe to run unattended (e.g. under `/loop`): PRs accumulate for the human to review and merge; the next pump reconciles merges and refills WIP.
 
@@ -127,7 +127,7 @@ Key states:
 | design, `design.md` present, `design-check.md` absent | card-design-checker | opus |
 | implement | card-implementer | sonnet |
 | test | card-tester | haiku |
-| review | **card-lens-reviewer × lenses, in parallel** | per-lens (Section 6b) |
+| review | **card-lens-reviewer × lenses, in parallel** | per-lens (Section 5, review panel) |
 | deliver (design or implementation PR) | card-deliverer | haiku |
 | design PR open, `deliver-check-design.md` absent | card-deliver-checker (design mode) | haiku |
 | implementation PR open, `deliver-check.md` absent | card-deliver-checker (implementation mode) | haiku |
@@ -145,7 +145,39 @@ In the dispatch prompt include: `card_id`, `card_dir`, the full `card.md`, and *
 - **card-design-checker** → `card.md`, `slice.md`, `design.md` — **including its `## Proposed ADRs` section, which is where the ADR proposals come from** (`DSG-ADR-NEEDED` cannot be verdicted without them; read them from the file, never from a `proposed_adrs` list you are holding in memory, which a pump boundary would have taken with it) — the **spec sections `design.md` cites**, **`KNOWLEDGE.md`** (`DSG-KNOWLEDGE` verdicts whether the design re-treads a recorded gotcha — without it there is nothing to compare against) and the **ADR index** (`docs/adrs/README.md` — `DSG-ADR-NEEDED` says *read the index before judging*; without it, a duplicate or contradicted standing ADR cannot be seen).
 - **card-deliver-checker** → `card.md`, the `pr_url`, the PR **mode** (design | implementation), the `worktree`, `gh_command`, `size_limit`, `size_exclude`, the card's `estimated_lines` (`DLV-SIZE` reports actual against estimate), **and the `checks` policy** — it must know which check docs are legitimately absent, or `DLV-DOCS` blocks on a doc a disabled check never wrote.
 
-Include `worktree` once it exists. **Always include the doctrine paths** every agent reads: the absolute `${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md` and the repo's `<board_dir>/PROTOCOL-ADDENDUM.md`. **Every `card-*-checker` dispatch additionally carries the absolute `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`** — it is where the checker's criterion set lives, and without it the checker has nothing to verdict. (For `pr-expert-reviewer` dispatches also the absolute `${CLAUDE_PLUGIN_ROOT}/templates/REVIEW-LENSES.md` — see Section 6b.)
+Include `worktree` once it exists. **Always include the doctrine paths** every agent reads: the absolute `${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md` and the repo's `<board_dir>/PROTOCOL-ADDENDUM.md`. **Every `card-*-checker` dispatch additionally carries the absolute `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`** — it is where the checker's criterion set lives, and without it the checker has nothing to verdict.
+
+### The review panel (status: review)
+
+`card-implementer`'s checker is `card-tester`, then this panel. It runs on the **branch diff in the
+worktree, before any PR opens** — the PR the human sees has already survived every lens.
+
+At `status: review` with `review.md` absent, dispatch one `card-lens-reviewer` **per lens, in
+parallel** (one Agent-tool message), passing each its `lens`, `worktree`, `card_id`, `card.md`,
+`design.md`, `implement.md`, `test.md`, and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
+`${CLAUDE_PLUGIN_ROOT}/templates/REVIEW-LENSES.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`). Lens
+briefs live in the plugin's `REVIEW-LENSES.md`; each expert reads only its own section. Assemble the
+panel from the branch's changed files (`git -C <worktree> diff --name-only main...HEAD`).
+
+| lens | dispatch when | model |
+|---|---|---|
+| acceptance | always | opus |
+| design | always | opus |
+| functionality | always | opus |
+| security | always | opus |
+| simplicity | always | sonnet |
+| tests | always | sonnet |
+| readability | always | sonnet |
+| python | diff touches `*.py` | sonnet |
+| typescript | diff touches `*.ts` / `*.tsx` | sonnet |
+
+Concatenate the panel's returned phase docs into `card_dir/review.md` and commit it on the
+implementation branch. Merge the lenses' **blocking** findings; any blocking finding → automatic
+rework of `card-implementer` (Section 5, step 4). **On a rework re-run, re-dispatch only the lenses
+that raised blocking findings** — not the whole panel. No blocking findings → advance to `deliver`.
+
+The panel does not wait for CI: `card-tester` has already run the suite in the worktree, so the diff
+reaching the panel is green by construction.
 
 ### Process each `result` (you persist everything)
 1. Parse the fenced `result` YAML.
@@ -200,57 +232,46 @@ Include `worktree` once it exists. **Always include the doctrine paths** every a
    - `complete` from **deliverer** → record the PR url into `design_pr_url` (design mode) or `pr_url` (implementation mode) — that recording *is* its persistence, and its checker needs the url. In implementation mode it also returns `deliver.md`: commit it to **`main`** (carve-out (b), step 2) with the same state commit — the PR it describes is open, so the branch is closed to it. The PR is now open + its check doc absent, so the next wave dispatches `card-deliver-checker` in the matching mode (above); the card awaits merge (Section 6) once that check passes, or immediately if `checks.deliver` is `off`.
 5. Commit state changes (`card.md`, `BOARD.md`, `KNOWLEDGE.md`) to `main` with a Conventional Commit (`chore(kanban): …` matching what happened), ending with the project `Co-Authored-By` trailer, and **push** (`git push origin main`; on rejection retry after `git pull --rebase origin main`). If pushes to `main` are refused by branch protection, say so in the report — Reconcile keeps lifecycle state recoverable from merged PRs, and phase docs/ADRs are safe on their branches regardless.
 
-## 6. PR open — CI gate, panel, review-complete addressing
+## 6. PR open — CI gate, review-complete addressing
 
-A card with an open PR (design or implementation) holds its WIP slot until merged.
+A card with an open PR (design or implementation) holds its WIP slot until merged. The review panel
+has already run (Section 5) — nothing on the PR is machine-reviewed. What remains is CI, the human's
+review, and addressing what they say.
 
 **Entry:** a card enters Section 6 when its deliver check returns `verdict: pass`, when `checks.deliver` is `off` — **or when the deliver check's only blocking finding is `DLV-CI`**. That last case is not a park and spends no budget: `DLV-CI` has no remedy the check layer can apply, and §6a below is the only machinery that knows how to triage a red CI. Any *other* blocking deliver finding routes per Section 5 and the card does not enter Section 6 until it is cleared.
 
 ### 6a. CI gate — nothing else happens on the PR until checks pass
-Every pump, before panel or addressing, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
+Every pump, before addressing, check the PR's CI: `{gh_command} pr checks <url>`. (CI log/rerun calls use `gh` directly.)
 - **No checks configured** → proceed. The gate requires that no check is failing, not that checks exist — docs-only design PRs and pre-CI-pipeline PRs are reviewable.
 - **Pending / running** → do nothing for this card this pump; report "CI running". The pump loop is the wait.
-- **All green** → proceed to 6b/6c. **If the card arrived here on a `DLV-CI` failure**, the finding is now stale: delete the deliver check doc (`deliver-check-design.md` / `deliver-check.md`, per the PR's mode) and let the next pump's "PR open + check doc absent" predicate re-run the deliver check against green CI.
+- **All green** → proceed to 6b. **If the card arrived here on a `DLV-CI` failure**, the finding is now stale: delete the deliver check doc (`deliver-check-design.md` / `deliver-check.md`, per the PR's mode) and let the next pump's "PR open + check doc absent" predicate re-run the deliver check against green CI.
 - **Failing** → read the real logs (`gh run view <run-id> --log-failed`) and classify:
   - **Actionable** (caused by the branch): dispatch `card-implementer` in rework mode with job + step + log excerpt (for a design PR: `card-designer`, e.g. a docs linter), noting the PR is open. Consumes that producer's budget — an **implementation-PR** CI failure spends `reworks.implement` (against `check_budget.implement`), a **design-PR** CI failure spends `reworks.design` (against `check_budget.design`); exhausted → `blocked`.
   - **Infrastructure** (Actions outage/degradation, runner provisioning, stuck/cancelled checks, rate limiting): **flag it** prominently, attempt `gh run rerun <run-id> --failed`, note the retry (date + reason) on the card's `## Notes`, re-check next pump. After **3** infra retries without progress → `status: blocked` ("CI infrastructure unavailable"). Never treat a red PR as reviewable or mergeable.
   - **Ambiguous / flaky** (failed once, passes locally, no relevant diff): infrastructure treatment first; a second consecutive failure of the same job is real.
 
-### 6b. Seed the review panel (implementation PRs only, once, CI green)
-Design PRs are prose the human reviews directly — no panel. For an **implementation PR** with CI green and `pr-review.md` absent: assemble the panel from the PR's changed files (`{gh_command} pr diff <url> --name-only`) and dispatch one `pr-expert-reviewer` **per lens, in parallel**, passing each its `lens`, `pr_url`, `worktree`, `card_id`, `card.md`, and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`, `${CLAUDE_PLUGIN_ROOT}/templates/REVIEW-LENSES.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`). Lens briefs live in the plugin's `REVIEW-LENSES.md` (the injected path); each expert reads only its own section.
+### 6b. Address loop (every pump per open PR, CI green)
 
-| lens | dispatch when | model |
-|---|---|---|
-| design | always | opus |
-| functionality | always | opus |
-| security | always | opus |
-| simplicity | always | sonnet |
-| tests | always | sonnet |
-| readability | always | sonnet |
-| python | diff touches `*.py` | sonnet |
-| typescript | diff touches `*.ts` / `*.tsx` | sonnet |
-
-Each expert posts one `COMMENT` review with `[lens]`-prefixed inline comments (nothing when it finds nothing). Concatenate the returned phase docs into `card_dir/pr-review.md` (committed to `main` — the PR is already open), route `knowledge`, commit `chore(kanban): CARD-NNN PR review seeded`, and tell the driver the PR awaits their review (👍 any panel comment to have it addressed too).
-
-### 6c. Address loop (every pump per open PR, CI green)
-Nothing is actioned until the human signals the review is **complete**; then every comment they authored is addressed, plus any panel comment they 👍'd. Never act before the signal.
+Nothing is actioned until the human signals the review is **complete**; then every comment they
+authored is addressed. Never act before the signal.
 
 1. **Detect the review-complete signal** — either one satisfies it:
    - a **submitted review** by a non-app user (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/reviews`) with state `COMMENTED` / `CHANGES_REQUESTED` / `APPROVED` (`PENDING` never counts); or
    - a top-level PR comment whose trimmed body equals `REVIEWED` (case-insensitive) by a non-app user (`{gh_command} api repos/{owner}/{repo}/issues/{n}/comments`).
    No signal → do nothing on this PR this pump; report "awaiting review". The pump loop is the wait.
 
-2. **Assemble the actionable set** — skip any item already carrying a `[kanban]` reply/marker (that reply is the idempotent addressed-marker):
-   - **every human-authored inline comment the signal authorises** (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`) — no 👍 needed (see *scope by signal* below);
-   - **each human-submitted review's summary body** when non-empty (idempotency keyed to the review id via a top-level `[kanban]` marker naming the review);
-   - **panel `[lens]` comments only if 👍'd**.
-   "App" = the identity the flow posts as (its comments carry the `[lens]`/`[kanban]` prefix or its App login); everything else is human. Exclude the `REVIEWED` comment itself. **Scope by signal:** a submitted review authorises only its own inline comments and body (one atomic unit); a `REVIEWED` comment authorises every loose inline comment (one not attached to a submitted review) created at/before its timestamp. A human comment reached by neither signal waits for one.
+2. **Assemble the actionable set** — every **human-authored** item the signal authorises, skipping any already carrying a `[kanban]` reply/marker (that reply is the idempotent addressed-marker):
+   - **every human-authored inline comment** (`{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments`);
+   - **each human-submitted review's summary body** when non-empty (idempotency keyed to the review id via a top-level `[kanban]` marker naming the review).
+   "App" = the identity the flow posts as (its comments carry the `[kanban]` prefix or its App login); everything else is human. Exclude the `REVIEWED` comment itself. **Scope by signal:** a submitted review authorises only its own inline comments and body (one atomic unit); a `REVIEWED` comment authorises every loose inline comment (one not attached to a submitted review) created at/before its timestamp. A human comment reached by neither signal waits for one.
 
-3. **Dispatch. Implementation PR:** dispatch `card-implementer` in PR-comment mode with the items verbatim (id, path, line, body; review-body items flagged as summary) — it fixes exactly those (test-first for behaviour), runs the fast gates, commits (one commit per comment or a tight cluster), pushes. **Design PR:** re-dispatch `card-designer` with the items verbatim; commit its revised `design.md` (and any superseding ADR proposals via the `adr` routing) to the design branch and push.
+   *(Legacy note: an old PR may still carry `[lens]` comments from the retired post-PR panel. They are app-authored, so they are never in the actionable set. If the driver wants one addressed, they reply to it in their own voice and that reply is picked up as human-authored.)*
+
+3. **Dispatch. Implementation PR:** dispatch `card-implementer` in PR-comment mode with the items verbatim (id, path, line, body; review-body items flagged as summary) — it fixes exactly those (test-first for behaviour), runs the fast gates, commits, pushes. **Design PR:** re-dispatch `card-designer` with the items verbatim; commit its revised `design.md` (and any superseding ADR proposals via the `adr` routing) to the design branch and push.
 
 4. **Reply once per item** — in its thread (inline, `{gh_command} api repos/{owner}/{repo}/pulls/{n}/comments/{id}/replies`) or as a top-level `[kanban]` comment (review body): `[kanban] Addressed in <commit-url> — <one-line explanation>`, where `<commit-url>` is the full `https://github.com/{owner}/{repo}/commit/<sha>`. For an item the agent returned in `blockers` (a question, or a change it judged wrong/infeasible), reply `[kanban] Not actioned — <reason>` and surface it to the driver. Every item in the set gets exactly one reply. **Never resolve threads**, never approve or dismiss — resolution and the merge are the human's.
 
-These fixes are human-directed and don't consume the `reworks` budget. Merge detection stays with Reconcile (Section 0). A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment `REVIEWED`), merge the implementation PR.
+These fixes are human-directed and don't consume any rework budget. Merge detection stays with Reconcile (Section 0). A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment `REVIEWED`), merge the implementation PR.
 
 ## 7. Report
 Print a concise digest: what advanced (and how far it chained), design PRs opened/merged, implementation PRs opened, what was auto-reworked (card, findings, `reworks`), what awaits a gate/input/merge, splits, amendments applied (card, action, REQ), blocks, free slots, and per-milestone progress. Flow metrics per finished card: `started → delivered` elapsed and `reworks`. List **ADRs written this pump** (`ADR-NNNN — title → CARD-NNN`, and which PR carries each). Warn on `MILESTONES.md` drift (a `/refine` fix — surface, don't edit). If `migration_needed` (Section 1), warn prominently: **"Un-migrated doctrine copies or a stale `kanban_flow_version` detected — run `/migrate`."** **Every 5 cards done**, suggest `/retro`.
@@ -272,7 +293,7 @@ Print a concise digest: what advanced (and how far it chained), design PRs opene
 - **A gate never fires on an unchecked producer result.** The check-doc-absent predicate is what dispatches a checker; a *spent* doc left on disk after its rework landed silently disarms it.
 - **A card must be recoverable from disk alone, so nothing load-bearing is held across a dispatch.** A pump ends when it ends — most often mid-dispatch — and the next pump inherits the disk, not your memory of a result block. Anything held (a designer's ADR proposals, a checker's findings) is held **in the artifact you persist**: ADRs in `design.md`'s `## Proposed ADRs`, findings in the check doc itself.
 - **A stale check doc is deleted only in the state commit that persists the work answering it** — never before. Its presence is what distinguishes *"a rework is in flight"* (re-dispatch the **producer**) from *"never checked"* (dispatch the **checker**); delete it early and the two states are byte-identical on disk, so an interrupted pump re-checks unreworked work, fails identically, and spends the budget without a single rework landing. Same rule for `test.md`/`review.md` in the implement loop, and for the deliver check docs on a self-fix.
-- PR comments are actioned only after a review-complete signal (a submitted review or a `REVIEWED` comment): then every human-authored comment is addressed, plus any 👍'd panel comment. The system replies `[kanban] Addressed in <commit-url>` (or `[kanban] Not actioned — <reason>`) but never resolves threads, never approves, never dismisses. Panel experts post `COMMENT` reviews only, on implementation PRs only.
+- PR comments are actioned only after a review-complete signal (a submitted review or a `REVIEWED` comment): then every human-authored comment is addressed. The system replies `[kanban] Addressed in <commit-url>` (or `[kanban] Not actioned — <reason>`) but never resolves threads, never approves, never dismisses. **No agent comments on a PR** — the review panel runs pre-PR, against the worktree diff.
 - Code review happens only on green CI (no-checks PRs count as reviewable). Branch-caused failures are fixed from the real logs; infrastructure failures are flagged, rerun, re-checked (max 3), then parked.
 - All branches off `main`; all PRs target `main`. Phase docs ride their half's PR: `slice.md`/`slice-check.md`/`design.md` (**including its `## Proposed ADRs`**)/`design-check.md`/ADRs/early feedback in the design PR; `implement.md`/`test.md`/`review.md` in the implementation PR. The **deliver checks — and `deliver.md` — commit to `main`**: all three are produced only *after* their PR is open, so committing them to the branch would mutate a PR under review — and the two PRs get **two distinct docs, named by the check's mode**: the design-mode check is persisted as `deliver-check-design.md`, the implementation-mode check as `deliver-check.md`. One shared filename would be cut into the implementation branch from `main` with the design PR's copy already present, and the implementation PR would never be checked.
 - **Checkers are terminal.** Never dispatch a checker for a checker's output. The driver is their backstop.
