@@ -675,13 +675,16 @@ tools: Read, Grep, Glob, Skill
 ```
 (No `Bash`, no `Write`, no `Edit` — a checker mutates nothing.)
 
-- [ ] **Step 4: Verify it covers every `SLC-*` criterion**
+- [ ] **Step 4: Verify it covers the size ceiling and the criteria set**
 
 Run:
 ```bash
-rtk proxy grep -c "SLC-SIZE" plugins/kanban-flow/agents/card-slice-checker.md
+rtk proxy grep -c "SLC-SIZE" plugins/kanban-flow/agents/card-slice-checker.md      # -> 1 (the size step)
+rtk proxy grep -c "size_limit" plugins/kanban-flow/agents/card-slice-checker.md    # -> 2
+rtk proxy grep -c "Estimate the size yourself" plugins/kanban-flow/agents/card-slice-checker.md  # -> 1
+rtk proxy grep -c "Derive before you read" plugins/kanban-flow/agents/card-slice-checker.md      # -> 1
 ```
-Expected: `2` (named in the Do list and in the size step).
+The last two are the anti-rubber-stamp instructions — if either is missing, the agent will read the slicer's rationale first and agree with it, which is the failure mode this whole layer exists to prevent.
 
 - [ ] **Step 5: Commit**
 
