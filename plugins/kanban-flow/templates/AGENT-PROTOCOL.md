@@ -131,16 +131,17 @@ at the two PR merges. Never add a checker for a checker.
 | `card-slicer` | `card-slice-checker` |
 | `card-designer` | `card-design-checker` |
 | `card-implementer` | `card-tester`, then the `card-lens-reviewer` panel |
+| `pr-splitter` | `card-split-checker` |
 | `card-deliverer` | `card-deliver-checker` |
 
 **Two kinds of checker.** The table names a *role*, not a return format. `card-tester` and the lens
 panel check the implementer by running the suite and reviewing the diff, and they keep their own
-existing contract (`status: blocked` + `blockers`). The **result fields below bind only the four
+existing contract (`status: blocked` + `blockers`). The **result fields below bind only the five
 dedicated `card-*-checker` agents** — `card-intake-checker`, `card-slice-checker`,
-`card-design-checker`, `card-deliver-checker` — which is why `checks` takes one of
-`intake | slice | design | deliver` and no `implement` value exists. Everything *else* in this
-section — independence, evidence over adjectives, and the terminal rule — binds every checker in the
-table.
+`card-design-checker`, `card-split-checker`, `card-deliver-checker` — which is why `checks` takes one
+of `intake | slice | design | split | deliver` and no `implement` value exists. Everything *else* in
+this section — independence, evidence over adjectives, and the terminal rule — binds every checker in
+the table.
 
 If you are a checker, these rules bind you in addition to everything above.
 
@@ -162,7 +163,7 @@ orchestrator persists it. Your criteria come from your section of the plugin's `
 ```result
 status: complete
 phase: check
-checks: design              # intake | slice | design | deliver
+checks: design              # intake | slice | design | split | deliver
 card: CARD-NNN
 gate: none                  # a checker never triggers a gate
 verdict: fail               # pass | fail

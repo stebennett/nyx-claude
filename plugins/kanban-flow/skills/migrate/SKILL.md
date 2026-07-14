@@ -27,12 +27,19 @@ target repo, on a migration branch, and you never modify the plugin.
    a template file already registered in `template_overrides` (pointing at that path) is a
    deliberately-preserved override, **not** a leftover; only an *unregistered* copy counts.
    Also check each `docs/cards/CARD-*/card.md` for a legacy scalar or missing `reworks`,
-   and compare the plugin's current `config.md` frontmatter keys against the repo's to
-   detect any missing (additive-only).
+   **a `reworks` map missing the `split` key** (an older map had only
+   `{slice, design, implement, deliver}`; `pr-splitter`'s budget lives in `reworks.split`, and
+   `/kanban` reads a missing key as `0` **only because this step is what puts it on disk** — leave
+   it out and that claim is false), **or a card still carrying a scalar `pr_url` (present or
+   absent — either form means the `pr_urls`/`split_slices` rewrite in Step 6 has not run on it)**,
+   and compare the plugin's
+   current `config.md` frontmatter keys against the repo's to detect any missing
+   (additive-only).
    **If the version is already current AND no unregistered copy is present AND no card
    needs its frontmatter migrated AND no config key is missing → report "already migrated"
    and stop** (do nothing destructive). The version records what a previous run *intended*,
-   not what it *achieved*; detect the work itself.
+   not what it *achieved*; detect the work itself — a card still carrying a scalar `pr_url`
+   is itself a trigger, version stamp notwithstanding.
 
 2. **Branch.** Create `task/migrate-<plugin-version>` off the current branch — every
    change rides one PR. Never commit migration changes straight to `main`.
@@ -65,18 +72,23 @@ target repo, on a migration branch, and you never modify the plugin.
      keep using the project's version. A template is a fill-in artifact, not prose
      doctrine — it never goes in the addendum.
 
-6. **Card frontmatter — the `reworks` map.** For every `docs/cards/CARD-*/card.md`, rewrite a legacy
-   scalar `reworks: N` as the per-producer map:
+6. **Card frontmatter — the `reworks` map, and the `pr_urls`/`split_slices` shape.** For every
+   `docs/cards/CARD-*/card.md`, rewrite a legacy scalar `reworks: N` as the per-producer map:
 
    ```yaml
    reworks:
      slice: 0
      design: 0
      implement: N     # the old counter only ever counted test/review→implement loops
+     split: 0
      deliver: 0
    ```
 
-   A card with **no** `reworks` key gets the all-zero map. Also backfill `estimated_lines: ""`,
+   A card with **no** `reworks` key gets the all-zero map. **A card whose map is present but
+   missing `split` gets `split: 0` added** — every other key untouched. The key is not cosmetic:
+   `reworks.split` is `pr-splitter`'s rework budget, and `/kanban` documents a missing key as
+   reading `0` *because `/migrate` normalises it on disk*. Skip it and that promise is unbacked.
+   Also backfill `estimated_lines: ""`,
    `actual_lines: ""`, and `review_lenses_failed: []` on every card lacking them (missing
    `review_lenses_failed` is safe — the full lens panel runs — so this is hygiene, not a bug fix).
 
@@ -85,13 +97,22 @@ target repo, on a migration branch, and you never modify the plugin.
    budget the card had. Cards at `status: review` need no special handling — `review.md` is absent, so
    the next `/kanban` pump dispatches the new lens panel for them.
 
+   **Same step, the `pr_urls`/`split_slices` rewrite.** A legacy scalar `pr_url: <url>` becomes
+   **`pr_urls: [<url>]`**; an empty or absent `pr_url` becomes **`pr_urls: []`**. Either way, also
+   backfill **`split_slices: 0`** (0 = the card was not split; it ships as one PR) if the key is
+   missing. A card that shipped as one PR is the **N=1 case, not a special case** — this is a rename
+   plus a list-wrap, nothing more. **Do not touch `design_pr_url`** — the design PR is a separate,
+   unaffected scalar field; `pr-splitter` never runs against it and this rewrite has nothing to say
+   about it.
+
 7. **Config.** In `<board_dir>/config.md`, add any key present in the plugin's current
    `${CLAUDE_PLUGIN_ROOT}/templates/config.md` frontmatter but missing here (**additive
    only** — never change an existing value, nor a `template_overrides` entry you set in
    Step 5). Then set `kanban_flow_version` to the installed plugin version.
 
    This run adds `checks`, `check_budget`, `size_limit` and `size_exclude` (all with plugin defaults —
-   every check `on`, budgets 2 except `deliver: 1`, `size_limit: 500`). **Tell the driver in the PR
+   every check `on` (**including `checks.split`**, which older configs predate and which is the
+   escape hatch for the carve), budgets 2 except `split: 1` and `deliver: 1`, `size_limit: 500`). **Tell the driver in the PR
    body what `size_limit` means for them:** from the next `/kanban` pump, `card-slice-checker` will
    *force a split* on any card it projects over 500 changed lines including tests. That is a real
    behaviour change on an existing backlog, and it must not arrive as a surprise.
@@ -113,9 +134,11 @@ target repo, on a migration branch, and you never modify the plugin.
 - Read-only toward the plugin; write only inside the target repo, on the migration branch.
 - **Never touch board state** — `BOARD.md`, `KNOWLEDGE.md`, `MILESTONES.md`, ADRs, and any card's
   status, phase, dependencies or content. The doctrine/template copies, `PROTOCOL-ADDENDUM.md` and
-  `config.md` are yours. **One exception:** the three mechanical frontmatter edits in Step 6 — reshaping
-  `reworks`, backfilling `estimated_lines` and `actual_lines`, and backfilling `review_lenses_failed` —
-  all shape/backfill changes that preserve the card's existing budget exactly and alter nothing else.
+  `config.md` are yours. **One exception:** the mechanical frontmatter edits in Step 6 — reshaping
+  `reworks`, backfilling `estimated_lines`, `actual_lines` and `review_lenses_failed`, and rewriting a
+  scalar `pr_url` into `pr_urls`/`split_slices` — all shape/backfill changes that preserve the card's
+  existing budget and delivery history exactly and alter nothing else. `design_pr_url` is untouched by
+  any of this — it is not a legacy field, just a scalar that was never part of the split.
 - Never delete a **customized** template — preserve it via `template_overrides`; never
   fold a template into the addendum.
 - Never silently drop a local **doctrine** customization — extract it to the addendum with

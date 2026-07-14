@@ -183,6 +183,111 @@ violates no doctrine (`DSG-*` is not a taste review — the lens panel reviews t
 generality the spec does not ask for (YAGNI is working); an ADR-worthy decision the design *does*
 propose as an ADR.
 
+## split
+
+Checks `pr-splitter`, dispatched at the end of the review phase once the lens panel has passed and
+**before any PR exists**. Your inputs: the **named original branch** and its change set
+(`git diff --no-renames --name-status origin/main...<original-branch>`), `split.md` (the ordered
+slices — paths, why, estimated lines, the green evidence for each, and the `## Environment` proof that
+the scratch worktree builds), `design.md`, `implement.md`, `review.md`, and `size_limit` /
+`size_exclude`.
+
+**Derive the ground truth from the NAMED ORIGINAL BRANCH — never from `HEAD`.** Your dispatch gives
+you the branch by name; use it. `HEAD` in the card's worktree is **not trustworthy**: `pr-splitter`
+may have moved the worktree onto a scratch branch, and a pump can die at any moment and leave it
+there. A ground truth taken from a scratch `HEAD` is a *strict subset* of the card's work, the union
+of the slices matches it exactly, and `SPL-NO-LOSS` passes on a carve that dropped whole slices.
+
+**Rename detection is OFF in this layer — `--no-renames` goes on EVERY `--name-status`, in yours and
+in the splitter's.** Git detects renames by default and reports one as a single `R100 old new` entry,
+and **the change-type vocabulary here is `A` / `M` / `D` and nothing else**: `pr-splitter`'s contract
+permits only those three, and the orchestrator populates a slice branch with exactly two commands
+(`git checkout` for `added`/`modified`, `git rm` for `deleted`). **Nothing in this system can consume
+an `R`** — improvised, it becomes a checkout of the new path with the old one never deleted, i.e. a
+stale duplicate on `main`. With `--no-renames` a rename is **always `D old` + `A new`**: the vocabulary
+is total, and set-equality against the splitter's union is mechanical rather than a comparison of two
+different notations for the same change.
+
+**A changed path carries a change TYPE.** `--no-renames --name-status` gives you `A` (added), `M`
+(modified) or `D` (deleted) per path. The unit of a slice is a **path plus its change type**, never a
+bare filename — a slice that must *delete* a path is not satisfied by a slice that merely lists it.
+
+| id | criterion | severity when failed |
+|---|---|---|
+| `SPL-NO-LOSS` | the union of the slices equals the original branch's change set **exactly** — same paths, **same change types**, in both directions: nothing dropped, nothing invented, no deletion left undone | blocking |
+| `SPL-GREEN` | each slice's green evidence is **real command output**, not a claim | blocking |
+| `SPL-SIZE` | every slice is within `size_limit` | blocking |
+| `SPL-ORDER` | no slice depends on a later one | blocking |
+| `SPL-FILES` | whole files only; no path appears in two slices; **and a rename is never split across slices** — with rename detection off it is a `D old` + an `A new`, and both go in the SAME slice | blocking |
+| `SPL-COHERENT` | each slice is reviewable on its own | advisory |
+
+**`SPL-NO-LOSS` is the criterion that matters most in this section.** A splitter that silently drops
+code ships a broken card, and the defect is invisible to every slice's own review — each slice looks
+complete on its own terms, so nothing downstream of the split would ever catch it. It is also the
+guarantee that makes it safe for the lens panel to have reviewed the whole diff *before* the split: if
+the union of the slices is exactly the change set the panel approved, the slices are the code it
+already reviewed — `pr-splitter` is a **redistribution, not a rewrite**, never a second chance to
+change the code unreviewed.
+
+**What `SPL-NO-LOSS` actually is: set-equality of the changed-path set — path AND change type — in
+BOTH directions, against the original branch.** Take the original branch's
+`git diff --no-renames --name-status origin/main...<original-branch>` (minus `size_exclude`) as a set
+of `(path, type)` pairs. Take the union of every slice's declared `(path, type)` pairs from `split.md`.
+The two sets must be **equal**. Compute both directions and say so in your evidence:
+
+- **original \ union** — a change the branch made that no slice ships. A path the branch **added or
+  modified** that no slice checks out is lost code. **A path the branch DELETED that no slice deletes
+  is lost too** — and it is the one that hides: the deletion simply never happens, the file survives
+  on `main` inherited from `main`'s own history, and nothing else in the system looks in that
+  direction. A refactor card that renames a module ships the new file, never removes the old, and
+  leaves a stale (possibly build-breaking) duplicate on `main`. **Blocking.**
+- **union \ original** — a path a slice claims that the branch never touched: invented content.
+  **Blocking.**
+
+Whole-file granularity is what makes this sound: a slice is defined as *these paths, taken from the
+original branch at this change type*, so equality of the `(path, type)` sets **is** equality of the
+content. (Do **not** try to byte-diff "the slice's version of a file" against the branch's — at check
+time **no slice branch exists**: `pr-splitter` deleted its scratch worktree and the slice branches are
+cut later, at deliver. A comparison you can only make by asserting it is not a check.)
+
+**Walk:** Before opening `split.md`, run the original branch's `--no-renames --name-status` yourself
+and form your own view of a defensible carve — which paths are cohesive, which large file would be
+awkward to place, which paths are deletions, and which `D`/`A` pairs are really a rename (same content,
+same basename, moved directory — the only form a rename takes with detection off) — the same discipline
+the Method section asks of every checker. Only then read `split.md`. For `SPL-NO-LOSS`: build the two
+`(path, type)` sets and show both set differences, with the numbers. For `SPL-GREEN`: for each slice,
+confirm the evidence is a pasted command plus its real output, gathered against the scratch build the
+spec describes — a **throwaway worktree** off fresh `origin/main`, **bootstrapped** (the project's
+install/setup step run in it), with slices `1..k`'s added/modified paths checked out of the original
+branch **and slices `1..k`'s deleted paths `git rm`'d** — not a bare assertion that it "passes", and not
+a gate run against the full original branch (which proves nothing about slice `k` in isolation) or
+against a scratch build that skipped the deletions (which models a `main` that will never exist).
+**Read `split.md`'s `## Environment` section as part of `SPL-GREEN`:** a fresh worktree has no
+`node_modules` and no venv, so a splitter that never bootstrapped would find *every* carve red for
+reasons that have nothing to do with the carve — and would report entangled code. `pr-splitter` must
+prove the worktree builds **with the whole original change applied** before it judges any slice; a
+refusal or a red slice offered without that proof is a blocking `SPL-GREEN` finding, because the
+evidence cannot tell entangled code from a broken box. (A genuinely broken environment is a
+`status: blocked` from the splitter, never a refusal.)
+For `SPL-SIZE`: sum `added + deleted` per slice from its own `--numstat` against `origin/main`,
+excluding `size_exclude`, and compare against `size_limit` yourself rather than trusting the splitter's
+arithmetic. For `SPL-ORDER`: walk the slices in the given order and confirm no earlier slice's files
+reference (import, call, extend) something only a later slice introduces. For `SPL-FILES`: confirm
+every path in the original change set appears in exactly one slice's list — appearing in zero is
+`SPL-NO-LOSS`, appearing in two or more is `SPL-FILES` — **and confirm no rename straddles a slice
+boundary**: a rename of `a → b` arrives as `D a` + `A b`, and a carve that deletes `a` in slice 1 and
+adds `b` in slice 3 leaves an intermediate `main` with **neither** copy (build broken between merges) —
+and the reverse order leaves it with **both**. Both halves go in one slice.
+For `SPL-COHERENT`: read each slice's stated "why" and judge whether a human handed only that slice's
+diff could review it without needing to see another slice.
+
+**Don't flag:** a slice boundary you would have drawn differently but that still leaves every slice
+coherent and within budget (taste is not a defect); a refusal (`split: none`) that names a real,
+checkable reason a file could not be divided without cutting it, **backed by a green `## Environment`**
+— that is the safety net working, not a finding; green evidence gathered against a scratch build
+matching the spec's construction even when the splitter's prose describing it is terse (evidence is the
+command and its output, not the write-up around it).
+
 ## deliver
 
 Checks `card-deliverer`, after the PR is open. Your inputs: `card.md`, the PR url and its mode
@@ -202,12 +307,18 @@ Checks `card-deliverer`, after the PR is open. Your inputs: `card.md`, the PR ur
 ```bash
 {gh_command} pr view <url> --json baseRefName,headRefName,body,state,files
 {gh_command} pr checks <url>
-git -C <worktree> diff --numstat main...HEAD
+git -C <worktree> fetch origin main
+git -C <worktree> diff --numstat origin/main...<the PR's branch>
 ```
+
+**Name the PR's branch — never `HEAD`.** On a slice PR that is the slice branch `<type>/NNN-slug-<k>`,
+not the card's original implementation branch; and a worktree any agent may have moved is not a
+trustworthy `HEAD`.
 
 ### `DLV-SIZE` — measured, advisory, escalated
 
-Count actual changed lines: sum `added + deleted` from `git -C <worktree> diff --numstat main...HEAD`,
+Count actual changed lines: sum `added + deleted` from
+`git -C <worktree> diff --numstat origin/main...<the PR's branch>`,
 **excluding** paths matching `size_exclude` (`config.md`). **Tests count.** Design PRs are exempt — a
 long design document is not a code-review problem; return `na`.
 
