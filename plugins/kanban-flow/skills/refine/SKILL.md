@@ -42,7 +42,23 @@ ownership of `MILESTONES.md`.
    both invariants (coverage; no card depends on a card in a later milestone) before you
    present anything.
 
-5. **Present the proposal** to the driver:
+5. **Check the proposal before showing it to anyone.** Unless `config.md`'s `checks.intake` is `off`,
+   dispatch **`card-intake-checker`** (opus) with: the proposed cards, the milestone plan, the
+   existing board's cards and their milestones, the requirement(s) in scope, `spec_path`, and the
+   doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
+   `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
+   and `<board_dir>/PROTOCOL-ADDENDUM.md`).
+
+   `verdict: fail` → **revise the proposal against the blocking findings and re-check**, up to
+   `check_budget.intake` (default 2). Budget exhausted → present anyway, with the unresolved findings
+   shown to the driver as open questions — never silently.
+
+   `verdict: pass` → proceed. Show the driver the checker's advisory findings alongside the proposal.
+
+   The driver's attention is the scarcest thing in this system: it should go on judgement, not on
+   catching an unobservable acceptance criterion or a dependency cycle. That is what this step buys.
+
+6. **Present the proposal** to the driver:
    - the **card table** — id, type, layer, title, `reqs`, `depends_on`, a one-line why,
      and 2–4 acceptance criteria each;
    - the **milestone plan** — ordered `M1…Mn` with title, goal, and member ids.
@@ -50,15 +66,17 @@ ownership of `MILESTONES.md`.
    Ask for approval, edits, or removals. Iterate the cards and milestones together until
    approved.
 
-6. **On approval, write.** For each approved card, create
+7. **On approval, write.** For each approved card, create
    `docs/cards/CARD-NNN-<slug>/card.md` from the card template with `status: backlog`,
    `phase: backlog`, the chosen `type`/`layer`/`reqs`/`depends_on`, empty
-   `branch`/`worktree`, `reworks: 0`, `right_sized` per `INTAKE.md`, and today's date.
+   `branch`/`worktree`, the template's all-zero **`reworks` map** (`{slice, design,
+   implement, deliver}` — never the retired scalar `reworks: 0`), empty
+   `estimated_lines`/`actual_lines`, `right_sized` per `INTAKE.md`, and today's date.
    Then create or update `{board_dir}/MILESTONES.md` in its documented format. When
    re-slicing an existing backlog, place new cards into the right milestone and keep both
    invariants holding across the whole set.
 
-7. **Hand off.** Tell the driver to run `/kanban` to render the board and begin
+8. **Hand off.** Tell the driver to run `/kanban` to render the board and begin
    scheduling. Do not render `BOARD.md` yourself.
 
 ## Rules

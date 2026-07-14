@@ -88,6 +88,14 @@ You respect that boundary absolutely. Classify every existing card by `status` a
    - the **amendments to be queued** — one line per in-flight card, naming the action and
      why.
 
+   **Check before you propose.** Unless `config.md`'s `checks.intake` is `off`, dispatch
+   **`card-intake-checker`** (opus) with the new cards, the milestone placements, the existing board,
+   the requirement, `spec_path`, and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
+   `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
+   `<board_dir>/PROTOCOL-ADDENDUM.md`). `verdict: fail` → revise against the blocking findings and
+   re-check, up to `check_budget.intake` (default 2); exhausted → present anyway with the unresolved
+   findings shown as open questions. Show advisory findings alongside the proposal.
+
    Ask for approval, edits, or removals. Iterate until approved. **Write nothing before
    approval.**
 
