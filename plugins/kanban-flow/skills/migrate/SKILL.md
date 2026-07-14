@@ -60,19 +60,44 @@ target repo, on a migration branch, and you never modify the plugin.
      keep using the project's version. A template is a fill-in artifact, not prose
      doctrine — it never goes in the addendum.
 
-6. **Config.** In `<board_dir>/config.md`, add any key present in the plugin's current
+6. **Card frontmatter — the `reworks` map.** For every `docs/cards/CARD-*/card.md`, rewrite a legacy
+   scalar `reworks: N` as the per-producer map:
+
+   ```yaml
+   reworks:
+     slice: 0
+     design: 0
+     implement: N     # the old counter only ever counted test/review→implement loops
+     deliver: 0
+   ```
+
+   A card with **no** `reworks` key gets the all-zero map. Also add `estimated_lines: ""` and
+   `actual_lines: ""` to every card that lacks them.
+
+   This is the **one** exception to the "never touch board state" rule below, and it is a pure shape
+   change: no status, phase, dependency or content is altered, and `implement: N` preserves the exact
+   budget the card had. Cards at `status: review` need no special handling — `review.md` is absent, so
+   the next `/kanban` pump dispatches the new lens panel for them.
+
+7. **Config.** In `<board_dir>/config.md`, add any key present in the plugin's current
    `${CLAUDE_PLUGIN_ROOT}/templates/config.md` frontmatter but missing here (**additive
    only** — never change an existing value, nor a `template_overrides` entry you set in
    Step 5). Then set `kanban_flow_version` to the installed plugin version.
 
-7. **Ship a PR.** Commit the deletions, the addendum appends, the `template_overrides`
+   This run adds `checks`, `check_budget`, `size_limit` and `size_exclude` (all with plugin defaults —
+   every check `on`, budgets 2 except `deliver: 1`, `size_limit: 500`). **Tell the driver in the PR
+   body what `size_limit` means for them:** from the next `/kanban` pump, `card-slice-checker` will
+   *force a split* on any card it projects over 500 changed lines including tests. That is a real
+   behaviour change on an existing backlog, and it must not arrive as a surprise.
+
+8. **Ship a PR.** Commit the deletions, the addendum appends, the `template_overrides`
    wiring, and the config changes (Conventional Commits + the project's `Co-Authored-By`
    trailer). Push and open a PR against `main` via `{gh_command} pr create`. The PR body
    lists explicitly: every file deleted, every customization folded into the addendum
    (with its text), every template preserved via `template_overrides`, and the config
    keys added plus the version bump. Process changes get the same human review as code.
 
-8. **Report.** Give the driver the PR url and a one-line summary; the migration takes
+9. **Report.** Give the driver the PR url and a one-line summary; the migration takes
    effect when they merge it.
 
 ## Rules
@@ -80,8 +105,10 @@ target repo, on a migration branch, and you never modify the plugin.
 - **Idempotent:** a re-run after the PR merges finds the version current and no copies →
   no-op. Safe to run any time `/kanban` nudges you.
 - Read-only toward the plugin; write only inside the target repo, on the migration branch.
-- **Never touch board state** — `BOARD.md`, `KNOWLEDGE.md`, `MILESTONES.md`, cards, ADRs.
-  Only the doctrine/template copies, `PROTOCOL-ADDENDUM.md`, and `config.md`.
+- **Never touch board state** — `BOARD.md`, `KNOWLEDGE.md`, `MILESTONES.md`, ADRs, and any card's
+  status, phase, dependencies or content. The doctrine/template copies, `PROTOCOL-ADDENDUM.md` and
+  `config.md` are yours. **One exception:** the `reworks` frontmatter shape change in Step 6 — a
+  mechanical rewrite that preserves the card's existing budget exactly and alters nothing else.
 - Never delete a **customized** template — preserve it via `template_overrides`; never
   fold a template into the addendum.
 - Never silently drop a local **doctrine** customization — extract it to the addendum with
