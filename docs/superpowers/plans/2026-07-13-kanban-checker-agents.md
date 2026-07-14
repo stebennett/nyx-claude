@@ -421,7 +421,7 @@ Run:
 rtk proxy grep -oE '`(INT|SLC|DSG|DLV)-[A-Z-]+`' plugins/kanban-flow/templates/CHECK-CRITERIA.md \
   | sort -u | wc -l
 ```
-Expected: `27` (7 INT + 6 SLC + 8 DSG + 6 DLV).
+Expected: `28` (7 INT + 7 SLC + 8 DSG + 6 DLV — the slice section has 7 because `SLC-SIZE` joins the original six).
 
 - [ ] **Step 4: Verify no duplicate ids in the criteria tables**
 
@@ -439,7 +439,7 @@ git add plugins/kanban-flow/templates/CHECK-CRITERIA.md
 git commit -m "$(cat <<'EOF'
 feat(kanban-flow): add CHECK-CRITERIA doctrine
 
-27 stable criterion ids across four check targets, plus the shared Method
+28 stable criterion ids across four check targets, plus the shared Method
 that makes agreement expensive: derive independently before reading the
 artifact, verdict every criterion, cite a location or you have no finding.
 
@@ -2555,7 +2555,7 @@ Run:
 rtk proxy grep -oE '^\| `(INT|SLC|DSG|DLV)-[A-Z-]+`' plugins/kanban-flow/templates/CHECK-CRITERIA.md \
   | sed 's/[|` ]//g' | sort -u | wc -l
 ```
-Expected: `27`. If this drifted from Task 2, the doctrine has been edited inconsistently — reconcile it.
+Expected: `28`. If this drifted from Task 2, the doctrine has been edited inconsistently — reconcile it.
 
 - [ ] **Step 5: No doctrine file tells an agent to write a `docs/cards/` copy**
 
