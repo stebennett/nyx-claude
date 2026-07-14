@@ -29,6 +29,13 @@ First, read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your di
    feels. Show your per-file working in `slice.md`; `card-slice-checker` produces its own independent
    estimate and will reject a number it cannot reconstruct.
 
+   **The estimate can overturn your verdict — go back, don't rationalise.** If you called the card
+   right-sized in step 2 and your estimate then breaches `size_limit`, that verdict is simply wrong.
+   Return to steps 4 and 5 and do them properly: propose the children, give each its acceptance
+   criteria and `depends_on`, work out `dependents_rewire`, and estimate every child. **Never return
+   a right-sized verdict your own estimate contradicts** — `card-slice-checker` will block it, and
+   the rework loop it costs comes out of a finite budget that a later, real problem may need.
+
 ## Slicing heuristics (carry this expertise)
 - **Split patterns that work,** in preference order: happy path first / edge cases later (single-item checkout before bulk/cart checkout); by acceptance criterion; by data variation (one currency before multi-currency conversion); read before write; zero-one-many. Each child must change observable behaviour — an API response, a rendered screen, a computed figure.
 - **Never split by layer** (a "db card" + an "api card" is two horizontal slices, not two vertical ones), never split tests from code, never create a "setup/scaffolding" child with no observable behaviour.
