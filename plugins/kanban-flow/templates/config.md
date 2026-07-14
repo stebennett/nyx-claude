@@ -88,6 +88,11 @@ the skills read it; **`/kanban` never rewrites it**, so it is safe to hand-edit.
   does not arrive at implement with nothing left. `implement: 2` is the historic
   behaviour of the old single `reworks` counter. `deliver: 1` because a delivery
   check failing twice means something another deliverer pass will not fix.
+  An **omitted** producer defaults to `2` — except `deliver`, which defaults to
+  `1` — so an older config missing this key behaves exactly as the shipped
+  values do. Likewise an omitted `checks` producer defaults to `on`, and an
+  omitted `size_limit` to `500`: a project that never touches this file gets
+  every check, at the shipped budgets, under the shipped ceiling.
 - **size_limit** — the hard ceiling on a card's **changed lines, including
   tests** (default 500). Enforced twice: `card-slice-checker` independently
   estimates before any code is written and a projected breach **forces a split**
