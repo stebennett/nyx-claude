@@ -10,3 +10,19 @@ structured-return format or the sole-writer invariant.
 flags those as a plugin PR rather than writing them here.
 
 <!-- No project-specific rules yet. -->
+
+## Check criteria
+
+Project-specific check criteria, layered on top of the plugin's `CHECK-CRITERIA.md`.
+Each checker reads its own target's section here in addition to the plugin's.
+
+Criteria here carry a **`LOCAL-`** id prefix so they never collide with a plugin id
+and `/retro` can tell which set a verdict came from. Ids are stable and permanent —
+never renamed, never reused. `/retro` owns this section; it may add, edit and prune
+`LOCAL-` criteria, but never touches the plugin's.
+
+Add a `## Check criteria — <target>` subsection (`target` ∈ `intake` | `slice` |
+`design` | `deliver`) when a lesson earns one. Format matches the plugin file: a
+table of `| id | criterion | severity when failed |`.
+
+<!-- No project-specific criteria yet. -->
