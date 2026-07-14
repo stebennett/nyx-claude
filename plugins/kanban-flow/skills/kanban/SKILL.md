@@ -31,12 +31,14 @@ Card state must survive lost local commits and merges that happen while no pump 
 7. Note any other drift you can't self-heal (a card id in a merged PR with no card dir, a worktree with no card) in the report — don't guess.
 
 ## 1. Load state
-Read `{board_dir}/config.md` first — it carries the tunables (`spec_path`, `gh_command`, `wip_limit`, `gates`, `layers`, `gate_layer`, `adr_dir`, `coverage_target`). Everything below reads these; never hardcode them. `board_dir` defaults to `docs/cards`. Read every `docs/cards/CARD-*/card.md` and parse its frontmatter (missing `reworks`/`started`/`delivered`/`design_pr_url` fields default to `0`/empty — legacy cards). This is the source of truth. Read `docs/cards/KNOWLEDGE.md`. Read `docs/cards/MILESTONES.md` (authored by `/refine`; you never write it): parse the ordered `## M<N> — <title>` headings and each milestone's `**Cards:**` line into a `card → milestone index` map (document order = delivery order; a card in no milestone has index ∞). Compute each milestone's progress = done members / total members.
+Read `{board_dir}/config.md` first — it carries the tunables (`spec_path`, `gh_command`, `wip_limit`, `gates`, `checks`, `check_budget`, `size_limit`, `size_exclude`, `layers`, `gate_layer`, `adr_dir`, `coverage_target`). Everything below reads these; never hardcode them. Missing `checks` producer → `on`; missing `check_budget` producer → `2` (`deliver` → `1`); missing `size_limit` → `500`. `board_dir` defaults to `docs/cards`. Read every `docs/cards/CARD-*/card.md` and parse its frontmatter (missing `started`/`delivered`/`design_pr_url`/`estimated_lines`/`actual_lines` fields default to empty — legacy cards). **`reworks` is a per-producer map** (`{slice, design, implement, deliver}`); a legacy scalar `reworks: N` reads as `{implement: N}`, everything else `0` (Section 0.5 normalises it on disk). This is the source of truth. Read `docs/cards/KNOWLEDGE.md`. Read `docs/cards/MILESTONES.md` (authored by `/refine`; you never write it): parse the ordered `## M<N> — <title>` headings and each milestone's `**Cards:**` line into a `card → milestone index` map (document order = delivery order; a card in no milestone has index ∞). Compute each milestone's progress = done members / total members.
 
 Resolve the **plugin doctrine directory** once this pump: `${CLAUDE_PLUGIN_ROOT}/templates/` (the same path `/kanban-init` uses). You pass absolute paths from it into every dispatch (Section 5) — agents never read a `docs/cards/` doctrine copy. **Template resolution rule** (used wherever a skill fills a template): for `card-template.md`, `pr-template.md`, or `design-pr-template.md`, read `config.md`'s `template_overrides[<name>]` if set (a repo-relative path), else the plugin's `${CLAUDE_PLUGIN_ROOT}/templates/<name>`. **Migration check:** compare `config.md`'s `kanban_flow_version` to the installed plugin version and scan `<board_dir>` for leftover plugin-owned copies (`AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `card-template.md`, `pr-template.md`, `design-pr-template.md`) — excluding any template file registered in `template_overrides` (a preserved override is intentional, not a leftover). If the version is behind or any such unregistered copy exists, set `migration_needed` for the report (Section 7).
 
 ## 2. Render the board (sole writer)
-Rewrite `BOARD.md` from the parsed cards: one bullet per card under the column matching its `status`, showing `CARD-NNN — title · phase · branch` (suffix the `[M<N>]` milestone tag), for blocked cards the blocker, for cards awaiting driver input `(awaiting input)`, and for cards with an open PR the PR link (`design PR #N open` / `PR #N open`). Columns in order: Backlog, Slice, Design, Implement, Test, Review, Deliver, Blocked, Done, Split, Superseded. Render `status: split` cards in the `## Split` section as `CARD-NNN — title → split into CARD-XXX, CARD-YYY` (terminal). Render `status: superseded` cards in the `## Superseded` section as `CARD-NNN — title → superseded by REQ-NNN` (terminal). Update the header counts and `last rendered` line.
+Rewrite `BOARD.md` from the parsed cards: one bullet per card under the column matching its `status`, showing `CARD-NNN — title · phase · branch` (suffix the `[M<N>]` milestone tag), for blocked cards the blocker, for cards awaiting driver input `(awaiting input)`, for cards with an open PR the PR link (`design PR #N open` / `PR #N open`), and for a card whose producer has returned but whose checker has not yet run or passed, `· checking <phase>`. A card parked on an exhausted check budget shows its blocker with the failing criterion ids (`check failed — DSG-AC-COVERED, DSG-SCOPE`) — the board says *why* it is stuck without anyone opening a file.
+
+**If any `checks` producer is `off`, put it in the header**, e.g. `⚠ checks disabled: design — cards are reaching the design PR unchecked`. A disabled check is loud, not silent: it is an escape hatch for a checker that turned out noisy, never a state the board lets you drift into and forget. Columns in order: Backlog, Slice, Design, Implement, Test, Review, Deliver, Blocked, Done, Split, Superseded. Render `status: split` cards in the `## Split` section as `CARD-NNN — title → split into CARD-XXX, CARD-YYY` (terminal). Render `status: superseded` cards in the `## Superseded` section as `CARD-NNN — title → superseded by REQ-NNN` (terminal). Update the header counts and `last rendered` line.
 
 These tunables are read from `config.md` (BOARD may display them, but config is authoritative): WIP limit (`wip_limit`), gate policy (`gates`).
 - **WIP limit** (default 3).
@@ -63,24 +65,36 @@ Also render the derived **`## Milestones`** section: `M<N> — <title> · <done>
 
 Advance every in-flight card **as far as it can go this pump**. Work in waves: dispatch all dispatchable cards' agents in parallel (one Agent-tool message), process each `result` **serially** (sole writer), apply transitions, dispatch the next wave. A card stops chaining at: a manual gate, `needs-input`, `blocked`, rework budget exhausted, an open PR awaiting merge, or `done`.
 
-**Dispatch vs. handle:** phase-doc presence in the card's current worktree `card_dir` decides — absent → dispatch the phase agent; present → handle (gate or advance). Key states:
+**Dispatch vs. handle:** phase-doc presence in the card's current worktree `card_dir` decides — absent → dispatch the phase agent; present → handle (gate or advance).
+
+**Every producer is followed by its checker before its gate.** The same rule extends with no new machinery: the **phase doc** present + its **`<phase>-check.md` absent** → dispatch the checker; both present with `verdict: pass` → advance. A check whose `checks` policy is `off` is skipped entirely (and warned about, Section 7). Checkers never trigger a gate — they gate the *producer*, and the driver's gate comes after.
+
+Key states:
 - `status: slice` + `slice.md` absent → dispatch card-slicer (no worktree; include the card's **dependents** for `dependents_rewire`).
-- slice right-sized (or start with `right_sized: true`) → **design transition:** create branch `<type>/NNN-slug-design` + worktree off `main` via **superpowers:using-git-worktrees** (e.g. `../<repo>-worktrees/CARD-NNN`), set `branch`/`worktree`, write `slice.md` into the worktree's `docs/cards/CARD-NNN-slug/` and commit it on the branch, `status: design`.
+- `status: slice` + `slice.md` present + `slice-check.md` absent + `checks.slice: on` → **dispatch card-slice-checker** (same inputs as the slicer, plus `slice.md` and the slicer's `proposed_cards`/`dependents_rewire`/`estimated_lines`). `verdict: fail` → rework the slicer (below). `verdict: pass` → record `estimated_lines` on the card and continue.
+- slice right-sized *and checked* (or start with `right_sized: true`) → **design transition:** create branch `<type>/NNN-slug-design` + worktree off `main` via **superpowers:using-git-worktrees** (e.g. `../<repo>-worktrees/CARD-NNN`), set `branch`/`worktree`, write `slice.md` into the worktree's `docs/cards/CARD-NNN-slug/` and commit it on the branch, `status: design`.
 - `status: design` + `design.md` absent → dispatch card-designer.
-- `status: design` + `design.md` present + design stop pending per policy → present the stop (Section 3).
+- `status: design` + `design.md` present + `design-check.md` absent + `checks.design: on` → **dispatch card-design-checker**. `verdict: fail` → rework the designer (below). `verdict: pass` → continue to the gate.
+- `status: design` + `design.md` present + checked + design stop pending per policy → present the stop (Section 3).
 - `status: design` + gate passed + `design_pr_url` empty → **open the design PR:** persist `design.md` (and any `feedback.md`) to the branch; route `proposed_adrs` (below) so ADR files land on the branch; assemble the design PR body from the `design-pr-template.md` template (resolved per Section 1's template-resolution rule); dispatch `card-deliverer` in **design mode** (push + open PR titled `CARD-NNN — design: <title>`). On return, record `design_pr_url`; the card now awaits merge (Section 6 CI/addressing apply).
 - Design PR merged → handled by Reconcile (Section 0 step 2): implementation branch/worktree created, `status: implement`.
 - `status: implement|test|review` → dispatch per the table; on `complete` advance (implement→test→review→deliver), committing each returned phase doc to the **implementation branch**.
-- `status: deliver` → deliver gate (Section 3) → card-deliverer in **implementation mode** → record `pr_url` → Section 6.
+- `status: deliver` → deliver gate (Section 3) → card-deliverer in **implementation mode** → record `pr_url` → **dispatch card-deliver-checker** (below) → Section 6.
+- **PR open** (design or implementation) + `deliver-check.md` absent + `checks.deliver: on` → **dispatch card-deliver-checker** with the `pr_url`, the PR mode, and the `worktree`. Record its `actual_lines` on the card. `verdict: fail` → rework `card-deliverer` (wrong base, false PR body, missing docs, impure PR) or `card-implementer` (a claimed acceptance criterion genuinely is not implemented), consuming the `deliver` budget. `verdict: pass` → Section 6. **A `DLV-SIZE` advisory breach is a `pass`** — surface its proposed PR split prominently in the report (Section 7) and leave the merge decision to the driver.
 
-| status | dispatch | model |
+| status / condition | dispatch | model |
 |---|---|---|
-| slice | card-slicer | sonnet |
-| design | card-designer | opus |
+| slice, `slice.md` absent | card-slicer | sonnet |
+| slice, `slice.md` present, `slice-check.md` absent | card-slice-checker | sonnet |
+| design, `design.md` absent | card-designer | opus |
+| design, `design.md` present, `design-check.md` absent | card-design-checker | opus |
 | implement | card-implementer | sonnet |
 | test | card-tester | haiku |
-| review | card-reviewer | opus |
+| review | **card-lens-reviewer × lenses, in parallel** | per-lens (Section 6b) |
 | deliver (design or implementation PR) | card-deliverer | haiku |
+| PR open, `deliver-check.md` absent | card-deliver-checker | haiku |
+
+(`card-intake-checker` is dispatched by `/refine` and `/requirement`, not by you.)
 
 **Model pinning:** you (the orchestrator) run under Opus; every dispatch passes the table's `model` explicitly so no agent ever inherits the session model. The agents' distilled expertise lives in their prompts and `AGENT-PROTOCOL.md`'s Doctrine section — capability comes from the instructions, not the model tier.
 
@@ -89,12 +103,15 @@ In the dispatch prompt include: `card_id`, `card_dir`, the full `card.md`, and *
 ### Process each `result` (you persist everything)
 1. Parse the fenced `result` YAML.
 2. Write `phase_doc` to the card's `card_dir` **in its current worktree** and commit it on the card's branch (Conventional Commit, e.g. `docs(card): CARD-NNN design`). Rework passes overwrite the doc; note the rework count in it.
+   Persist the size fields when a result carries them: `estimated_lines` from **card-slicer** (verified by card-slice-checker) and `actual_lines` from **card-deliver-checker** go onto `card.md` frontmatter with the pump's state commit. Both are `/retro` fuel — never drop them.
 3. Route `knowledge`: append `repo` entries under the right `KNOWLEDGE.md` section — `Conventions | Gotchas | Glossary` only, prefix `[CARD-NNN]` (no Decisions section: decisions are ADRs) — committed to `main`; `personal` entries → the Claude project memory directory for this checkout.
    **Route `proposed_adrs`:** invoke the **`adr`** skill with `card_id`, today's ISO date, the proposed list, and the card's **worktree** as the write target — ADR files land on the card's current branch and merge via its PR (design-phase ADRs via the design PR — the point of this flow). **Numbering across parallel branches:** allocate `NNNN = max(files under docs/adrs/ on main, every id in any card's `adrs:` list) + 1`; appending the id to the card's `adrs:` frontmatter (a direct-to-main state commit) reserves the number before the file merges.
 4. Apply the transition:
    - `needs-input` → surface `open_questions`; on answers re-dispatch the same agent. Unattended: leave awaiting input, continue other cards.
    - `blocked` from **implementer** (design wrong, environment broken) → `status: blocked`; driver decides.
-   - `blocked` from **tester or reviewer** (failing gates / blocking findings) → **automatic rework**: if `reworks < 2`, increment, `status: implement`, delete stale `test.md`/`review.md` from the branch, re-dispatch `card-implementer` in rework mode with the findings verbatim. Else `status: blocked`.
+   - `blocked` from **tester or the lens panel** (failing gates / blocking findings) → **automatic rework**: if `reworks.implement < check_budget.implement`, increment it, `status: implement`, delete stale `test.md`/`review.md` from the branch, re-dispatch `card-implementer` in rework mode with the findings verbatim (merged across lenses). Else `status: blocked`. **On a re-run of the panel, dispatch only the lenses that raised blocking findings** — not all of them.
+   - `verdict: fail` from **any checker** → **automatic rework of its producer**: if `reworks.<producer> < check_budget.<producer>`, increment it, delete the stale `<phase>-check.md`, and re-dispatch that producer in rework mode with the checker's blocking findings verbatim (slice → card-slicer; design → card-designer; deliver → card-deliverer or card-implementer per the finding). Else `status: blocked` with the blocker **`check failed — <failing criterion ids>`** (e.g. `check failed — DSG-AC-COVERED, DSG-SCOPE`), and the driver decides. **Advisory findings never trigger rework** — they are recorded in the check doc and ride the PR.
+   - **Drop any finding with no `location`** — the contract makes it invalid (`AGENT-PROTOCOL.md`, Checker contract). If dropping it leaves no blocking finding, the verdict is a `pass`.
    - `complete` + `gate: slice` → slice gate per policy (Section 3).
    - `complete` + `gate: none` from **slice** → `right_sized: true`; design transition (above).
    - `complete` + `gate: design` → design stop per policy, then the design-PR step (above).
@@ -153,7 +170,11 @@ Nothing is actioned until the human signals the review is **complete**; then eve
 These fixes are human-directed and don't consume the `reworks` budget. Merge detection stays with Reconcile (Section 0). A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment `REVIEWED`), merge the implementation PR.
 
 ## 7. Report
-Print a concise digest: what advanced (and how far it chained), design PRs opened/merged, implementation PRs opened, what was auto-reworked (card, findings, `reworks`), what awaits a gate/input/merge, splits, amendments applied (card, action, REQ), blocks, free slots, and per-milestone progress. Flow metrics per finished card: `started → delivered` elapsed and `reworks`. List **ADRs written this pump** (`ADR-NNNN — title → CARD-NNN`, and which PR carries each). Warn on `MILESTONES.md` drift (a `/refine` fix — surface, don't edit). If `migration_needed` (Section 1), warn prominently: **"Un-migrated doctrine copies or a stale `kanban_flow_version` detected — run `/migrate`."** **Every 5 cards done**, suggest `/retro`.
+Print a concise digest: what advanced (and how far it chained), design PRs opened/merged, implementation PRs opened, what was auto-reworked (card, findings, `reworks`), what awaits a gate/input/merge, splits, amendments applied (card, action, REQ), blocks, free slots, and per-milestone progress.
+
+**Check layer:** which checks ran and their verdicts; any producer reworked by its checker (card, failing criterion ids, `reworks.<producer>`); any card parked on an exhausted check budget. Surface a `DLV-SIZE` breach **prominently**, with the checker's proposed PR split verbatim — the driver decides whether to land the PR or split it, and they cannot decide what they cannot see.
+
+**If any `checks` producer is `off`, warn every pump** — name it and name the consequence: *"checks disabled: design — cards are reaching the design PR unchecked"*. For `slice=off` add: *"— and `size_limit` is unenforced before code is written; only `DLV-SIZE`'s after-the-fact warning remains."* Flow metrics per finished card: `started → delivered` elapsed and `reworks`. List **ADRs written this pump** (`ADR-NNNN — title → CARD-NNN`, and which PR carries each). Warn on `MILESTONES.md` drift (a `/refine` fix — surface, don't edit). If `migration_needed` (Section 1), warn prominently: **"Un-migrated doctrine copies or a stale `kanban_flow_version` detected — run `/migrate`."** **Every 5 cards done**, suggest `/retro`.
 
 ## Rules
 - `/refine` and `/requirement` create and edit `card.md` files **in `backlog`**; from the moment a card leaves backlog you are its sole writer, and you are sole writer of `BOARD.md` and `KNOWLEDGE.md` throughout. Never let phase agents write any of the three. Likewise sole writer of `docs/adrs/`, produced only via the `adr` skill from agents' `proposed_adrs` — agents propose, never write.
@@ -166,4 +187,6 @@ Print a concise digest: what advanced (and how far it chained), design PRs opene
 - Auto-rework only for actionable findings (failing tests, blocking review findings, branch-caused CI failures); max 2 loops per card, then the driver decides.
 - PR comments are actioned only after a review-complete signal (a submitted review or a `REVIEWED` comment): then every human-authored comment is addressed, plus any 👍'd panel comment. The system replies `[kanban] Addressed in <commit-url>` (or `[kanban] Not actioned — <reason>`) but never resolves threads, never approves, never dismisses. Panel experts post `COMMENT` reviews only, on implementation PRs only.
 - Code review happens only on green CI (no-checks PRs count as reviewable). Branch-caused failures are fixed from the real logs; infrastructure failures are flagged, rerun, re-checked (max 3), then parked.
-- All branches off `main`; all PRs target `main`. Phase docs ride their half's PR: slice/design/ADRs/early feedback in the design PR; implement/test/review in the implementation PR.
+- All branches off `main`; all PRs target `main`. Phase docs ride their half's PR: `slice.md`/`slice-check.md`/`design.md`/`design-check.md`/ADRs/early feedback in the design PR; `implement.md`/`test.md`/`review.md` in the implementation PR. `deliver-check.md` commits to `main` — the PR is already open by the time it exists.
+- **Checkers are terminal.** Never dispatch a checker for a checker's output. The driver is their backstop.
+- Every producer is checked before its gate, unless `checks.<producer>` is `off` — in which case say so, loudly, every pump.
