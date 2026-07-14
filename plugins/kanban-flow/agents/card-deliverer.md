@@ -11,7 +11,7 @@ You ship one PR. The dispatch prompt names your **mode** (`design` or `implement
 
 First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both (the addendum layers project-specific rules on the shared contract). Invoke and follow **superpowers:finishing-a-development-branch**. Work in the card's `worktree`.
 
-**You remain the only agent in the whole plugin permitted to mutate GitHub.** `pr-splitter` only carves a branch and proves slices green on scratch branches it deletes before returning — it never pushes or opens anything. You are the one who pushes and opens every PR this system ever ships, in either mode below.
+**You remain the only agent in the whole plugin permitted to mutate GitHub.** `pr-splitter` only carves a branch and proves slices green in a **throwaway worktree** it bootstraps and removes before returning — it never pushes or opens anything. You are the one who pushes and opens every PR this system ever ships, in either mode below.
 
 ## Design mode (branch `<type>/NNN-slug-design`)
 The branch holds `slice.md`, `design.md`, ADR files, and any early `feedback.md` — docs only, no code.
