@@ -74,7 +74,7 @@ Emit exactly one fenced ```result block, valid YAML:
 
 ```result
 status: complete            # complete | blocked | needs-input
-phase: <slice|design|implement|test|review|deliver|pr-review>
+phase: <slice|design|implement|test|review|deliver|check>
 card: CARD-NNN
 gate: none                  # none | design | slice  (which gate this phase triggers; never "deliver")
 summary:
@@ -114,6 +114,72 @@ phase_doc: |
 - `status: complete` + `gate: slice` (slice phase only) → orchestrator applies the gate policy: auto-apply the split, or surface `proposed_cards` + `dependents_rewire` to the driver.
 - `status: complete` + `gate: design` → orchestrator applies the gate policy: auto-approve, or stop for the driver (domain-layer cards by default).
 - The deliver gate is triggered by a card reaching `deliver` status, not by any agent `gate` value. No agent should ever emit `gate: deliver`.
+
+## Checker contract (checker agents only)
+
+Every agent in this system is either a **producer** — it creates an artifact and can be wrong — or a
+**checker** — it verifies a producer's output. **Checkers are terminal: nothing checks a checker.**
+That is what stops the regress; a checker's backstop is the human, at the intake and slice gates and
+at the two PR merges. Never add a checker for a checker.
+
+| Producer | Its checker(s) |
+|---|---|
+| intake (`/refine`, `/requirement`) | `card-intake-checker` |
+| `card-slicer` | `card-slice-checker` |
+| `card-designer` | `card-design-checker` |
+| `card-implementer` | `card-tester`, then the `card-lens-reviewer` panel |
+| `card-deliverer` | `card-deliver-checker` |
+
+If you are a checker, these rules bind you in addition to everything above.
+
+**You receive the producer's inputs and its output — never its reasoning.** Derive your own view from
+the same inputs and compare. A checker that reads the producer's justification is only agreeing with
+it.
+
+**You write nothing and mutate nothing.** No files, no GitHub. You return `phase_doc`; the
+orchestrator persists it. Your criteria come from your section of the plugin's `CHECK-CRITERIA.md`
+(absolute path in your dispatch), then any `## Check criteria — <target>` section of the repo's
+`PROTOCOL-ADDENDUM.md` layered on top. Local criteria carry a `LOCAL-` id prefix.
+
+**Your `result` block carries four extra fields:**
+
+```result
+status: complete
+phase: check
+checks: design              # intake | slice | design | deliver
+card: CARD-NNN
+gate: none                  # a checker never triggers a gate
+verdict: fail               # pass | fail
+criteria:                   # EVERY criterion in your set — an omission is a malformed result
+  - id: DSG-AC-COVERED
+    verdict: fail           # pass | fail | na
+    evidence: "design.md:31-58 — task list has no task for AC-3 (offline retry)"
+findings:                   # [] when verdict is pass
+  - criterion: DSG-AC-COVERED
+    severity: blocking      # blocking | advisory
+    location: "design.md:31"
+    detail: "AC-3 'retries when offline' has no corresponding design task."
+    remedy: "Add a task covering the retry path, or move AC-3 out of scope explicitly."
+phase_doc: |
+  <full markdown of the check doc>
+```
+
+Three rules give this contract its teeth:
+
+1. **Every criterion in your set gets a verdict.** You may not silently skip the criterion you found
+   inconvenient. Use `na` — with evidence for *why* it does not apply — rather than omitting it.
+2. **Every finding cites a `location` in the artifact.** A finding with no location is **invalid and
+   the orchestrator drops it.** If you cannot point at a line, you do not have a finding.
+3. **`verdict: fail` if and only if at least one finding is `blocking`.** Advisory findings are
+   recorded and ride the PR for the human; they never trigger rework.
+
+**Blocking findings auto-rework the producer** — the orchestrator re-dispatches it with your findings
+verbatim, up to that producer's `check_budget`, then parks the card for the driver. Make every
+blocking finding actionable: what is wrong, where, and what right looks like.
+
+**Agreement must be earned.** A `pass` with thin evidence is worse than no check at all, because it
+manufactures confidence. Your `evidence` for each passing criterion states what you actually verified
+— not "looks fine". `/retro` reads these to tell diligence from a skim.
 
 ## Architecture Decision Records (ADRs)
 
