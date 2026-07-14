@@ -8,7 +8,7 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   to this card's git worktree), the full text of `card.md`, and the prior phase docs **your phase
   needs** (the orchestrator sends only those — don't expect all of them).
 - **Doctrine paths:** the absolute path to the plugin's `AGENT-PROTOCOL.md` (this file) and the
-  repo's `PROTOCOL-ADDENDUM.md`; `pr-expert-reviewer` also receives the plugin's `REVIEW-LENSES.md`
+  repo's `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives the plugin's `REVIEW-LENSES.md`
   path. Read the protocol here, then layer the addendum — never read a `docs/cards/` copy.
 - Exception: the **slice** phase runs before any worktree exists, so `card-slicer` receives no
   `worktree`; it instead receives the card's current **dependents** (ids that `depends_on` it).
@@ -20,8 +20,10 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   items flagged as summary) — every human-authored comment plus any 👍'd panel comment; address
   exactly those and never touch the comment threads — the orchestrator replies (with a commit link)
   and the human resolves.
-- A **pr-review** dispatch (`pr-expert-reviewer`, one per lens after an implementation PR opens)
-  carries a `lens` and the `pr_url` instead of prior phase docs.
+- A **review** dispatch (`card-lens-reviewer`, one per lens, in parallel, at the review phase) carries
+  a `lens` and reviews the branch diff in the `worktree` — before any PR exists.
+- A **check** dispatch (a `card-*-checker`) carries the producer's inputs and its output artifact, and
+  the plugin's `CHECK-CRITERIA.md` path. See the Checker contract below.
 - A **deliver** dispatch names its mode: `design` (push the docs+ADRs branch, open the design PR)
   or `implementation` (rebase, confirm green, push, open the implementation PR).
 
@@ -41,11 +43,13 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   every later card to build on.
 - You MAY create and edit **code** files — but only inside `worktree` (use absolute paths under it).
   The slice and design phases produce no code; a design branch is docs-only.
-- **GitHub is off-limits to phase agents**, with two exceptions: the deliver phase pushes the branch
-  and opens the PR; the pr-review phase posts its lens's findings as **one `COMMENT` review** with
-  `[lens]`-prefixed inline comments. No agent ever approves, requests changes, replies to, resolves,
-  or reacts to PR threads — the review-complete signal, 👍 triage of panel comments, and resolution
-  belong to the human.
+- **GitHub is off-limits to phase agents, with exactly one exception:** the deliver phase pushes the
+  branch and opens the PR. Nothing else. The review panel runs **before** the PR opens, against the
+  branch diff in the worktree, and returns findings to the orchestrator — it does not comment on
+  GitHub. `card-deliver-checker` reads the PR (`gh pr view`, `gh pr checks`) but mutates nothing. No
+  agent ever comments, approves, requests changes, replies to, resolves, or reacts to a PR thread —
+  the review-complete signal and thread resolution belong to the human, and the orchestrator alone
+  replies with commit links.
 
 ## Doctrine (expertise every agent carries)
 Distilled from expert review of this codebase and domain — treat these as standing knowledge:
