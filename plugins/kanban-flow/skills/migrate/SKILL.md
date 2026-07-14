@@ -26,8 +26,13 @@ target repo, on a migration branch, and you never modify the plugin.
    `REVIEW-LENSES.md`, `card-template.md`, `pr-template.md`, `design-pr-template.md` — but
    a template file already registered in `template_overrides` (pointing at that path) is a
    deliberately-preserved override, **not** a leftover; only an *unregistered* copy counts.
-   **If the version is already current AND no unregistered copy is present → report
-   "already migrated" and stop** (do nothing destructive).
+   Also check each `docs/cards/CARD-*/card.md` for a legacy scalar or missing `reworks`,
+   and compare the plugin's current `config.md` frontmatter keys against the repo's to
+   detect any missing (additive-only).
+   **If the version is already current AND no unregistered copy is present AND no card
+   needs its frontmatter migrated AND no config key is missing → report "already migrated"
+   and stop** (do nothing destructive). The version records what a previous run *intended*,
+   not what it *achieved*; detect the work itself.
 
 2. **Branch.** Create `task/migrate-<plugin-version>` off the current branch — every
    change rides one PR. Never commit migration changes straight to `main`.
@@ -71,8 +76,9 @@ target repo, on a migration branch, and you never modify the plugin.
      deliver: 0
    ```
 
-   A card with **no** `reworks` key gets the all-zero map. Also add `estimated_lines: ""` and
-   `actual_lines: ""` to every card that lacks them.
+   A card with **no** `reworks` key gets the all-zero map. Also backfill `estimated_lines: ""`,
+   `actual_lines: ""`, and `review_lenses_failed: []` on every card lacking them (missing
+   `review_lenses_failed` is safe — the full lens panel runs — so this is hygiene, not a bug fix).
 
    This is the **one** exception to the "never touch board state" rule below, and it is a pure shape
    change: no status, phase, dependency or content is altered, and `implement: N` preserves the exact
@@ -107,8 +113,9 @@ target repo, on a migration branch, and you never modify the plugin.
 - Read-only toward the plugin; write only inside the target repo, on the migration branch.
 - **Never touch board state** — `BOARD.md`, `KNOWLEDGE.md`, `MILESTONES.md`, ADRs, and any card's
   status, phase, dependencies or content. The doctrine/template copies, `PROTOCOL-ADDENDUM.md` and
-  `config.md` are yours. **One exception:** the `reworks` frontmatter shape change in Step 6 — a
-  mechanical rewrite that preserves the card's existing budget exactly and alters nothing else.
+  `config.md` are yours. **One exception:** the three mechanical frontmatter edits in Step 6 — reshaping
+  `reworks`, backfilling `estimated_lines` and `actual_lines`, and backfilling `review_lenses_failed` —
+  all shape/backfill changes that preserve the card's existing budget exactly and alter nothing else.
 - Never delete a **customized** template — preserve it via `template_overrides`; never
   fold a template into the addendum.
 - Never silently drop a local **doctrine** customization — extract it to the addendum with
