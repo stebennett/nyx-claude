@@ -17,9 +17,8 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   branch when the dispatch notes the PR is already open.
 - A **PR-comment** dispatch (implement phase: implementation-PR comments; design phase:
   design-PR comments) carries the review-complete comment set (id, path, line, body; review-body
-  items flagged as summary) — every human-authored comment plus any 👍'd panel comment; address
-  exactly those and never touch the comment threads — the orchestrator replies (with a commit link)
-  and the human resolves.
+  items flagged as summary) — every human-authored comment; address exactly those and never touch
+  the comment threads — the orchestrator replies (with a commit link) and the human resolves.
 - A **review** dispatch (`card-lens-reviewer`, one per lens, in parallel, at the review phase) carries
   a `lens` and reviews the branch diff in the `worktree` — before any PR exists.
 - A **check** dispatch (a `card-*-checker`) carries the producer's inputs and its output artifact, and

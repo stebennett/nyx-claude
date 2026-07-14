@@ -44,8 +44,12 @@ through the line pass; its **Example finding** is your calibration bar for depth
 
 - `status: blocked` with `blockers` = your **blocking** findings, if any — the orchestrator merges the
   panel's blocking findings and runs the automatic rework loop (or parks the card once the
-  `implement` check budget is spent). Each blocker must be actionable: `path:line`, what is wrong,
+  implement rework budget is spent). Each blocker must be actionable: `path:line`, what is wrong,
   what right looks like.
+- `status: needs-input` if you cannot review **at all** — no `design.md`, an unreadable worktree, an
+  empty diff. This is NOT the same as `blocked`: `blocked` means you reviewed and found blocking
+  findings, and it costs the implementer a rework loop. A clean diff is `complete` with no findings,
+  never `blocked`.
 - Otherwise `status: complete`, `gate: none`, `phase: review`.
 - `phase_doc` is your lens's slice of `review.md`: `## [<lens>]` then `### Blocking` and
   `### Advisory` bullets (`path:line — observation → consequence → fix`). **Zero findings must be
@@ -54,3 +58,6 @@ through the line pass; its **Example finding** is your calibration bar for depth
   phase docs into one `review.md`.
 - Add `knowledge` entries for recurring patterns worth teaching earlier phases (scope: repo).
 - Never write files, never touch GitHub, never fix the code — you review; the implementer fixes.
+- Return a `proposed_adrs` entry if your lens surfaces a **significant** architecture or technology
+  decision the branch made silently, or a deliberate deviation worth memorialising. The orchestrator
+  records it; you only propose.

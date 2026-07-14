@@ -33,29 +33,29 @@ line-by-line pass), **Red flags** (concrete patterns, greppable where possible),
 1. **Map pass, then line pass.** First read the whole diff end to end *without writing anything*,
    plus `design.md`, to understand what the change is and why. Only then go line-by-line through
    your lens with the anchor questions. Findings written during the first pass are skims — don't.
-2. **Verify before you post.** A pattern-match is a *hypothesis*, not a finding. Before writing a
-   comment, check the worktree for the counter-evidence: read the surrounding function, grep for
-   the validation/test/caller you claim is missing (`grep -rn` is cheap; a wrong comment is not).
+2. **Verify before you file it.** A pattern-match is a *hypothesis*, not a finding. Before writing
+   a finding, check the worktree for the counter-evidence: read the surrounding function, grep for
+   the validation/test/caller you claim is missing (`grep -rn` is cheap; a wrong finding is not).
    If you can't verify it, either drop it or record it honestly as `advisory` with what you checked.
-3. **The rebuttal test.** Before posting, imagine the author's strongest one-line defence
-   ("that's validated upstream in X", "the spec requires exactly this", "that case can't occur
-   because Y"). If the defence wins, drop it. If you can't tell, make it `advisory`.
-4. **Comment formula — observation → consequence → fix.** (a) What is true at this line, stated
+3. **The rebuttal test.** Before filing a blocking finding, imagine the author's strongest one-line
+   defence ("that's validated upstream in X", "the spec requires exactly this", "that case can't
+   occur because Y"). If the defence wins, drop it. If you can't tell, make it `advisory`.
+4. **Finding formula — observation → consequence → fix.** (a) What is true at this line, stated
    as fact you verified. (b) Why it matters: the concrete failure, wrong figure, or maintenance
    cost — cite the spec rule or invariant when one applies. (c) The smallest concrete fix — a
    ` ```suggestion ` block when the patch is small and you are certain it compiles/passes.
-   A comment missing any of the three is not ready to post.
+   A finding missing any of the three is not ready to file.
 5. **Trace, don't vibe.** For behavioural claims, follow the actual data flow: where does this
    value come from, who has already checked it, where does it go? Quote the evidence in the
-   comment ("`rt` here comes from `list_rate()` at pricing.py:41, but reward points
+   finding ("`rt` here comes from `list_rate()` at pricing.py:41, but reward points
    need the *net* rate — spec §4.2").
 6. **Zero findings must be earned.** If you find nothing, your returned phase_doc lists what you
    checked and found clean ("traced both rate paths; checked all 6 rounding call sites reuse
    `round_half_up`; …"). "No findings" without the list means "didn't look" and will be treated
    as such by `/retro`.
-7. **Anchor precisely.** Comment on the exact line where the fix goes, not the hunk header. If a
-   finding spans files, put one comment at the primary site and mention the others in it — don't
-   scatter duplicates.
+7. **Anchor precisely.** File the finding at the exact line where the fix goes, not the hunk
+   header. If a finding spans files, put one finding at the primary site and mention the others in
+   it — don't scatter duplicates.
 
 ## [acceptance]
 **Focus:** Does this branch actually deliver the card, and does it hold the project's invariants?
@@ -127,9 +127,9 @@ recorded reasoning only if it's factually wrong.
 ```python
 points = max(0, base_reward + threshold - amount_due)
 ```
-Comment: `[design] This computes reward points inline in the router. Pricing rules must live
-in domain/ as pure functions (the project's single-implementation invariant — CLAUDE.md); a second
-caller (the adapter's contract tests, nightly reporting) will otherwise duplicate it. Move to
+Finding: `[design] blocking — This computes reward points inline in the router. Pricing rules must
+live in domain/ as pure functions (the project's single-implementation invariant — CLAUDE.md); a
+second caller (the adapter's contract tests, nightly reporting) will otherwise duplicate it. Move to
 domain/pricing.py::reward_points() and call it here; the router should only shape the response.`
 
 ## [functionality]
@@ -167,9 +167,9 @@ to a later card (check `## Out of scope` first).
 ```python
 recent = sorted(orders, key=lambda o: o.placed_on)[-20:]
 ```
-Comment: `[functionality] Orders placed on the same date have no tiebreaker here, so the selected
-"most recent 20" set (and therefore the loyalty rating) is nondeterministic across runs — the test
-fixtures have single-date orders, which is why nothing catches it. Sort by (placed_on, id):`
+Finding: `[functionality] blocking — Orders placed on the same date have no tiebreaker here, so the
+selected "most recent 20" set (and therefore the loyalty rating) is nondeterministic across runs —
+the test fixtures have single-date orders, which is why nothing catches it. Sort by (placed_on, id):`
 ```suggestion
 recent = sorted(orders, key=lambda o: (o.placed_on, o.id))[-20:]
 ```
@@ -203,10 +203,10 @@ simplify the expression of it, not the rules); the pure-function/plain-data styl
 pattern.
 
 **Example finding.** Diff adds `domain/pricing_strategies.py` with a `PricingStrategy` Protocol,
-`StandardPricingStrategy`, `PromotionalPricingStrategy`, and a registry dict. Comment: `[simplicity]
-Three files of indirection dispatch between exactly two cases that the spec fixes forever (standard
-and promotional — no third tier exists). A single function with one branch says the same thing in
-~10 lines and gives the next reader one place to look: def price_order(order): if
+`StandardPricingStrategy`, `PromotionalPricingStrategy`, and a registry dict. Finding: `[simplicity]
+advisory — Three files of indirection dispatch between exactly two cases that the spec fixes forever
+(standard and promotional — no third tier exists). A single function with one branch says the same
+thing in ~10 lines and gives the next reader one place to look: def price_order(order): if
 order.is_promotional: … else: …. The Protocol earns its keep only when a third variant exists, and
 none is on the milestone plan.`
 
@@ -262,8 +262,8 @@ def test_price_differential():
     assert price_differential(total=85, reference=Decimal("70.2"), factor=125) == \
         round_half_up(Decimal(100) / 125 * (85 - Decimal("70.2")), 1)
 ```
-Comment: `[tests] The expected value is computed with the same formula and helpers as the
-implementation, so this test passes even if the formula itself is wrong (e.g. factor and the
+Finding: `[tests] blocking — The expected value is computed with the same formula and helpers as
+the implementation, so this test passes even if the formula itself is wrong (e.g. factor and the
 scaling constant inverted — both sides invert together). Assert the literal: the spec's worked
 example gives (100/125)×(85−70.2) = 11.84 → 11.8. `
 ```suggestion
@@ -303,7 +303,7 @@ differential, proration are the *right* jargon here — see the spec glossary); 
 ```python
 def points(amount: int, threshold: int, rt: int) -> int:
 ```
-Comment: `[readability] Nit: rt doesn't say which rate this is, and in this codebase that
+Finding: `[readability] advisory — rt doesn't say which rate this is, and in this codebase that
 ambiguity is dangerous — reward points must use the net rate (list rate × the account's discount
 allowance), not the list rate (spec §4.2). Naming the parameter net_rate makes a caller passing
 the wrong one visibly wrong at the call site.`
@@ -346,10 +346,10 @@ silent).
 ```python
 resp = httpx.get(f"{base_url}/orders/{order_id}")
 ```
-Comment: `[security] Two issues at this call: no timeout (a hung API blocks the adapter service
-indefinitely — httpx has no default timeout), and order_id is interpolated into the path unchecked
-— a value like "1/../../admin" changes the target route. Use the typed client with a timeout and
-params, and validate order_id as int in the tool schema before it gets here:`
+Finding: `[security] blocking — Two issues at this call: no timeout (a hung API blocks the adapter
+service indefinitely — httpx has no default timeout), and order_id is interpolated into the path
+unchecked — a value like "1/../../admin" changes the target route. Use the typed client with a
+timeout and params, and validate order_id as int in the tool schema before it gets here:`
 ```suggestion
 resp = client.get(f"/orders/{int(order_id)}", timeout=10.0)
 ```
@@ -394,9 +394,9 @@ tests (that's pytest idiom, not production `assert` misuse).
 ```python
 return round_half_up(Decimal(rating * factor / 100) + (base_rate - reference_rate), 0)
 ```
-Comment: `[python] rating * factor / 100 is computed in float before Decimal sees it, so the value
-carries binary representation error into the half-up rounding — exactly the class of bug the
-Decimal convention exists to prevent (a true x.5 can arrive as x.4999…). Keep the arithmetic in
+Finding: `[python] blocking — rating * factor / 100 is computed in float before Decimal sees it, so
+the value carries binary representation error into the half-up rounding — exactly the class of bug
+the Decimal convention exists to prevent (a true x.5 can arrive as x.4999…). Keep the arithmetic in
 Decimal end to end:`
 ```suggestion
 return round_half_up(Decimal(rating) * factor / Decimal(100) + (base_rate - reference_rate), 0)
@@ -444,10 +444,10 @@ component design only).
 const [total, setTotal] = useState(0);
 useEffect(() => { setTotal(lines.reduce((s, l) => s + l.amount, 0)); }, [lines]);
 ```
-Comment: `[typescript] total is derived data mirrored into state via an effect — it renders one
-frame stale after lines changes and adds a render cycle. Derive it in render (or useMemo if
-lines is large). Also note the summed total must come from the API's per-line figures, never be
-recomputed from unit prices client-side:`
+Finding: `[typescript] advisory — total is derived data mirrored into state via an effect — it
+renders one frame stale after lines changes and adds a render cycle. Derive it in render (or
+useMemo if lines is large). Also note the summed total must come from the API's per-line figures,
+never be recomputed from unit prices client-side:`
 ```suggestion
 const total = lines.reduce((s, l) => s + l.amount, 0);
 ```
