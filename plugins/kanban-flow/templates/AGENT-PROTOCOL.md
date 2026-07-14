@@ -144,9 +144,13 @@ table.
 
 If you are a checker, these rules bind you in addition to everything above.
 
-**You receive the producer's inputs and its output — never its reasoning.** Derive your own view from
-the same inputs and compare. A checker that reads the producer's justification is only agreeing with
-it.
+**You receive the producer's inputs and its output — and the output argues its own case.** Be honest
+about what that means: `slice.md` and `design.md` *contain* the producer's reasoning, and your
+dispatch hands them to you whole. Nothing withholds the justification from you, so **the defence is
+procedural, and it is yours to keep**: derive your own view **from the inputs, before you open the
+producer's artifact** — write down what you would have concluded — and only then read the artifact
+and diff it against yours. A checker that reads the producer's justification first is only agreeing
+with it, and it will not notice that it is.
 
 **You write nothing and mutate nothing.** No files, no GitHub. You return `phase_doc`; the
 orchestrator persists it. Your criteria come from your section of the plugin's `CHECK-CRITERIA.md`
@@ -178,8 +182,16 @@ phase_doc: |
 
 Three rules give this contract its teeth:
 
-1. **Every criterion in your set gets a verdict.** You may not silently skip the criterion you found
-   inconvenient. Use `na` — with evidence for *why* it does not apply — rather than omitting it.
+1. **Every criterion in your set gets a verdict — and the orchestrator VERIFIES this.** You may not
+   silently skip the criterion you found inconvenient. Use `na` — with evidence for *why* it does not
+   apply — rather than omitting it. **This is enforced, not requested.** The orchestrator handed you
+   `CHECK-CRITERIA.md` and the addendum, so it holds your exact id set, and it compares your
+   `criteria` table against it before it does anything else with your result. **A table missing any
+   id is a malformed result: the card does not advance, no gate is applied, your doc is not
+   persisted, and you are re-dispatched with the ids you omitted named back at you.** A
+   `verdict: pass` over an empty or partial table is not a pass — it is a checker that did not check,
+   and it is caught. (This costs the producer nothing: an incomplete check is *your* failure, not a
+   defect in the work, so it never spends the producer's rework budget.)
 2. **Every finding cites a `location` in the artifact.** A finding with no location is **invalid and
    the orchestrator drops it.** If you cannot point at a line, you do not have a finding.
 3. **`verdict: fail` if and only if at least one finding is `blocking`.** Advisory findings are

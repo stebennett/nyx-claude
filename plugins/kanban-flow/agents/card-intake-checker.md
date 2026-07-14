@@ -22,7 +22,8 @@ Read: the plugin `AGENT-PROTOCOL.md` (Doctrine + Checker contract), the repo's
 section), the plugin `INTAKE.md` (the slicing and milestone doctrine the proposal is meant to
 follow), and `KNOWLEDGE.md`. Your dispatch gives you: the **proposed cards** (title, type, layer,
 reqs, why, acceptance criteria, depends_on), the **milestone plan**, the **existing board** (card ids
-and their milestones), and the **requirement(s)** in scope, plus `spec_path`.
+and their milestones), the **requirement(s)** in scope, `spec_path`, and **`size_limit` /
+`size_exclude`** (the ceiling and the exclusions for `INT-SIZED`).
 
 ## Do
 
@@ -51,7 +52,25 @@ and their milestones), and the **requirement(s)** in scope, plus `spec_path`.
    not a horizontal layer. A "set up the database schema" card with no user-visible outcome is the
    canonical failure.
 
-7. **Verdict every criterion** with evidence citing the proposed card or the spec line.
+7. **Size every proposed card against `size_limit`** (`INT-SIZED`) — **and produce the estimate
+   yourself.** For each card, walk its acceptance criteria, `Grep`/`Glob` the real codebase to find
+   the modules that already exist, name the files that must change (new file vs edit), estimate the
+   changed lines per file **counting tests** (this project is TDD), and sum them. Only `size_exclude`
+   paths are omitted. Show the per-file working in your evidence — a bare number is not evidence. Any
+   card over `size_limit` is **blocking**: the intake skill must slice it smaller and re-check.
+
+   **Why this matters more than it looks:** a card the intake skill marks `right_sized: true` **skips
+   the slice phase**, so it never meets `SLC-SIZE` and is **never sized again before its code is
+   written**. You are its only pre-code size check — after you, the sole remaining enforcement is
+   `DLV-SIZE`, which is advisory and arrives after the PR is open. **Return `estimated_lines` for
+   every proposed card**, breach or no breach, so the intake skill can persist it onto the card it
+   writes: leave it empty at intake and it is empty forever, `DLV-SIZE` has no baseline to report
+   `actual_lines` against, and `/retro`'s under-estimation signal never sees the card.
+
+8. **Verdict every criterion** with evidence citing the proposed card or the spec line. **Every id in
+   your section — omit none.** The dispatcher holds the same id set you were handed and checks your
+   table against it; a `criteria` table missing an id is a **malformed** result and you will be
+   re-dispatched for the ids you skipped. Use `na` (with evidence for *why*) rather than omitting.
 
 ## Return
 
@@ -60,9 +79,14 @@ and their milestones), and the **requirement(s)** in scope, plus `spec_path`.
 - `verdict: fail` when any finding is blocking — the intake skill revises the proposal and re-checks,
   up to the `intake` check budget, then presents to the driver with your findings attached.
 - `phase_doc` is the intake check report: `## Verdict`, `## Criteria` (the full table — id, verdict,
-  evidence), `## Requirement coverage` (behaviour → card map), `## Blocking findings`,
-  `## Advisory findings`. The intake skill shows this to the driver alongside the proposal; it is not
-  written as a card phase doc (no card exists yet).
+  evidence), `## Requirement coverage` (behaviour → card map), `## Size` (**`estimated_lines` per
+  proposed card**, with the per-file working and the excluded paths), `## Blocking findings`,
+  `## Advisory findings`. No card exists yet, so it is not a card phase doc — the intake skill shows
+  it to the driver alongside the proposal and **persists it to
+  `<board_dir>/intake-checks/YYYY-MM-DD-<slug>.md`**, committed with the cards. That file is the
+  durable record of your `INT-*` verdicts: `/retro` aggregates every check doc **by criterion id**,
+  and without it the `intake` target — the earliest and cheapest place in the system to fix
+  anything — would be the one target whose criteria can never be tuned.
 - `status: needs-input` only if you cannot check at all (spec unreadable, no proposal supplied).
 - **A card set you would have sliced differently is a `pass`.** Granularity that meets `INT-VERTICAL`
   is the intake skill's call, not yours. Taste is not a defect.

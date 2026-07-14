@@ -90,11 +90,16 @@ You respect that boundary absolutely. Classify every existing card by `status` a
 
    **Check before you propose.** Unless `config.md`'s `checks.intake` is `off`, dispatch
    **`card-intake-checker`** (opus) with the new cards, the milestone placements, the existing board,
-   the requirement, `spec_path`, and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
+   the requirement, `spec_path`, **`size_limit` and `size_exclude`** (the ceiling and exclusions for
+   `INT-SIZED`), and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
    `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
    `<board_dir>/PROTOCOL-ADDENDUM.md`). `verdict: fail` → revise against the blocking findings and
    re-check, up to `check_budget.intake` (default 2); exhausted → present anyway with the unresolved
    findings shown as open questions. Show advisory findings alongside the proposal.
+
+   **Keep the checker's `estimated_lines` for every proposed card** — you persist it in step 6. It
+   comes from `INT-SIZED`, and for a card you mark `right_sized: true` it is the **only** estimate
+   that will ever exist: that card skips the slice phase, so `SLC-SIZE` never runs on it.
 
    Ask for approval, edits, or removals. Iterate until approved. **Write nothing before
    approval.**
@@ -103,7 +108,18 @@ You respect that boundary absolutely. Classify every existing card by `status` a
    1. Persist the requirement via **`req-ids`**: `allocate` for the new one (it returns the
       id), then `supersede` for any it replaces. Never edit the spec by hand.
    2. Create the new cards from the card template, and apply the approved edits, deletions
-      and `depends_on` rewires to `backlog` cards.
+      and `depends_on` rewires to `backlog` cards. **Set each new card's `estimated_lines` to the
+      value `card-intake-checker` produced for it under `INT-SIZED`** — never leave it empty. A card
+      marked `right_sized: true` **skips the slice phase**, so no slicer will ever size it and
+      `SLC-SIZE` will never run: this is the only moment its estimate can be recorded. Empty, and
+      `DLV-SIZE` has no baseline for `actual_lines` and `/retro` cannot see the card's estimate at
+      all. (`checks.intake: off` → no estimate exists to persist; tell the driver those cards reach
+      the board unsized.)
+   2b. **Persist the intake check report** to `{board_dir}/intake-checks/YYYY-MM-DD-<slug>.md`
+      (`<slug>` from the requirement), creating the directory if needed. `/retro` aggregates every
+      check doc **by criterion id** and reads this directory alongside the cards' check docs — without
+      it the `INT-*` verdicts leave no durable record and intake is the one target `/retro` can never
+      tune. Persist it for a budget-exhausted failing run too.
    3. Update `{board_dir}/MILESTONES.md` — place each new card, and **remove from its
       milestone's `**Cards:**` line every card you queued for `supersede`**, putting its
       replacement card (if any) in its place. A superseded card can never be `done`, so

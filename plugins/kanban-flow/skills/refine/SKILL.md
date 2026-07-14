@@ -44,7 +44,8 @@ ownership of `MILESTONES.md`.
 
 5. **Check the proposal before showing it to anyone.** Unless `config.md`'s `checks.intake` is `off`,
    dispatch **`card-intake-checker`** (opus) with: the proposed cards, the milestone plan, the
-   existing board's cards and their milestones, the requirement(s) in scope, `spec_path`, and the
+   existing board's cards and their milestones, the requirement(s) in scope, `spec_path`,
+   **`size_limit` and `size_exclude`** (the ceiling and exclusions for `INT-SIZED`), and the
    doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
    `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
    and `<board_dir>/PROTOCOL-ADDENDUM.md`).
@@ -55,8 +56,14 @@ ownership of `MILESTONES.md`.
 
    `verdict: pass` → proceed. Show the driver the checker's advisory findings alongside the proposal.
 
+   **Keep the checker's `estimated_lines` for every proposed card** — you persist it in step 7. It
+   is produced by `INT-SIZED`, and for a card you mark `right_sized: true` it is the **only** size
+   estimate that will ever exist: such a card skips the slice phase, so `SLC-SIZE` never runs on it
+   and no slicer ever sizes it. Drop the number here and it is empty forever.
+
    The driver's attention is the scarcest thing in this system: it should go on judgement, not on
-   catching an unobservable acceptance criterion or a dependency cycle. That is what this step buys.
+   catching an unobservable acceptance criterion, a dependency cycle, or a card that was never going
+   to fit under `size_limit`. That is what this step buys.
 
 6. **Present the proposal** to the driver:
    - the **card table** — id, type, layer, title, `reqs`, `depends_on`, a one-line why,
@@ -70,11 +77,28 @@ ownership of `MILESTONES.md`.
    `docs/cards/CARD-NNN-<slug>/card.md` from the card template with `status: backlog`,
    `phase: backlog`, the chosen `type`/`layer`/`reqs`/`depends_on`, empty
    `branch`/`worktree`, the template's all-zero **`reworks` map** (`{slice, design,
-   implement, deliver}` — never the retired scalar `reworks: 0`), empty
-   `estimated_lines`/`actual_lines`, `right_sized` per `INTAKE.md`, and today's date.
-   Then create or update `{board_dir}/MILESTONES.md` in its documented format. When
+   implement, deliver}` — never the retired scalar `reworks: 0`), **`estimated_lines` set
+   to the value `card-intake-checker` produced for that card under `INT-SIZED`** (empty
+   `actual_lines` — the deliver check fills it), `right_sized` per `INTAKE.md`, and today's
+   date. Then create or update `{board_dir}/MILESTONES.md` in its documented format. When
    re-slicing an existing backlog, place new cards into the right milestone and keep both
    invariants holding across the whole set.
+
+   **Never write a card with an empty `estimated_lines`.** A card you mark `right_sized: true`
+   **skips the slice phase**, so no slicer will ever run on it and `SLC-SIZE` will never size it —
+   this is the only moment its estimate can be recorded, exactly as the split carve-out is the only
+   moment a split child's can. Leave it empty and `DLV-SIZE` has no baseline to report `actual_lines`
+   against and `/retro`'s under-estimation signal loses the card entirely. (If `checks.intake` is
+   `off` there is no checker estimate to persist: say so to the driver, and note that those cards
+   reach the board unsized.)
+
+   **Persist the intake check report too:** write the checker's `phase_doc` to
+   `{board_dir}/intake-checks/YYYY-MM-DD-<slug>.md` (`<slug>` naming this intake run — the spec or
+   the batch), creating the directory if needed, and **commit it with the cards**. `/retro` aggregates
+   every check doc **by criterion id** and reads this directory alongside the cards' check docs;
+   without it the `INT-*` verdicts leave no durable record at all and the self-tuning loop is inert
+   for the one target that is cheapest to fix. Record the report for a **failing** run whose budget
+   was exhausted too — that is the most informative one there is.
 
 8. **Hand off.** Tell the driver to run `/kanban` to render the board and begin
    scheduling. Do not render `BOARD.md` yourself.

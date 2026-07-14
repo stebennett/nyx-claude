@@ -12,13 +12,21 @@ file are plugin-owned and are never edited by `/retro`.
 
 ## Method (every checker — this is how you avoid rubber-stamping)
 
-1. **Derive independently, then compare.** You are given the producer's *inputs* and its *output*,
-   never its reasoning. Form your own answer from the inputs first — what tasks *should* this design
-   have, how big *should* this card be — and only then read the artifact and diff it against yours.
-   Reading the producer's justification first and nodding along is the failure mode this whole layer
-   exists to prevent.
-2. **Verdict every criterion.** Return a row for every id in your section — `pass`, `fail`, or `na`.
-   An omission is a malformed result. `na` needs evidence for *why* it does not apply.
+1. **Derive independently, then compare — and note that the artifact contains the producer's
+   reasoning, so the discipline is on you.** You are given the producer's *inputs* and its *output*.
+   The output is not a bare answer: `slice.md` and `design.md` argue their case, and reading that
+   argument first is the fastest way to end up agreeing with it. Nothing withholds it from you, so
+   the defence is **procedural**: form your own answer **from the inputs, before you open the
+   artifact** — what tasks *should* this design have, how big *should* this card be — write it down,
+   and only then read the producer's and diff the two. A disagreement you reached independently is a
+   finding; a disagreement you failed to think of because the producer's rationale was persuasive is
+   the failure mode this whole layer exists to prevent.
+2. **Verdict every criterion — and know that this is checked.** Return a row for every id in your
+   section (plus every `LOCAL-` id the addendum adds) — `pass`, `fail`, or `na`. An omission is a
+   **malformed result**: the orchestrator holds the same id set it handed you, compares your table
+   against it, and on any missing id **does not advance the card, does not apply the gate, and
+   re-dispatches you** with the omitted ids named. A `pass` over a partial table is not a pass. `na`
+   needs evidence for *why* it does not apply.
 3. **Evidence, not adjectives.** Each verdict's `evidence` says what you checked and what you found,
    citing a line: `"design.md:31-58 — 6 tasks; AC-3 (offline retry) maps to none"`. Never
    `"looks complete"`. A passing criterion with no evidence of the check is a skim, and `/retro` will
@@ -36,7 +44,8 @@ file are plugin-owned and are never edited by `/retro`.
 ## intake
 
 Checks the card set proposed by `/refine` or `/requirement`, **before** the driver sees it. Your
-inputs: the spec (at `spec_path`), the proposed cards, the milestone plan, and the existing board.
+inputs: the spec (at `spec_path`), the proposed cards, the milestone plan, the existing board, and
+`size_limit` / `size_exclude` (for `INT-SIZED`).
 
 | id | criterion | severity when failed |
 |---|---|---|
@@ -47,13 +56,46 @@ inputs: the spec (at `spec_path`), the proposed cards, the milestone plan, and t
 | `INT-NO-OVERLAP` | no two cards claim the same work | blocking |
 | `INT-DAG` | `depends_on` is acyclic and every id names a real card or a proposed sibling | blocking |
 | `INT-MILESTONE` | every card sits in exactly one milestone, and no card depends on a card in a later milestone | blocking |
+| `INT-SIZED` | **no proposed card is projected to exceed `size_limit`** (see *The intake size estimate* below) | blocking |
 
 **Walk:** Read the requirement(s) first and list, in your own words, the observable behaviours it
 demands. Only then read the proposed cards. Map behaviours → cards: an unclaimed behaviour is
 `INT-COVERAGE`; two cards claiming one behaviour is `INT-NO-OVERLAP`. Then read each acceptance
 criterion and ask *what would I run to see this?* — "the system is robust" fails `INT-AC-OBSERVABLE`;
 "a request with no auth header returns 401" passes. Build the `depends_on` graph by hand and walk it
-for cycles and for milestone-order violations.
+for cycles and for milestone-order violations. Finally, size every card (below).
+
+### The intake size estimate (`INT-SIZED`)
+
+**A card the intake skill marks `right_sized: true` skips the slice phase entirely.** It therefore
+never meets `SLC-SIZE`, never gets an `estimated_lines`, and is never sized again before its code is
+written — the only size enforcement left to it is `DLV-SIZE`, which is *advisory* and fires after the
+fact, on a PR that is already open. **You are that card's only pre-code size check.** This is the same
+argument the split carve-out makes for giving a split *child* an `estimated_lines` ("no slicer will
+ever run on it again"), and it applies here for exactly the same reason.
+
+**Method — identical to `SLC-SIZE`'s.** For **each proposed card**: walk its acceptance criteria and
+name the files that must change. Use `Grep`/`Glob` on the real codebase — find the modules that
+already exist, and judge each as *new file* vs *edit*. Estimate changed lines per file, **counting
+tests** (this project is TDD; a test file roughly matches the code it drives). Sum them. Show the
+per-file working in your `evidence` — a bare number is not evidence. Only `size_exclude` paths are
+omitted (lock files, vendored deps — `config.md`). Tests count.
+
+**Any card whose estimate exceeds `size_limit`** (`config.md`, default 500) → **blocking.** The intake
+skill must slice that card smaller and re-check; each resulting card is subject to `INT-SIZED` in turn,
+so splitting one over-budget card into two over-budget cards does not pass either.
+
+**Return `estimated_lines` for every proposed card** in your `phase_doc` — whether or not it breaches.
+The intake skill persists it onto the card it writes, so a card that arrives at the board already
+right-sized still carries a size estimate: `DLV-SIZE` has a baseline to report `actual_lines` against,
+and `/retro`'s under-estimation signal can see the card at all. Leave it empty at intake and it is
+empty forever.
+
+**Don't flag:** an estimate that stays comfortably under the limit but that you would have pitched
+somewhat differently (you are checking for a *ceiling breach* and for defensible reasoning, not
+auditing arithmetic); a card whose size you cannot estimate because the codebase does not exist yet
+(a greenfield first card) — say so in the evidence, give your best bound from the acceptance criteria
+alone, and only fail it if even that bound breaches.
 
 **Don't flag:** card granularity you would have chosen differently but that meets `INT-VERTICAL`
 (taste is not a defect); a card whose acceptance criteria are thin *because the requirement is thin*
