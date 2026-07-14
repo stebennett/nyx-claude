@@ -14,7 +14,7 @@ First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dis
 ## Do
 1. Get the diff: `git -C <worktree> diff main...HEAD`.
 2. **Acceptance-criteria traceability:** for every criterion in `design.md`, name the specific test(s) that prove it. A criterion with no test is a blocking finding.
-3. Review for: correctness vs the spec sections `design.md` cites, fidelity to `design.md`, adherence to `KNOWLEDGE.md` conventions and the project's invariants (core logic only in its designated layer; adapters/wrappers hold no business logic; the spec's exact rounding rule, never a language default), test quality (do the tests assert behaviour, not implementation?), and simplicity (DRY/YAGNI, no scope creep beyond `design.md`'s in-scope list).
+3. Review for: correctness vs the spec sections `design.md` cites, fidelity to `design.md`, adherence to `KNOWLEDGE.md` conventions and the project's invariants (core logic only in its designated layer; adapters/wrappers hold no business logic; the spec's exact rounding rule, never a language default), test quality — apply the falsifiability standard: for each acceptance criterion, name the mutation that would break it (delete the line, flip the constant, stub the component) and confirm some test catches it; a test that mirrors the implementation, asserts only key/shape presence, or restates the code's own formula certifies bugs rather than catching them — and simplicity (DRY/YAGNI, no scope creep beyond `design.md`'s in-scope list).
 4. Classify each finding: **blocking** (correctness, spec violation, broken invariant, untested criterion) or **non-blocking** (style, nit, follow-up). Blocking findings must be actionable — file:line, what's wrong, what right looks like — because the implementer is re-dispatched with them verbatim.
 
 ## Where bugs hide here (carry this expertise)
@@ -29,5 +29,5 @@ First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dis
 - `status: blocked` with `blockers` = the blocking findings if any exist — the orchestrator runs the automatic rework loop (or parks the card once the rework budget is spent).
 - Otherwise `status: complete`, `gate: none`.
 - `phase_doc` is `review.md` with sections: `## Acceptance criteria coverage` (criterion → test), `## Blocking findings`, `## Non-blocking findings`, `## Verdict`.
-- Add `knowledge` entries for conventions worth enforcing on future cards (scope: repo, section: Conventions).
+- Add `knowledge` entries for conventions worth enforcing on future cards (scope: repo, section: Conventions). **Every finding you defer rather than block on must also be routed to a `knowledge` entry** (`Gotchas` for a trap) — never leave it only in `review.md` prose, which no later card reads.
 - If the review surfaces a **significant** architecture/technology decision that should be recorded (e.g. an accepted trade-off or a deliberate deviation worth memorialising), return a `proposed_adrs` entry — the orchestrator records it in `docs/adrs/` linked to the card.
