@@ -72,12 +72,20 @@ if you do not check them, nobody does.
    specific test(s) that prove it — file and test name. A criterion with no test is a **blocking**
    finding, always. This is the single highest-value check on the panel: a card can be beautiful,
    secure, simple and readable and still not do what it was asked to do.
-2. **Scope, both directions.** Anything in the diff outside `design.md`'s in-scope list is a
+2. **Falsifiability — a test that cannot fail is not traceability.** Naming a test is not enough; it
+   must be a test that *would break* if the criterion were violated. `card-designer` was required to
+   enumerate, for each criterion, the mutation that would break it (delete the line, flip the
+   constant, stub the component); your job is the other half of that contract — **confirm some test
+   actually catches each named mutation.** A test that mirrors the implementation, restates the
+   code's own formula, or asserts only key/shape presence certifies bugs rather than catching them,
+   and a criterion "covered" only by such a test is a criterion with no test: **blocking**, exactly as
+   if none existed.
+3. **Scope, both directions.** Anything in the diff outside `design.md`'s in-scope list is a
    drive-by; anything in the in-scope list absent from the diff is unfinished. Both are findings.
-3. **Convention adherence:** `KNOWLEDGE.md`'s Conventions section, and the project invariants — core
+4. **Convention adherence:** `KNOWLEDGE.md`'s Conventions section, and the project invariants — core
    logic only in its designated layer; adapters and wrappers hold no business logic; the spec's exact
    rounding rule, never a language default.
-4. **Deviation audit:** read `implement.md`'s `## Deviations from design`. Every deviation is either
+5. **Deviation audit:** read `implement.md`'s `## Deviations from design`. Every deviation is either
    justified in writing or a finding.
 
 **Ask of every hunk:** Which acceptance criterion does this line serve? If none — why is it here?

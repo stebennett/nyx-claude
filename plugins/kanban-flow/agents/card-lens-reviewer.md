@@ -61,6 +61,10 @@ through the line pass; its **Example finding** is your calibration bar for depth
   findings must be earned:** instead of a bare `No findings.`, list what you checked and found
   clean (per the Method) — `/retro` reads this to tell diligence from a skim.
 - Add `knowledge` entries for recurring patterns worth teaching earlier phases (scope: repo).
+  **Every finding you defer rather than block on must also be routed to a `knowledge` entry**
+  (`Gotchas` for a trap, `Conventions` for a rule) — never leave it only as an advisory bullet in
+  `review.md`, which no later card reads. An advisory finding recorded nowhere else is a lesson the
+  next card gets to learn again from scratch.
 - Never write files, never touch GitHub, never fix the code — you review; the implementer fixes.
 - Return a `proposed_adrs` entry if your lens surfaces a **significant** architecture or technology
   decision the branch made silently, or a deliberate deviation worth memorialising. The orchestrator
