@@ -49,13 +49,21 @@ own diff.
    ```bash
    {gh_command} pr view <pr_url> --json baseRefName,headRefName,body,state,files
    {gh_command} pr checks <pr_url>
-   git -C <worktree> diff --numstat main...HEAD
-   git -C <worktree> log --oneline main..HEAD
+   git -C <worktree> fetch origin main
+   git -C <worktree> diff --numstat origin/main...<the PR's branch>
+   git -C <worktree> log --oneline origin/main..<the PR's branch>
    ```
-   Paste real output into your evidence. Never report a result you did not observe.
+   **Name the PR's branch — the one your dispatch gave you (a slice PR's is the slice branch
+   `<type>/NNN-slug-<k>`, not the card's original branch) — never `HEAD`.** A worktree may have been
+   moved off its branch by an earlier agent, and a pump can die at any moment; `HEAD` is not a reliable
+   name for the code this PR carries. Paste real output into your evidence. Never report a result you
+   did not observe.
 
-2. **`DLV-BASE`** — `baseRefName` is `main`; `headRefName` matches the card's `branch`. A design PR's
-   branch ends `-design`; an implementation PR's does not.
+2. **`DLV-BASE`** — `baseRefName` is `main`; `headRefName` matches **the branch this PR was built
+   from**: the card's `branch` on a design or unsplit implementation PR, and **the slice branch
+   `<type>/NNN-slug-<k>` on a slice PR** — *not* the card's original implementation branch, which never
+   gets a PR of its own and is closed to changes for the whole shipping sequence. A design PR's branch
+   ends `-design`; an implementation PR's does not.
 
 3. **`DLV-BODY-TRUE`** — read the PR body claim by claim and find each one in the diff. A body
    claiming an acceptance criterion is implemented when no code or test in the diff serves it is

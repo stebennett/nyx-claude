@@ -14,6 +14,7 @@ checks:
   intake: on
   slice: on
   design: on
+  split: on
   deliver: on
 check_budget:
   intake: 2
@@ -84,15 +85,20 @@ the skills read it; **`/kanban` never rewrites it**, so it is safe to hand-edit.
   the hard cap on card size and leaves only `DLV-SIZE`'s after-the-fact warning.
   There is deliberately **no `implement` switch**: the implementer's checkers are
   `card-tester` and the lens panel, so an off switch there would silently skip
-  running the test suite. The implement chain is unconditional.
+  running the test suite. The implement chain is unconditional. `split: off`
+  disables the carve entirely — an oversized branch is never split and the human
+  gets one oversized PR, with only `DLV-SIZE`'s advisory warning about it.
 - **check_budget** — per-producer automatic rework loops before a card parks for
   the driver. Budgets are per-producer so a card that needed two design revisions
   does not arrive at implement with nothing left. `implement: 2` is the historic
   behaviour of the old single `reworks` counter. `deliver: 1` because a delivery
   check failing twice means something another rework pass will not fix — and it is
-  allowed **per PR**: a card ships two PRs (design, then implementation), each with
-  its own deliver check, and each gets the full allowance, so the shipped `1` is one
-  loop per PR, not one for the whole card. `split: 1` for the same reason as
+  allowed **per PR**: a card ships two PRs (design, then implementation) — and a
+  **split** card ships N implementation PRs, one per slice — each with its own
+  deliver check, and each gets the full allowance, so the shipped `1` is one loop
+  per PR, not one for the whole card. `/kanban` makes that real by resetting
+  `reworks.deliver` (and `reworks.implement`) to `0` when the design PR merges and
+  again on each slice merge with slices still to come. `split: 1` for the same reason as
   `deliver`: a split that fails `card-split-checker` twice is not going to work on
   a third try — `pr-splitter` is a safety net, not a routine path, and a repeated
   failure means the carve itself is unworkable, not that another attempt will find

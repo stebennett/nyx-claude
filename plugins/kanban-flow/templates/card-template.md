@@ -18,7 +18,8 @@ reworks:              # automatic rework loops consumed, per producer (budgets: 
   slice: 0            # card-slice-checker → card-slicer
   design: 0           # card-design-checker → card-designer
   implement: 0        # card-tester / the lens panel → card-implementer
-  deliver: 0          # card-deliver-checker → card-deliverer
+  split: 0            # card-split-checker / the per-slice acceptance lens → pr-splitter
+  deliver: 0          # card-deliver-checker → card-deliverer (per PR: reset when the design PR merges, and between slice PRs)
 review_lenses_failed: []   # lenses whose blocking findings sent the card back; only these re-run on the next panel pass (empty = run the full panel). Written by /kanban in the same state commit that increments reworks.implement; cleared when the panel passes clean.
 estimated_lines: ""   # projected changed lines, from whichever estimator sized this card: card-slicer (verified by card-slice-checker under SLC-SIZE), or — for a card that arrives `right_sized: true` — /refine or /requirement at intake (verified by card-intake-checker under INT-SIZED). A split child's is copied from the slicer's proposed_cards entry at the carve-out. The ceiling for both is config.md `size_limit`.
 actual_lines: ""      # changed lines card-deliver-checker measured on the implementation PR; vs estimated_lines it is /retro's signal that an estimator under-estimates — /retro tallies both populations (slicer-sized and intake-sized) separately

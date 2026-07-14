@@ -27,8 +27,12 @@ target repo, on a migration branch, and you never modify the plugin.
    a template file already registered in `template_overrides` (pointing at that path) is a
    deliberately-preserved override, **not** a leftover; only an *unregistered* copy counts.
    Also check each `docs/cards/CARD-*/card.md` for a legacy scalar or missing `reworks`,
-   **or a card still carrying a scalar `pr_url` (present or absent — either form means the
-   `pr_urls`/`split_slices` rewrite in Step 6 has not run on it)**, and compare the plugin's
+   **a `reworks` map missing the `split` key** (an older map had only
+   `{slice, design, implement, deliver}`; `pr-splitter`'s budget lives in `reworks.split`, and
+   `/kanban` reads a missing key as `0` **only because this step is what puts it on disk** — leave
+   it out and that claim is false), **or a card still carrying a scalar `pr_url` (present or
+   absent — either form means the `pr_urls`/`split_slices` rewrite in Step 6 has not run on it)**,
+   and compare the plugin's
    current `config.md` frontmatter keys against the repo's to detect any missing
    (additive-only).
    **If the version is already current AND no unregistered copy is present AND no card
@@ -76,10 +80,15 @@ target repo, on a migration branch, and you never modify the plugin.
      slice: 0
      design: 0
      implement: N     # the old counter only ever counted test/review→implement loops
+     split: 0
      deliver: 0
    ```
 
-   A card with **no** `reworks` key gets the all-zero map. Also backfill `estimated_lines: ""`,
+   A card with **no** `reworks` key gets the all-zero map. **A card whose map is present but
+   missing `split` gets `split: 0` added** — every other key untouched. The key is not cosmetic:
+   `reworks.split` is `pr-splitter`'s rework budget, and `/kanban` documents a missing key as
+   reading `0` *because `/migrate` normalises it on disk*. Skip it and that promise is unbacked.
+   Also backfill `estimated_lines: ""`,
    `actual_lines: ""`, and `review_lenses_failed: []` on every card lacking them (missing
    `review_lenses_failed` is safe — the full lens panel runs — so this is hygiene, not a bug fix).
 
@@ -102,7 +111,8 @@ target repo, on a migration branch, and you never modify the plugin.
    Step 5). Then set `kanban_flow_version` to the installed plugin version.
 
    This run adds `checks`, `check_budget`, `size_limit` and `size_exclude` (all with plugin defaults —
-   every check `on`, budgets 2 except `deliver: 1`, `size_limit: 500`). **Tell the driver in the PR
+   every check `on` (**including `checks.split`**, which older configs predate and which is the
+   escape hatch for the carve), budgets 2 except `split: 1` and `deliver: 1`, `size_limit: 500`). **Tell the driver in the PR
    body what `size_limit` means for them:** from the next `/kanban` pump, `card-slice-checker` will
    *force a split* on any card it projects over 500 changed lines including tests. That is a real
    behaviour change on an existing backlog, and it must not arrive as a surprise.
