@@ -87,7 +87,10 @@ the skills read it; **`/kanban` never rewrites it**, so it is safe to hand-edit.
   the driver. Budgets are per-producer so a card that needed two design revisions
   does not arrive at implement with nothing left. `implement: 2` is the historic
   behaviour of the old single `reworks` counter. `deliver: 1` because a delivery
-  check failing twice means something another deliverer pass will not fix.
+  check failing twice means something another rework pass will not fix — and it is
+  allowed **per PR**: a card ships two PRs (design, then implementation), each with
+  its own deliver check, and each gets the full allowance, so the shipped `1` is one
+  loop per PR, not one for the whole card.
   An **omitted** producer defaults to `2` — except `deliver`, which defaults to
   `1` — so an older config missing this key behaves exactly as the shipped
   values do. Likewise an omitted `checks` producer defaults to `on`, and an
