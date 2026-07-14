@@ -169,6 +169,14 @@ Count actual changed lines: sum `added + deleted` from `git -C <worktree> diff -
 **excluding** paths matching `size_exclude` (`config.md`). **Tests count.** Design PRs are exempt — a
 long design document is not a code-review problem; return `na`.
 
+**The card's own phase docs are excluded from the count.** That diff also carries `implement.md`,
+`test.md`, `review.md` (concatenated across the whole review panel), `pr-body.md` and `feedback.md`
+under the board dir — which shipped `size_exclude` omits as `docs/cards/**`. Do not count them, even
+if a local `size_exclude` forgets to: the budget measures **the change a human must review, not the
+paperwork describing it**, and `estimated_lines` — the number you report `actual_lines` against —
+estimated code + tests only. Counting the docs inflates every card against its own estimate and can
+breach `size_limit` on documentation volume alone. State in your `evidence` which paths you excluded.
+
 **A breach is `advisory`, not `blocking` — deliberately.** The code is written and the PR is open;
 re-dispatching `card-deliverer` cannot un-write it, so a blocking verdict would burn rework budget
 against a remedy that does not exist at this phase.

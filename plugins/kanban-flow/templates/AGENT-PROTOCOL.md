@@ -112,7 +112,7 @@ phase_doc: |
 ```
 
 - `status: needs-input` → orchestrator surfaces `open_questions` to the driver and re-dispatches you with answers.
-- `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode (budget: 2 loops), then parks the card.
+- `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode, up to `check_budget.implement` loops (`config.md` — budgets are per-producer and configurable; never assume a number), then parks the card.
 - `status: blocked` from any other phase → orchestrator parks the card with `blockers` shown on the board.
 - `status: complete` + `gate: slice` (slice phase only) → orchestrator applies the gate policy: auto-apply the split, or surface `proposed_cards` + `dependents_rewire` to the driver.
 - `status: complete` + `gate: design` → orchestrator applies the gate policy: auto-approve, or stop for the driver (domain-layer cards by default).
@@ -201,6 +201,17 @@ invariants, cross-cutting patterns, expensive-to-reverse trade-offs) are recorde
 `KNOWLEDGE.md`. Small conventions → `KNOWLEDGE.md ## Conventions`; traps → `## Gotchas`.
 - Any phase agent MAY return `proposed_adrs` when it makes or surfaces such a decision. You only
   *propose*: the orchestrator persists each ADR (numbering, file, index, `adrs:` card link) via
-  the `adr` skill. Design-phase ADRs are written once the design gate passes (auto or approved).
+  the `adr` skill. **Design-phase ADRs are written once the design *check* passes** —
+  `card-design-checker`'s `verdict: pass`, which comes *before* the design gate and the design PR.
+  The orchestrator holds them unwritten until then, because the `adr` skill reserves a number the
+  moment it writes, and an ADR the checker rejects would burn one on a decision that gets reworked.
+- **A design-phase agent therefore records its proposals in its `phase_doc` as well as in
+  `proposed_adrs`.** The hold spans a whole dispatch (the checker's), and a pump can end inside it —
+  at which point the only surviving copy of anything is what was persisted to disk. Your result block
+  is not persisted; your `phase_doc` is. Write each proposal out in full under a `## Proposed ADRs`
+  section (title, context, decision, consequences, any `supersedes`) **and** return it in
+  `proposed_adrs`: the section is the durable copy the checker verdicts and the orchestrator routes
+  from, not a replacement for the field. Nothing load-bearing may live only in a result block that
+  the next pump will never see.
 - Read `docs/adrs/README.md`'s index before proposing — to reverse an earlier decision, propose a
   new ADR with `supersedes: [ADR-NNNN]`; never propose a duplicate of a standing one.

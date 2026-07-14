@@ -35,6 +35,7 @@ size_exclude:
   - "composer.lock"
   - "vendor/**"
   - "node_modules/**"
+  - "docs/cards/**"
 layers:
   - infra
   - domain
@@ -102,9 +103,19 @@ the skills read it; **`/kanban` never rewrites it**, so it is safe to hand-edit.
   (`SLC-SIZE`, blocking); `card-deliver-checker` measures the real diff and, on a
   breach, must propose a concrete split into smaller PRs (`DLV-SIZE`, advisory).
   This is the real ceiling on card size in the system.
-- **size_exclude** — glob paths omitted from both counts: machine-authored files
-  a human never reviews. Lock files and vendored dependencies by default; add
-  your project's generated code (protobuf stubs, OpenAPI clients) here.
+- **size_exclude** — glob paths omitted from both counts: files that are not the
+  change a human must review. Lock files and vendored dependencies by default —
+  machine-authored and never read — **plus the board itself (`docs/cards/**`), so a
+  card's own phase docs do not count against its size budget.** That last exclusion
+  is what makes the two counts comparable: `estimated_lines` is an estimate of
+  **code + tests**, but the implementation branch also carries `implement.md`,
+  `test.md`, `review.md` (concatenated across the whole review panel), `pr-body.md`
+  and `feedback.md` — hundreds of lines of paperwork *about* the change. Counting
+  them inflates `actual_lines` against the estimate it is compared to, and lets a
+  card breach `size_limit` on documentation volume alone. The budget measures the
+  diff a human reviews, not the prose describing it. Add your project's generated
+  code (protobuf stubs, OpenAPI clients) here too. If you move the board with
+  `board_dir`, move this glob with it.
 - **layers** — the project's architectural layers, **in order**. The scheduler
   uses this order as the tie-break rank when picking the next ready card. Tag each
   card's `layer` with one of these values.
