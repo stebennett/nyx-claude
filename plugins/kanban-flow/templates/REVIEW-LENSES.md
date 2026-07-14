@@ -26,6 +26,11 @@ line-by-line pass), **Red flags** (concrete patterns, greppable where possible),
 - Stay in your lane: skip findings clearly owned by another lens unless severe and likely missed.
 - Max 10 findings — but never pad toward it. Two verified findings beat ten speculative ones.
 - Mention one notable good thing in your phase doc when you see it. Reviews teach.
+- Your returned `phase_doc` must open with exactly one `## [<lens>]` heading — your lens's tag,
+  nothing else. The orchestrator merges the panel's docs into a single `review.md` by locating
+  each lens's section **by that heading**, and on a rework replaces only the re-run lenses'
+  sections. Two headings, a different level, or a renamed tag and your findings are lost — or
+  another lens's are overwritten.
 - You do not touch GitHub. There is no PR yet.
 
 ## Method (every lens — this is how you avoid being a shallow reviewer)

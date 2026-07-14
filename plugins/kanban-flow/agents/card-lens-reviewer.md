@@ -52,10 +52,14 @@ through the line pass; its **Example finding** is your calibration bar for depth
   never `blocked`.
 - Otherwise `status: complete`, `gate: none`, `phase: review`.
 - `phase_doc` is your lens's slice of `review.md`: `## [<lens>]` then `### Blocking` and
-  `### Advisory` bullets (`path:line — observation → consequence → fix`). **Zero findings must be
-  earned:** instead of a bare `No findings.`, list what you checked and found clean (per the Method)
-  — `/retro` reads this to tell diligence from a skim. The orchestrator concatenates the panel's
-  phase docs into one `review.md`.
+  `### Advisory` bullets (`path:line — observation → consequence → fix`). **Your `phase_doc` must
+  open with exactly one `## [<lens>]` heading — your lens's tag, nothing else — and every finding
+  must sit beneath it.** The orchestrator merges the panel's docs into a single `review.md` by
+  locating each lens's section **by that heading**, and on a rework replaces only the re-run
+  lenses' sections. A second top-level heading, a different level, or a renamed tag and your
+  section cannot be found: your findings are lost, or another lens's are overwritten. **Zero
+  findings must be earned:** instead of a bare `No findings.`, list what you checked and found
+  clean (per the Method) — `/retro` reads this to tell diligence from a skim.
 - Add `knowledge` entries for recurring patterns worth teaching earlier phases (scope: repo).
 - Never write files, never touch GitHub, never fix the code — you review; the implementer fixes.
 - Return a `proposed_adrs` entry if your lens surfaces a **significant** architecture or technology
