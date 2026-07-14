@@ -13,7 +13,13 @@ worktree: ""          # absolute path of the current branch's worktree
 design_pr_url: ""     # design PR (slice.md + design.md + ADRs); set when it opens, kept after merge for traceability
 pr_url: ""            # implementation PR (code + implement/test/review docs); set when it opens, kept after merge
 adrs: []              # ADR ids this card produced, e.g. [ADR-0007]; appended by /kanban via the adr skill (the append reserves the number; the file merges via the card's PR)
-reworks: 0            # automatic test/review→implement loops consumed (budget 2); flow-metric input for /retro
+reworks:              # automatic rework loops consumed, per producer (budgets: config.md `check_budget`); flow-metric input for /retro
+  slice: 0            # card-slice-checker → card-slicer
+  design: 0           # card-design-checker → card-designer
+  implement: 0        # card-tester / the lens panel → card-implementer
+  deliver: 0          # card-deliver-checker → card-deliverer
+estimated_lines: ""   # changed lines card-slicer projected, verified by card-slice-checker; the SLC-SIZE ceiling is config.md `size_limit`
+actual_lines: ""      # changed lines card-deliver-checker measured on the implementation PR; vs estimated_lines it is /retro's signal that the slicer under-estimates
 started: ""           # ISO date the card left backlog (set by /kanban)
 delivered: ""         # ISO date the card's PR merged (set by /kanban reconcile)
 created: 2026-06-29   # ISO date
