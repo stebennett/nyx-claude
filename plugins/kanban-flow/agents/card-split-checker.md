@@ -1,5 +1,6 @@
 ---
 name: card-split-checker
+description: Checks pr-splitter's work against the SPL-* criteria. Re-derives the union of the proposed slices itself rather than trusting split.md — SPL-NO-LOSS is the criterion that matters, because a splitter that silently drops code ships a broken card, and an exact union is also what proves the slices are byte-for-byte the code the lens panel already approved. Verifies each slice is within size_limit, carries real gate output proving it is green, holds whole files only, and depends on no later slice. Read-only Bash; touches no GitHub. Produces split-check.md.
 model: sonnet
 tools: Read, Grep, Glob, Bash, Skill
 ---

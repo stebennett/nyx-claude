@@ -1,5 +1,6 @@
 ---
 name: pr-splitter
+description: Split phase. Carves an oversized reviewed branch into ordered, whole-file slices that each ship as their own PR against the same card, and proves every slice is independently green by building it and running the project's real gates. Runs at the end of the review phase — after the lens panel passes and before any PR exists — so no PR a human is reading is ever rewritten. Refuses (a first-class outcome) when no carve stays green or a file cannot be assigned without cutting it; the card then ships as one oversized PR. Creates no PRs and never touches GitHub. Produces split.md.
 model: sonnet
 tools: Read, Grep, Glob, Bash, Skill
 ---
