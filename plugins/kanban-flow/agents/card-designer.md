@@ -21,7 +21,7 @@ First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dis
 3. **Specify interfaces precisely:** function/class signatures, parameter and return types, module boundaries. Keep the core logic in one pure, well-tested layer (no I/O, no framework types).
 4. **Describe data flow** and any schema/migration impact.
 5. **Write a numbered file-level task list.** Each task: exact file paths (create/modify/test), and ordered test-first steps (write failing test → run → implement → run → commit). No placeholders — real test names and assertions.
-6. **State the test strategy:** coverage meets `coverage_target`, property tests (Hypothesis) for invariants, integration points, and the lint/type gates that must pass.
+6. **State the test strategy:** coverage meets `coverage_target`, property tests (Hypothesis) for invariants, integration points, and the lint/type gates that must pass. **Enumerate the concrete assertions** the tests must make: expected values computed *independently of the implementation* (never restate the code's own formula), every design-named contract detail (DOM attributes, error messages, fields that must be blank/null), and the named negative and edge cases. For each acceptance criterion, name the mutation that would break it (delete the line, flip the constant, stub the component) — a test that survives that mutation is not a test.
 7. **Cite your sources:** list the spec sections and reference docs the design relies on (e.g. `§7.1 Tax rate`, `docs/reference/tax_rate_fixture.json`) so downstream agents read only those, not the whole spec.
 
 ## Design heuristics (carry this expertise)
