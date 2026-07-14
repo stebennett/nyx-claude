@@ -2066,6 +2066,28 @@ In `skills/refine/SKILL.md`, insert a new step between step 4 (milestones) and s
    catching an unobservable acceptance criterion or a dependency cycle. That is what this step buys.
 ```
 
+- [ ] **Step 2b: Fix /refine's card creation — it still writes the OLD scalar `reworks`**
+
+`/refine` is the only place that mints a card's frontmatter by hand rather than from the template, and it still writes the retired scalar. Task 10 changed `reworks` to a per-producer map; a card `/refine` creates today would carry the wrong shape from birth. (`/requirement` and `/kanban`'s split carve-out both build from `card-template.md`, so they inherit the map correctly — this is the only leak.)
+
+In `skills/refine/SKILL.md`, in the "On approval, write" step, replace:
+
+```markdown
+   `docs/cards/CARD-NNN-<slug>/card.md` from the card template with `status: backlog`,
+   `phase: backlog`, the chosen `type`/`layer`/`reqs`/`depends_on`, empty
+   `branch`/`worktree`, `reworks: 0`, `right_sized` per `INTAKE.md`, and today's date.
+```
+
+with:
+
+```markdown
+   `docs/cards/CARD-NNN-<slug>/card.md` from the card template with `status: backlog`,
+   `phase: backlog`, the chosen `type`/`layer`/`reqs`/`depends_on`, empty
+   `branch`/`worktree`, the template's all-zero **`reworks` map** (`{slice, design,
+   implement, deliver}` — never the retired scalar `reworks: 0`), empty
+   `estimated_lines`/`actual_lines`, `right_sized` per `INTAKE.md`, and today's date.
+```
+
 - [ ] **Step 3: Add the check step to /requirement**
 
 In `skills/requirement/SKILL.md`, in step 5 (`**Propose — once.**`), insert immediately **before** the line `   Ask for approval, edits, or removals. Iterate until approved. **Write nothing before`:
