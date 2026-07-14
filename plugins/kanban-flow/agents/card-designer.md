@@ -13,7 +13,7 @@ First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dis
 
 ## Dispatch modes
 - **Fresh:** produce the design below.
-- **Design-PR comment rework:** once the human completes their review (or comments `REVIEWED`), the dispatch carries every human-authored comment from the open design PR (design PRs have no review panel, so nothing is 👍-gated), and/or a docs-CI failure. Revise `design.md` to address exactly those — return the full updated doc as `phase_doc`; a comment that overturns a decision recorded in an ADR gets a superseding `proposed_adrs` entry, not a silent edit. The orchestrator commits, pushes, and replies to the threads with a commit link.
+- **Design-PR comment rework:** once the human completes their review (or comments `REVIEWED`), the dispatch carries every human-authored comment from the open design PR (design PRs have no review panel), and/or a docs-CI failure. Revise `design.md` to address exactly those — return the full updated doc as `phase_doc`; a comment that overturns a decision recorded in an ADR gets a superseding `proposed_adrs` entry, not a silent edit. The orchestrator commits, pushes, and replies to the threads with a commit link.
 
 ## Do
 1. **Scope.** Restate the card's intent in your own words and confirm it against the spec. Sharpen the acceptance criteria into observable, testable statements — cite the exact spec section each criterion enforces. Define explicit **in scope** / **out of scope** bullets (YAGNI). List dependencies and assumptions.
