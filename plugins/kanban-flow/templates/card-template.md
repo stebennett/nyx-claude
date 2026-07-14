@@ -18,6 +18,7 @@ reworks:              # automatic rework loops consumed, per producer (budgets: 
   design: 0           # card-design-checker → card-designer
   implement: 0        # card-tester / the lens panel → card-implementer
   deliver: 0          # card-deliver-checker → card-deliverer
+review_lenses_failed: []   # lenses whose blocking findings sent the card back; only these re-run on the next panel pass (empty = run the full panel). Written by /kanban in the same state commit that increments reworks.implement; cleared when the panel passes clean.
 estimated_lines: ""   # changed lines card-slicer projected, verified by card-slice-checker; the SLC-SIZE ceiling is config.md `size_limit`
 actual_lines: ""      # changed lines card-deliver-checker measured on the implementation PR; vs estimated_lines it is /retro's signal that the slicer under-estimates
 started: ""           # ISO date the card left backlog (set by /kanban)
