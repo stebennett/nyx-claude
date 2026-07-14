@@ -548,7 +548,14 @@ Run:
 ```bash
 rtk proxy grep -c "estimated_lines" plugins/kanban-flow/agents/card-slicer.md
 ```
-Expected: `4` or more.
+Expected: `2` — the field is named once in the right-sized Return bullet and once in the split Return bullet. (The `## Do` step and the heuristics talk about "changed lines" and `size_limit` without naming the field.)
+
+Also confirm the other four edits landed:
+```bash
+rtk proxy grep -c "Estimate the size of every card" plugins/kanban-flow/agents/card-slicer.md   # -> 1
+rtk proxy grep -c "size_limit" plugins/kanban-flow/agents/card-slicer.md                        # -> 4
+rtk proxy grep -c "## Size estimate" plugins/kanban-flow/agents/card-slicer.md                  # -> 2
+```
 
 - [ ] **Step 6: Commit**
 
