@@ -75,4 +75,11 @@ section), and `KNOWLEDGE.md`. Your dispatch gives you `card.md`, the `pr_url`, t
   evidence with real command output), `## Size` (`actual_lines`, the excluded paths, and against
   `estimated_lines` from the card), `## Blocking findings`, `## Advisory findings` (a `DLV-SIZE`
   breach's proposed PR split lives here, in full).
-- `status: blocked` only if you cannot check at all (`{gh_command}` failing, PR unreachable).
+- `status: blocked` only if you cannot check at all (`{gh_command}` failing, PR unreachable). Note this
+  differs from the sibling checkers, which return `needs-input` when they cannot check: an unreachable
+  `gh` or a dead network is an **infrastructure** failure with nothing for the driver to *answer*, so
+  it parks the card rather than posing a question. Deliberate — do not "align" it with the others.
+- Add `knowledge` entries for recurring delivery traps worth teaching earlier phases (scope: repo,
+  section: Gotchas) — a PR body that keeps overclaiming, a CI job that flakes on the same step, a
+  phase doc that keeps failing to ride its PR. An empty `KNOWLEDGE.md` after many cards is a process
+  failure.
