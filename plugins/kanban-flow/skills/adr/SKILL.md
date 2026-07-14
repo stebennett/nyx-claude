@@ -16,12 +16,29 @@ ADRs use the Cognitect lightweight format
 
 ## When you run
 
-The orchestrator invokes you once it has decided to persist a phase result that
-contains `proposed_adrs`:
+The orchestrator invokes you once it has decided a proposal is safe to write. **Writing
+is not free: you reserve a number the moment you write**, so an ADR written for work that
+is then reworked burns a number on a decision that gets made again. The routing points
+follow from that:
 
-- **design** phase → at the **design gate**, on driver `approve`.
-- **plan / implement / test / review** phases → when that phase's `result` is
-  processed (the same point the phase doc is persisted).
+- **design** phase → **when `card-design-checker` returns `verdict: pass`** (or when
+  `checks.design` is `off`). That is **before** the design gate and before the design PR
+  opens — *not* at the gate, and *not* on a driver `approve`: under the default
+  `design: pr` gate policy there is no driver approve at all, because the design PR **is**
+  the review. `DSG-ADR-NEEDED` blocks on an ADR that duplicates or contradicts a standing
+  one, so the orchestrator holds the designer's proposals unwritten until that check
+  clears; a `verdict: fail` routes nothing, and the reworked `design.md` brings its own
+  proposals which replace the old ones wholesale.
+  The proposals the orchestrator hands you are read from **`design.md`'s `## Proposed ADRs`
+  section on disk** (the designer is required to write them there), never from a result
+  block held in memory — a pump can end inside the checker's dispatch, and only disk
+  survives it. Because that read can therefore happen twice, **routing is idempotent**: the
+  orchestrator passes you only the proposals the card's `adrs:` list does not already
+  account for, and if it passes you none, there is nothing to write.
+- **implement / test / review** phases → when that phase's `result` is processed (the same
+  point the phase doc is persisted). There is no checker holding these back.
+
+(There is no `plan` phase. It was folded into `design`.)
 
 You always receive: the `card_id` (e.g. `CARD-015`), the today's date (ISO), and the
 list of `proposed_adrs`, each shaped:

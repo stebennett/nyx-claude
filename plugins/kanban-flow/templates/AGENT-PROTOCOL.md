@@ -8,7 +8,7 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   to this card's git worktree), the full text of `card.md`, and the prior phase docs **your phase
   needs** (the orchestrator sends only those — don't expect all of them).
 - **Doctrine paths:** the absolute path to the plugin's `AGENT-PROTOCOL.md` (this file) and the
-  repo's `PROTOCOL-ADDENDUM.md`; `pr-expert-reviewer` also receives the plugin's `REVIEW-LENSES.md`
+  repo's `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives the plugin's `REVIEW-LENSES.md`
   path. Read the protocol here, then layer the addendum — never read a `docs/cards/` copy.
 - Exception: the **slice** phase runs before any worktree exists, so `card-slicer` receives no
   `worktree`; it instead receives the card's current **dependents** (ids that `depends_on` it).
@@ -17,11 +17,12 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   branch when the dispatch notes the PR is already open.
 - A **PR-comment** dispatch (implement phase: implementation-PR comments; design phase:
   design-PR comments) carries the review-complete comment set (id, path, line, body; review-body
-  items flagged as summary) — every human-authored comment plus any 👍'd panel comment; address
-  exactly those and never touch the comment threads — the orchestrator replies (with a commit link)
-  and the human resolves.
-- A **pr-review** dispatch (`pr-expert-reviewer`, one per lens after an implementation PR opens)
-  carries a `lens` and the `pr_url` instead of prior phase docs.
+  items flagged as summary) — every human-authored comment; address exactly those and never touch
+  the comment threads — the orchestrator replies (with a commit link) and the human resolves.
+- A **review** dispatch (`card-lens-reviewer`, one per lens, in parallel, at the review phase) carries
+  a `lens` and reviews the branch diff in the `worktree` — before any PR exists.
+- A **check** dispatch (a `card-*-checker`) carries the producer's inputs and its output artifact, and
+  the plugin's `CHECK-CRITERIA.md` path. See the Checker contract below.
 - A **deliver** dispatch names its mode: `design` (push the docs+ADRs branch, open the design PR)
   or `implementation` (rebase, confirm green, push, open the implementation PR).
 
@@ -41,11 +42,13 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   every later card to build on.
 - You MAY create and edit **code** files — but only inside `worktree` (use absolute paths under it).
   The slice and design phases produce no code; a design branch is docs-only.
-- **GitHub is off-limits to phase agents**, with two exceptions: the deliver phase pushes the branch
-  and opens the PR; the pr-review phase posts its lens's findings as **one `COMMENT` review** with
-  `[lens]`-prefixed inline comments. No agent ever approves, requests changes, replies to, resolves,
-  or reacts to PR threads — the review-complete signal, 👍 triage of panel comments, and resolution
-  belong to the human.
+- **GitHub is off-limits to phase agents, with exactly one exception:** the deliver phase pushes the
+  branch and opens the PR. Nothing else. The review panel runs **before** the PR opens, against the
+  branch diff in the worktree, and returns findings to the orchestrator — it does not comment on
+  GitHub. `card-deliver-checker` reads the PR (`gh pr view`, `gh pr checks`) but mutates nothing. No
+  agent ever comments, approves, requests changes, replies to, resolves, or reacts to a PR thread —
+  the review-complete signal and thread resolution belong to the human, and the orchestrator alone
+  replies with commit links.
 
 ## Doctrine (expertise every agent carries)
 Distilled from expert review of this codebase and domain — treat these as standing knowledge:
@@ -74,7 +77,7 @@ Emit exactly one fenced ```result block, valid YAML:
 
 ```result
 status: complete            # complete | blocked | needs-input
-phase: <slice|design|implement|test|review|deliver|pr-review>
+phase: <slice|design|implement|test|review|deliver|check>
 card: CARD-NNN
 gate: none                  # none | design | slice  (which gate this phase triggers; never "deliver")
 summary:
@@ -109,11 +112,98 @@ phase_doc: |
 ```
 
 - `status: needs-input` → orchestrator surfaces `open_questions` to the driver and re-dispatches you with answers.
-- `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode (budget: 2 loops), then parks the card.
+- `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode, up to `check_budget.implement` loops (`config.md` — budgets are per-producer and configurable; never assume a number), then parks the card.
 - `status: blocked` from any other phase → orchestrator parks the card with `blockers` shown on the board.
 - `status: complete` + `gate: slice` (slice phase only) → orchestrator applies the gate policy: auto-apply the split, or surface `proposed_cards` + `dependents_rewire` to the driver.
 - `status: complete` + `gate: design` → orchestrator applies the gate policy: auto-approve, or stop for the driver (domain-layer cards by default).
 - The deliver gate is triggered by a card reaching `deliver` status, not by any agent `gate` value. No agent should ever emit `gate: deliver`.
+
+## Checker contract (checker agents only)
+
+Every agent in this system is either a **producer** — it creates an artifact and can be wrong — or a
+**checker** — it verifies a producer's output. **Checkers are terminal: nothing checks a checker.**
+That is what stops the regress; a checker's backstop is the human, at the intake and slice gates and
+at the two PR merges. Never add a checker for a checker.
+
+| Producer | Its checker(s) |
+|---|---|
+| intake (`/refine`, `/requirement`) | `card-intake-checker` |
+| `card-slicer` | `card-slice-checker` |
+| `card-designer` | `card-design-checker` |
+| `card-implementer` | `card-tester`, then the `card-lens-reviewer` panel |
+| `card-deliverer` | `card-deliver-checker` |
+
+**Two kinds of checker.** The table names a *role*, not a return format. `card-tester` and the lens
+panel check the implementer by running the suite and reviewing the diff, and they keep their own
+existing contract (`status: blocked` + `blockers`). The **result fields below bind only the four
+dedicated `card-*-checker` agents** — `card-intake-checker`, `card-slice-checker`,
+`card-design-checker`, `card-deliver-checker` — which is why `checks` takes one of
+`intake | slice | design | deliver` and no `implement` value exists. Everything *else* in this
+section — independence, evidence over adjectives, and the terminal rule — binds every checker in the
+table.
+
+If you are a checker, these rules bind you in addition to everything above.
+
+**You receive the producer's inputs and its output — and the output argues its own case.** Be honest
+about what that means: `slice.md` and `design.md` *contain* the producer's reasoning, and your
+dispatch hands them to you whole. Nothing withholds the justification from you, so **the defence is
+procedural, and it is yours to keep**: derive your own view **from the inputs, before you open the
+producer's artifact** — write down what you would have concluded — and only then read the artifact
+and diff it against yours. A checker that reads the producer's justification first is only agreeing
+with it, and it will not notice that it is.
+
+**You write nothing and mutate nothing.** No files, no GitHub. You return `phase_doc`; the
+orchestrator persists it. Your criteria come from your section of the plugin's `CHECK-CRITERIA.md`
+(absolute path in your dispatch), then any `## Check criteria — <target>` section of the repo's
+`PROTOCOL-ADDENDUM.md` layered on top. Local criteria carry a `LOCAL-` id prefix.
+
+**Your `result` block carries four extra fields:**
+
+```result
+status: complete
+phase: check
+checks: design              # intake | slice | design | deliver
+card: CARD-NNN
+gate: none                  # a checker never triggers a gate
+verdict: fail               # pass | fail
+criteria:                   # EVERY criterion in your set — an omission is a malformed result
+  - id: DSG-AC-COVERED
+    verdict: fail           # pass | fail | na
+    evidence: "design.md:31-58 — task list has no task for AC-3 (offline retry)"
+findings:                   # [] when verdict is pass
+  - criterion: DSG-AC-COVERED
+    severity: blocking      # blocking | advisory
+    location: "design.md:31"
+    detail: "AC-3 'retries when offline' has no corresponding design task."
+    remedy: "Add a task covering the retry path, or move AC-3 out of scope explicitly."
+phase_doc: |
+  <full markdown of the check doc>
+```
+
+Three rules give this contract its teeth:
+
+1. **Every criterion in your set gets a verdict — and the orchestrator VERIFIES this.** You may not
+   silently skip the criterion you found inconvenient. Use `na` — with evidence for *why* it does not
+   apply — rather than omitting it. **This is enforced, not requested.** The orchestrator handed you
+   `CHECK-CRITERIA.md` and the addendum, so it holds your exact id set, and it compares your
+   `criteria` table against it before it does anything else with your result. **A table missing any
+   id is a malformed result: the card does not advance, no gate is applied, your doc is not
+   persisted, and you are re-dispatched with the ids you omitted named back at you.** A
+   `verdict: pass` over an empty or partial table is not a pass — it is a checker that did not check,
+   and it is caught. (This costs the producer nothing: an incomplete check is *your* failure, not a
+   defect in the work, so it never spends the producer's rework budget.)
+2. **Every finding cites a `location` in the artifact.** A finding with no location is **invalid and
+   the orchestrator drops it.** If you cannot point at a line, you do not have a finding.
+3. **`verdict: fail` if and only if at least one finding is `blocking`.** Advisory findings are
+   recorded and ride the PR for the human; they never trigger rework.
+
+**Blocking findings auto-rework the producer** — the orchestrator re-dispatches it with your findings
+verbatim, up to that producer's `check_budget`, then parks the card for the driver. Make every
+blocking finding actionable: what is wrong, where, and what right looks like.
+
+**Agreement must be earned.** A `pass` with thin evidence is worse than no check at all, because it
+manufactures confidence. Your `evidence` for each passing criterion states what you actually verified
+— not "looks fine". `/retro` reads these to tell diligence from a skim.
 
 ## Architecture Decision Records (ADRs)
 
@@ -123,6 +213,17 @@ invariants, cross-cutting patterns, expensive-to-reverse trade-offs) are recorde
 `KNOWLEDGE.md`. Small conventions → `KNOWLEDGE.md ## Conventions`; traps → `## Gotchas`.
 - Any phase agent MAY return `proposed_adrs` when it makes or surfaces such a decision. You only
   *propose*: the orchestrator persists each ADR (numbering, file, index, `adrs:` card link) via
-  the `adr` skill. Design-phase ADRs are written once the design gate passes (auto or approved).
+  the `adr` skill. **Design-phase ADRs are written once the design *check* passes** —
+  `card-design-checker`'s `verdict: pass`, which comes *before* the design gate and the design PR.
+  The orchestrator holds them unwritten until then, because the `adr` skill reserves a number the
+  moment it writes, and an ADR the checker rejects would burn one on a decision that gets reworked.
+- **A design-phase agent therefore records its proposals in its `phase_doc` as well as in
+  `proposed_adrs`.** The hold spans a whole dispatch (the checker's), and a pump can end inside it —
+  at which point the only surviving copy of anything is what was persisted to disk. Your result block
+  is not persisted; your `phase_doc` is. Write each proposal out in full under a `## Proposed ADRs`
+  section (title, context, decision, consequences, any `supersedes`) **and** return it in
+  `proposed_adrs`: the section is the durable copy the checker verdicts and the orchestrator routes
+  from, not a replacement for the field. Nothing load-bearing may live only in a result block that
+  the next pump will never see.
 - Read `docs/adrs/README.md`'s index before proposing — to reverse an earlier decision, propose a
   new ADR with `supersedes: [ADR-NNNN]`; never propose a duplicate of a standing one.
