@@ -183,6 +183,55 @@ violates no doctrine (`DSG-*` is not a taste review — the lens panel reviews t
 generality the spec does not ask for (YAGNI is working); an ADR-worthy decision the design *does*
 propose as an ADR.
 
+## split
+
+Checks `pr-splitter`, dispatched at the end of the review phase once the lens panel has passed and
+**before any PR exists**. Your inputs: the original branch diff (`git diff --numstat main...HEAD`),
+`split.md` (the ordered slices — files, why, estimated lines, the green evidence for each), `design.md`,
+`implement.md`, `review.md`, and `size_limit` / `size_exclude`.
+
+| id | criterion | severity when failed |
+|---|---|---|
+| `SPL-NO-LOSS` | the union of the slices equals the original branch diff **exactly** — nothing dropped, nothing invented | blocking |
+| `SPL-GREEN` | each slice's green evidence is **real command output**, not a claim | blocking |
+| `SPL-SIZE` | every slice is within `size_limit` | blocking |
+| `SPL-ORDER` | no slice depends on a later one | blocking |
+| `SPL-FILES` | whole files only; no file appears in two slices | blocking |
+| `SPL-COHERENT` | each slice is reviewable on its own | advisory |
+
+**`SPL-NO-LOSS` is the criterion that matters most in this section.** A splitter that silently drops
+code ships a broken card, and the defect is invisible to every slice's own review — each slice looks
+complete on its own terms, so nothing downstream of the split would ever catch it. It is also the
+guarantee that makes it safe for the lens panel to have reviewed the whole diff *before* the split: if
+the union of the slices is exactly the diff the panel approved, the slices are byte-for-byte the code
+it already reviewed — `pr-splitter` is a **redistribution, not a rewrite**, never a second chance to
+change the code unreviewed. **You must re-derive the union yourself** — diff the original branch
+against `main`, diff each slice's files against `main`, take the union, and compare it directly against
+the original. Never take `split.md`'s account of the comparison on trust.
+
+**Walk:** Before opening `split.md`, run the original branch's diff yourself and form your own view of
+a defensible carve — which files are cohesive, which large file would be awkward to place — the same
+discipline the Method section asks of every checker. Only then read `split.md`. For `SPL-NO-LOSS`:
+take the full file list from the original diff; take the union of every slice's file list; the two
+sets must match exactly, and for every file in both, the slice's content for it must be byte-identical
+to the original branch's — re-diff it, don't eyeball it. For `SPL-GREEN`: for each slice, confirm the
+evidence is a pasted command plus its real output, gathered against the scratch branch the spec
+describes (fresh `main` + slices `1..k`'s files) — not a bare assertion that it "passes". For
+`SPL-SIZE`: sum `added + deleted` per slice from its own diff against `main`, excluding `size_exclude`,
+and compare against `size_limit` yourself rather than trusting the splitter's arithmetic. For
+`SPL-ORDER`: walk the slices in the given order and confirm no earlier slice's files reference
+(import, call, extend) something only a later slice introduces. For `SPL-FILES`: confirm every file in
+the original diff appears in exactly one slice's file list — appearing in zero is `SPL-NO-LOSS`,
+appearing in two or more is `SPL-FILES`. For `SPL-COHERENT`: read each slice's stated "why" and judge
+whether a human handed only that slice's diff could review it without needing to see another slice.
+
+**Don't flag:** a slice boundary you would have drawn differently but that still leaves every slice
+coherent and within budget (taste is not a defect); a refusal (`split: none`) that names a real,
+checkable reason a file could not be divided without cutting it — that is the safety net working, not a
+finding; green evidence gathered against a scratch branch matching the spec's construction even when
+the splitter's prose describing it is terse (evidence is the command and its output, not the write-up
+around it).
+
 ## deliver
 
 Checks `card-deliverer`, after the PR is open. Your inputs: `card.md`, the PR url and its mode

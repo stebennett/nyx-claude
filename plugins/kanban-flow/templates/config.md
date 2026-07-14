@@ -20,6 +20,7 @@ check_budget:
   slice: 2
   design: 2
   implement: 2
+  split: 1
   deliver: 1
 size_limit: 500
 size_exclude:
@@ -91,10 +92,15 @@ the skills read it; **`/kanban` never rewrites it**, so it is safe to hand-edit.
   check failing twice means something another rework pass will not fix — and it is
   allowed **per PR**: a card ships two PRs (design, then implementation), each with
   its own deliver check, and each gets the full allowance, so the shipped `1` is one
-  loop per PR, not one for the whole card.
-  An **omitted** producer defaults to `2` — except `deliver`, which defaults to
-  `1` — so an older config missing this key behaves exactly as the shipped
-  values do. Likewise an omitted `checks` producer defaults to `on`, and an
+  loop per PR, not one for the whole card. `split: 1` for the same reason as
+  `deliver`: a split that fails `card-split-checker` twice is not going to work on
+  a third try — `pr-splitter` is a safety net, not a routine path, and a repeated
+  failure means the carve itself is unworkable, not that another attempt will find
+  one; the card falls back to `SPL-NO-LOSS`'s refusal path and ships as one
+  oversized PR.
+  An **omitted** producer defaults to `2` — except `deliver` and `split`, which
+  default to `1` — so an older config missing this key behaves exactly as the
+  shipped values do. Likewise an omitted `checks` producer defaults to `on`, and an
   omitted `size_limit` to `500`: a project that never touches this file gets
   every check, at the shipped budgets, under the shipped ceiling.
 - **size_limit** — the hard ceiling on a card's **changed lines, including

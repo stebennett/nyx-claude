@@ -11,7 +11,8 @@ depends_on: []        # list of card ids that must be `done` before this starts,
 branch: ""            # current branch: `<type>/NNN-slug-design` from the slice→design transition, then `<type>/NNN-slug` once the design PR merges
 worktree: ""          # absolute path of the current branch's worktree
 design_pr_url: ""     # design PR (slice.md + design.md + ADRs); set when it opens, kept after merge for traceability
-pr_url: ""            # implementation PR (code + implement/test/review docs); set when it opens, kept after merge
+pr_urls: []           # implementation PRs, in shipping order. The card is `done` when ALL have merged. A card that ships as one PR has exactly one entry — that is the N=1 case, not a special case.
+split_slices: 0       # how many slices this card ships as. 0 = pr-splitter did not run (one PR). N = split into N slices by pr-splitter.
 adrs: []              # ADR ids this card produced, e.g. [ADR-0007]; appended by /kanban via the adr skill (the append reserves the number; the file merges via the card's PR)
 reworks:              # automatic rework loops consumed, per producer (budgets: config.md `check_budget`); flow-metric input for /retro
   slice: 0            # card-slice-checker → card-slicer
