@@ -13,7 +13,7 @@ flags those as a plugin PR rather than writing them here.
 
 ## Check criteria
 
-Project-specific check criteria, layered on top of the plugin's `CHECK-CRITERIA.md`.
+Project-specific check criteria, layered on top of the plugin's `checks/` doctrine.
 Each checker reads its own target's section here in addition to the plugin's.
 
 Criteria here carry a **`LOCAL-`** id prefix so they never collide with a plugin id
