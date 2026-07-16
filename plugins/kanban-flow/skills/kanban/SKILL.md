@@ -54,7 +54,10 @@ Card state must survive lost commits and merges that happen while no pump runs. 
    **the card stays `blocked`** and the report says why.
 3. **Implementation PR merged** (matches a `pr_urls` entry, or a non-design `CARD-NNN` subject). Let
    `N = split_slices` (0/1 → one PR) and `k` = the merged url's **1-based position in `pr_urls`**
-   (shipping order = slice number). Record the merge, keep every url, **tear nothing down yet**. Then:
+   (shipping order = slice number). Record the merge, keep every url, **tear nothing down yet**.
+   **Un-actioned findings** (each merged implementation PR): `review.md` advisories no branch commit
+   answered, no review-complete signal before the merge → surface each (§7) as *"un-actioned findings on
+   merged CARD-NNN — candidate defect cards"*; don't reopen or block. Then:
    - **More slices remain** (`N ≥ 2` and `k < N`) → **not** done. Tear down **only that slice's**
      branch/worktree (`<type>/NNN-slug-<k>`); **leave `status: deliver`** and the **original branch and
      worktree ALIVE** (source of truth for unshipped slices). **Reset `reworks.deliver` AND
@@ -66,8 +69,7 @@ Card state must survive lost commits and merges that happen while no pump runs. 
      `phase: done`, `delivered` = merge date, tear down the original worktree, delete the original
      branch **locally and on `origin`** (the only moment either may be deleted) and any leftover slice
      worktrees. **Non-empty is not yet a verdict** (squash/rebase leaves the merge base behind) → **read
-     `references/reconcile-edge-cases.md`** for the two-direction procedure and the un-actioned-findings
-     check.
+     `references/reconcile-edge-cases.md`** for the two-direction procedure.
 4. For every card, check **every** not-yet-merged url (`design_pr_url` + each `pr_urls` entry):
    `{gh_command} pr view <url> --json state,mergedAt`. `MERGED` → apply step 2/3. `CLOSED` (unmerged)
    → **read `references/reconcile-edge-cases.md`** (closed-PR recovery — a naive unblock skips the
@@ -87,16 +89,19 @@ completeness backstop → **read `references/reconcile-edge-cases.md`** before a
 
 After the cheap reconcile probes and **before** §1's full card parse, run only these checks:
 - **Merges:** the §0 step 1 fetch + merge-subject scan — did any `design_pr_url`/`pr_urls` url land?
-- **PR states:** `gh pr view <url> --json state` per not-yet-merged url — any newly `MERGED`/`CLOSED`?
-- **Card frontmatter scan** (status + blocker only, **not** a full parse): any card dispatchable (a
-  `backlog` card with deps `done` and a free WIP slot; an in-flight card whose next phase doc is absent
-  or whose check doc calls for a rework within budget)? Any card needing the driver (a gate awaiting an
-  answer, a `blocked` card, a `needs-input`)? Is `AMENDMENTS.md` non-empty?
+- **PR states, CI, reviews:** one `{gh_command} pr view <url> --json state,statusCheckRollup,reviews,comments`
+  per not-yet-merged url (one call each) — any newly `MERGED`/`CLOSED`? any open PR with a **failing
+  check**, or a **human review/`REVIEWED` comment not yet addressed** (no `[kanban]` reply)?
+- **Card frontmatter + doc presence** (status/blocker, plus phase-/check-doc presence via `ls` and their
+  `verdict:` headers — **not** a full parse): any card dispatchable (a `backlog` card with deps `done`
+  and a free WIP slot; an in-flight card whose next phase doc is absent, or whose check doc reads
+  `verdict: fail`)? Any card needing the driver (a gate awaiting an answer, a `blocked` card, a
+  `needs-input`)? Is `AMENDMENTS.md` non-empty?
 
-**If ALL hold** — no merge landed, no card dispatchable, no gate/blocker/amendment needs the driver,
-every in-flight card awaiting human review/merge/running CI — **print `idle — M in flight awaiting
-human/CI, K in backlog` and STOP** (skip the board re-render unless state changed). **Any condition
-false → full pump** (§1 on). When in doubt, run the full pump.
+**If ALL hold** — no merge, no open PR failing CI or with an unaddressed review, nothing dispatchable, no
+gate/blocker/amendment for the driver, every in-flight card awaiting human/CI — **print `idle — M in
+flight awaiting human/CI, K in backlog` and STOP** (skip the re-render unless state changed). **Any false
+→ full pump** (§1 on). When in doubt, run the full pump.
 
 ## 1. Load state
 
@@ -119,9 +124,8 @@ parse `## M<N> — <title>` headings and each `**Cards:**` line into a `card →
 section of `<board_dir>/PROTOCOL-ADDENDUM.md` (absent → no `LOCAL-` ids), and **hold the id set per
 target** — `intake` | `slice` | `design` | `split` | `deliver` — each being its `ids.md` ids
 (`INT-*`/`SLC-*`/`DSG-*`/`SPL-*`/`DLV-*`) **plus** the addendum's `LOCAL-` ids for that target. **This
-read is what makes §5's completeness valve real** — the valve rejects any checker result whose
-check-doc `criteria:` map omits an id of its target's set, and you cannot notice the absence of an id
-you have never seen (RATIONALE).
+read makes §5's completeness valve real** — the valve rejects any checker result whose `criteria:` map
+omits an id of its target's set (RATIONALE).
 
 Resolve the **plugin doctrine directory** once: `${CLAUDE_PLUGIN_ROOT}/templates/`. Pass absolute paths
 from it into every dispatch (§5) — agents never read a `docs/cards/` copy. **Template resolution:** for
@@ -184,8 +188,9 @@ checker first.
   (feedback)` (→ re-dispatch `card-designer`) / `stop`. Under `design=pr` there is no stop.
 - **Deliver gate** (`status: deliver`, **no PR currently open** — `len(pr_urls) == 0` unsplit, or `<
   split_slices` with every url so far merged): assemble **the next PR's** body (fill `pr-template.md`,
-  §1 resolution) into `card_dir/pr-body.md` in **that PR's worktree** — for a split card **slice `k`'s**
-  body (the slice's files and the criteria *it* claims from `split.md`, as `CARD-NNN — <title> (slice k
+  §1 resolution) into `card_dir/pr-body.md` in **that PR's worktree** (a slice PR's is created at
+  split-shipping step 1) — for a split card **slice `k`'s** body (the slice's files and the criteria
+  *it* claims from `split.md`, as `CARD-NNN — <title> (slice k
   of N)` naming the siblings). `deliver=auto` → dispatch `card-deliverer`; `deliver=manual` → present
   the body first. **If the last `pr_urls` url names a PR still open, it is open — §6; never re-dispatch
   `card-deliverer` for it.** The gate fires once per PR.
@@ -270,12 +275,11 @@ The split sub-step is the last thing `review` does; the card stays at **`status:
 | `split-acceptance.md` **`verdict: fail`**, `reworks.split < check_budget.split` | **rework in flight** (the carve, not the code) | re-dispatch **`pr-splitter`** with the failing acceptance findings verbatim |
 | `split-acceptance.md` **`verdict: fail`**, budget spent | parked | leave alone (`blocked`) |
 
-**Size measurement:** the moment `review.md` is `verdict: pass` and complete, sum `added + deleted`
-(excluding `size_exclude`) over `git -C <worktree> diff --numstat origin/main...<branch>` (naming the
-branch, never `HEAD`). **Trigger: `review.md` pass+complete and diff > `size_limit` (or `split_slices ≥
-2` at deliver, or any slice PR open) → read `references/split-shipping.md` before acting** — it carries
-the measurement commands, the `--no-renames` doctrine, splitter/checker/acceptance dispatch,
-refusal/blocked handling, and slice shipping steps 0–4.
+**Size measurement:** once `review.md` is `verdict: pass` and complete, sum `added + deleted` over the
+branch diff's non-excluded paths (`size_exclude`) versus `size_limit`. **Trigger: pass+complete and diff
+> `size_limit` (or `split_slices ≥ 2` at deliver, or any slice PR open) → read
+`references/split-shipping.md` before acting** (measurement commands, split-layer dispatch, slice
+shipping steps 0–4).
 
 **Precedence: a `verdict: fail` wins over every other review row.** `review_lenses_failed` only selects
 lenses; the incomplete-panel row is stated two ways ("a lens with no section" / "`review_lenses_failed`
@@ -370,6 +374,9 @@ spends it per slice PR). (RATIONALE.)
 | design PR open, `deliver-check-design.md` absent | card-deliver-checker (design mode) | sonnet |
 | implementation PR open, `deliver-check.md` absent (**slice PR `k` open, `deliver-check-<k>.md` absent**) | card-deliver-checker (implementation mode) | sonnet |
 | **open slice PR `k` needs a commit** (§6a CI rework, §6b addressing, a `DLV-*` finding routed to the implementer) | card-implementer — **dispatched into slice `k`'s worktree, on slice `k`'s branch**, never the card's | sonnet |
+
+**Re-dispatches and reworks use the same agent's model row; a partial panel re-run uses the per-lens
+models for exactly the lenses in `review_lenses_failed`.**
 
 (`card-intake-checker` is dispatched by `/refine` and `/requirement`, not by you.)
 
@@ -496,8 +503,9 @@ hand to the split sub-step). The panel does not wait for CI — `card-tester` al
      merged; else `blocked`). **From the panel, the same commit writes `review_lenses_failed`** (the
      failing lenses; cleared to `[]` when clean) and clears the stale findings thus: `test.md` **deleted
      outright**; `review.md` **stripped** (remove only the `review_lenses_failed` `## [<lens>]` sections,
-     restamp survivor `verdict: pass`; delete outright if none survive) — the missing sections, not the
-     verdict, mark the panel **incomplete**.
+     restamp survivor `verdict: pass`; delete outright if none survive), the stripped `review.md`
+     **committed on the implementation branch** — the missing sections, not the verdict, mark the panel
+     **incomplete**.
    - **Panel SLICE-MODE** finding reworks **`pr-splitter`** (spends `reworks.split`), NOT
      `card-implementer` — read the mode (`references/split-shipping.md`).
    - **Reject an INCOMPLETE checker result (before drop & verdict):** its `criteria:` map must verdict
@@ -540,12 +548,10 @@ hand to the split sub-step). The panel does not wait for CI — `card-tester` al
 
 ## 6. PR open — CI gate, review-complete addressing
 
-A card with an open PR (design, implementation, **or a slice**) holds its WIP slot until merged. The
-review panel already ran (§5). What remains is CI, the human's review, and addressing what they say.
-**Everything here applies to a slice PR unchanged, once per slice** — slice `k` gets its own §6a CI
-gate, `card-deliver-checker` pass, and §6b loop; only one slice PR is open at a time, so "the PR" is the
-last url in `pr_urls`, `k = len(pr_urls)`. **On a slice PR, every dispatch here carries slice `k`'s
-branch and worktree, never the card's** (`references/split-shipping.md`, slice-PR dispatch contract).
+A card with an open PR holds its WIP slot until merged (§4); the review panel already ran (§5), so §6 is
+CI, the human's review, and addressing it. **On a slice PR** (`k = len(pr_urls)`, one open at a time)
+everything here applies unchanged per slice, and **every dispatch carries slice `k`'s branch/worktree,
+never the card's** (`references/split-shipping.md`).
 
 **Entry:** a card enters §6 when its deliver check returns `verdict: pass`, when `checks.deliver` is
 `off`, **or when its only blocking deliver finding is `DLV-CI`** (not a park, no budget — §6a triages
@@ -666,9 +672,10 @@ reminder.
   **checker**); same for `test.md`/`review.md`. [dangerous invariant; canonical: §5]
 - **Slice docs are never committed to `main`** (except a split parent's) — stage exact paths, never `git
   add -A`. [dangerous invariant; canonical: intro + §5 step 5]
-- **Ground truth is never taken from `HEAD`** — every split-layer diff names the branch. **Never split a
-  split.** **Self-fix deliver remedies capped at one attempt per criterion per PR** (no budget, so the
-  `## Notes` entry + cap is the only bound). **`card-deliverer` has no rework mode**; `DLV-CI` → §6a.
+- **Ground truth is never taken from `HEAD`** — every split-layer diff names the branch; the split
+  layer never recurses (`references/split-shipping.md`). **Self-fix deliver remedies capped at one
+  attempt per criterion per PR** (no budget, so the `## Notes` entry + cap is the only bound).
+  **`card-deliverer` has no rework mode**; `DLV-CI` → §6a.
 - **Every doc that can carry blocking findings carries a `verdict: pass|fail`**, stamped by you; presence
   alone never advances a card. **A checker's result must verdict every criterion or it is malformed**
   (you hold the id set from §1). **A gate never fires on an unchecked producer result.** **Checkers are

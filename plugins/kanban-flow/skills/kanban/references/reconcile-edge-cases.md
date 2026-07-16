@@ -107,9 +107,7 @@ holds changes main does not, after all PRs merged` (name whether unshipped conte
 both), **keep the original branch and worktree** (local + remote — the only copy), surface **loudly**
 (§7). A **serious defect** — the splitter dropped a change and `SPL-NO-LOSS` missed it.
 
-## Un-actioned-findings check (§0 step 3, each merged implementation PR)
+## Un-actioned-findings check
 
-If a PR merged with **advisory findings in `review.md` that no branch commit answered** and no
-review-complete signal preceded the merge, they were silently lost — surface each (§7) as
-*"un-actioned findings on merged CARD-NNN — candidate defect cards"*. Don't reopen or block the
-card; merge timing is the driver's prerogative.
+Stated inline at `SKILL.md` §0 step 3 — it runs on every merged implementation PR, not only behind
+this file's trigger.
