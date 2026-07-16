@@ -91,6 +91,38 @@ milestone until both hold.
 `/refine` and `/requirement` are the only writers of `MILESTONES.md`. `/kanban` reads it
 and never writes it, except for the mechanical parent→children swap on an applied split.
 
+## Check
+
+Both `/refine` and `/requirement` run this before showing the driver anything — one
+protocol, run per this section.
+
+Unless `config.md`'s `checks.intake` is `off`, dispatch **`card-intake-checker`** (opus)
+with: the proposed cards, their milestone placement, the existing board's cards and
+milestones, the requirement(s) in scope, `spec_path`, **`size_limit` and `size_exclude`**
+(the ceiling and exclusions for `INT-SIZED`), and the doctrine paths it reads —
+`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
+`${CLAUDE_PLUGIN_ROOT}/templates/checks/_method.md`,
+`${CLAUDE_PLUGIN_ROOT}/templates/checks/intake.md`,
+`${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`.
+
+**Budget loop.** `verdict: fail` → rework the proposal against the blocking findings
+**verbatim** and re-check, up to `check_budget.intake` (default 2). Budget exhausted →
+present anyway, the unresolved findings shown to the driver as open questions — never
+silently. `verdict: pass` → proceed, showing the advisory findings alongside the proposal.
+
+**Persist `estimated_lines` onto every card** from the checker's `INT-SIZED` output.
+**Never leave it empty:** a card born `right_sized: true` skips the slice phase, so
+`SLC-SIZE` never runs — this is its only pre-code size check, and the sole moment its
+estimate can be recorded. Empty, and `DLV-SIZE` has no baseline for `actual_lines` and
+`/retro`'s under-estimation signal loses the card. (`checks.intake: off` → no estimate
+exists; tell the driver those cards reach the board unsized.)
+
+**Persist the report:** write the checker's `phase_doc` to
+`<board_dir>/intake-checks/YYYY-MM-DD-<slug>.md` (`<slug>` naming this run), creating the
+directory if needed, and commit it with the cards. `/retro` aggregates every check doc **by
+criterion id** and reads this directory — without it the `INT-*` verdicts leave no durable
+record. Persist a budget-exhausted failing run too; it is the most informative one.
+
 ## Never
 
 - Bundle multiple cards into one `card.md`. One card = one file.

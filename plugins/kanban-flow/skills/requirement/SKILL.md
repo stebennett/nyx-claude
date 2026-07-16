@@ -1,25 +1,22 @@
 ---
 name: requirement
-description: Add, amend or supersede a single requirement on a running project. Interviews the driver into a well-formed requirement, persists it to the spec via req-ids, slices it into cards per the intake doctrine, and applies its impact on the board — editing backlog cards directly and queueing amendments for cards already in flight. Intake only — never starts implementation. Run under Opus.
+description: Add, amend, or supersede one requirement on a running project: interview the driver, persist via req-ids, slice into cards, apply board impact. Intake only — never implements. Run under Opus.
 ---
 
 # /requirement — add, amend, or supersede a requirement
 
 `/refine` turns a whole spec into a backlog. **You handle one requirement on a project
 that is already running** — the mid-flight ask, the changed mind, the thing the spec
-never said.
-
-You are an **intake** skill. You never write code, never create branches or worktrees,
-and never start a card.
+never said. You are an **intake** skill: never code, never branches or worktrees, never
+start a card.
 
 Usage: `/requirement [rough one-liner]`. With no argument, ask what the driver wants to add.
 
 ## The ownership boundary — read this first
 
-`/kanban` is the **sole writer** of every `card.md` from the moment a card leaves
-`backlog`. That rule is what makes the board safe to drive unattended under `/loop`, and
-a card beyond backlog owns a git branch, a worktree, and possibly an open PR — so
-retiring one is a **teardown**, not a file edit.
+`/kanban` is the **sole writer** of every `card.md` once a card leaves `backlog` — the rule
+that makes the board safe to drive unattended under `/loop`. A card beyond backlog owns a
+branch, a worktree and maybe an open PR, so retiring one is a **teardown**, not a file edit.
 
 You respect that boundary absolutely. Classify every existing card by `status` alone:
 
@@ -63,16 +60,15 @@ You respect that boundary absolutely. Classify every existing card by `status` a
    - **amends** an existing `REQ-NNN` — same capability, changed detail;
    - **supersedes** one or more existing `REQ-NNN` — the old requirement is now wrong.
 
-   Then find every affected card. Use the `reqs` frontmatter field as the index — it is a
-   lookup, not an inference. Two traps:
-   - **A card with empty `reqs` means _unknown_, not _unaffected_.** It pre-dates the
-     field. Read it and judge; surface it to the driver as *impact undetermined* rather
-     than silently assuming it is fine.
-   - **Superseding a card orphans its dependents.** Any card whose `depends_on` names a
-     card you are superseding can never become ready — `/kanban` will park it forever. For
-     **every** dependent you must propose a rewire: drop the dead id, or repoint it at the
-     replacement card. A `backlog` dependent you rewire directly; an in-flight dependent
-     needs its own `revisit` amendment. **Never leave a dangling `depends_on`.**
+   Then find every affected card. Use the `reqs` frontmatter field as the index — a lookup,
+   not an inference. Two traps:
+   - **Empty `reqs` means _unknown_, not _unaffected_** (`INTAKE.md`). Read it and judge;
+     surface it to the driver as *impact undetermined* rather than assume it is fine.
+   - **Superseding a card orphans its dependents.** Any card whose `depends_on` names a card
+     you supersede can never become ready — `/kanban` parks it forever. For **every** dependent,
+     propose a rewire: drop the dead id, or repoint it at the replacement. A `backlog` dependent
+     you rewire directly; an in-flight one needs its own `revisit` amendment. **Never leave a
+     dangling `depends_on`.**
 
    Classify each affected card by the ownership boundary above.
 
@@ -88,18 +84,9 @@ You respect that boundary absolutely. Classify every existing card by `status` a
    - the **amendments to be queued** — one line per in-flight card, naming the action and
      why.
 
-   **Check before you propose.** Unless `config.md`'s `checks.intake` is `off`, dispatch
-   **`card-intake-checker`** (opus) with the new cards, the milestone placements, the existing board,
-   the requirement, `spec_path`, **`size_limit` and `size_exclude`** (the ceiling and exclusions for
-   `INT-SIZED`), and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
-   `${CLAUDE_PLUGIN_ROOT}/templates/checks/_method.md`, `${CLAUDE_PLUGIN_ROOT}/templates/checks/intake.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
-   `<board_dir>/PROTOCOL-ADDENDUM.md`). `verdict: fail` → revise against the blocking findings and
-   re-check, up to `check_budget.intake` (default 2); exhausted → present anyway with the unresolved
-   findings shown as open questions. Show advisory findings alongside the proposal.
-
-   **Keep the checker's `estimated_lines` for every proposed card** — you persist it in step 6. It
-   comes from `INT-SIZED`, and for a card you mark `right_sized: true` it is the **only** estimate
-   that will ever exist: that card skips the slice phase, so `SLC-SIZE` never runs on it.
+   **Check before you propose.** Run the intake check per `INTAKE.md` `## Check` — it
+   dispatches `card-intake-checker`, runs the budget loop, and yields each card's
+   `estimated_lines`, which you persist in step 6.
 
    Ask for approval, edits, or removals. Iterate until approved. **Write nothing before
    approval.**
@@ -107,24 +94,14 @@ You respect that boundary absolutely. Classify every existing card by `status` a
 6. **On approval, write — then commit once.**
    1. Persist the requirement via **`req-ids`**: `allocate` for the new one (it returns the
       id), then `supersede` for any it replaces. Never edit the spec by hand.
-   2. Create the new cards from the card template, and apply the approved edits, deletions
-      and `depends_on` rewires to `backlog` cards. **Set each new card's `estimated_lines` to the
-      value `card-intake-checker` produced for it under `INT-SIZED`** — never leave it empty. A card
-      marked `right_sized: true` **skips the slice phase**, so no slicer will ever size it and
-      `SLC-SIZE` will never run: this is the only moment its estimate can be recorded. Empty, and
-      `DLV-SIZE` has no baseline for `actual_lines` and `/retro` cannot see the card's estimate at
-      all. (`checks.intake: off` → no estimate exists to persist; tell the driver those cards reach
-      the board unsized.)
-   2b. **Persist the intake check report** to `{board_dir}/intake-checks/YYYY-MM-DD-<slug>.md`
-      (`<slug>` from the requirement), creating the directory if needed. `/retro` aggregates every
-      check doc **by criterion id** and reads this directory alongside the cards' check docs — without
-      it the `INT-*` verdicts leave no durable record and intake is the one target `/retro` can never
-      tune. Persist it for a budget-exhausted failing run too.
+   2. Create the new cards from the card template — **instantiation strips the template's
+      frontmatter comments, so each card.md carries bare frontmatter** — and apply the approved
+      edits, deletions and `depends_on` rewires to `backlog` cards. `estimated_lines` and the
+      intake check report are persisted per `INTAKE.md` `## Check`.
    3. Update `{board_dir}/MILESTONES.md` — place each new card, and **remove from its
-      milestone's `**Cards:**` line every card you queued for `supersede`**, putting its
-      replacement card (if any) in its place. A superseded card can never be `done`, so
-      leaving it there would make that milestone's progress permanently unreachable. Both
-      `INTAKE.md` invariants must still hold across the whole board afterwards.
+      milestone's `**Cards:**` line every card you queued for `supersede`** (a superseded card
+      can never be `done` — `INTAKE.md`'s terminal-card rule), putting its replacement (if any)
+      in its place. Both `INTAKE.md` invariants must still hold across the board afterwards.
    4. Append the approved amendments to `{board_dir}/AMENDMENTS.md` (format below),
       creating the file if it does not exist.
    5. Commit everything as **one** Conventional Commit:
@@ -162,23 +139,20 @@ One block per pending amendment:
   intact, and its blocked-card conversation asks the driver how to proceed. Use for
   everything that is not a clean kill.
 
-There is deliberately **no "re-slice a card that already has code on its branch"** action.
-That is `revisit` plus a human decision. Do not automate it.
+There is deliberately **no "re-slice a card that already has code on its branch"** action —
+that is `revisit` plus a human decision. Do not automate it.
 
-`**Reason:**` is written for a human reading it days later in a different session. Name the
-REQ ids and say what actually changed.
+`**Reason:**` is for a human reading it days later in another session: name the REQ ids and
+say what actually changed.
 
 ## Rules
 
 - **Intake only.** No branches, no worktrees, no code, no starting cards.
-- **Never write a `card.md` that is not in `backlog`.** In-flight cards are reached only
-  through `AMENDMENTS.md`. This is not a style preference — it is the invariant that keeps
-  the board's state from being corrupted by two concurrent writers.
+- **Never write a `card.md` that is not in `backlog`** — the ownership table above is the
+  rule; in-flight cards are reached only through `AMENDMENTS.md`.
 - **Never write `BOARD.md` or `KNOWLEDGE.md`.** `/kanban` owns them.
 - **Never edit the spec directly.** `req-ids` is the sole authority for requirement
   identity; you supply the prose, it supplies the identity.
 - **Never delete a requirement.** Superseding leaves it in place, marked. History is the point.
 - Card doctrine lives in `INTAKE.md`. If a rule about slicing, typing, layering, `reqs`,
   `depends_on`, `right_sized`, or milestones seems missing here, it is there.
-- Never leave a dangling `depends_on` pointing at a superseded card.
-- Elicit one question at a time.
