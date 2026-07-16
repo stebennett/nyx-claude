@@ -23,36 +23,22 @@ Add this repo as a plugin marketplace, then install `kanban-flow`.
 
 ## Every agent is checked
 
-Each agent that **produces** something has a **checker** that verifies it, and checkers are
-**terminal** — nothing checks a checker. Checkers write nothing and mutate nothing; they return a
-verdict, and the orchestrator persists it and runs the rework loop.
+Each producing agent has a **checker** that verifies it, and checkers are **terminal** — nothing
+checks a checker; the human is their backstop. Checkers write and mutate nothing; they return a
+verdict the orchestrator persists and reworks against.
 
-What makes a check more than a rubber stamp: criteria live in the plugin's `checks/` doctrine with
-**stable ids**, a checker must return a verdict for **every** criterion with an evidence citation,
-and **a finding that cannot point at a line is invalid and gets dropped**. `/retro` aggregates
-verdicts by id — a criterion that never fires gets pruned, and one that fires constantly means the
-**producer** is wrong and *its* prompt gets fixed, not the check.
-
-Blocking findings automatically rework the producer, against a per-producer budget
-(`check_budget` in `config.md`). Checks are on by default; `checks` can turn one off if it proves
-noisy, and `/kanban` then warns loudly, every pump, about what is shipping unchecked.
+The doctrine — stable criterion ids, one cited verdict per criterion, findings that can't point at a
+line dropped, `/retro` pruning/escalating by id — lives at **`templates/checks/`** (rationale in
+**`RATIONALE.md`**). Blocking findings rework the producer against a per-producer `check_budget`;
+`checks` can turn one off, and `/kanban` then warns every pump about what ships unchecked.
 
 ### The size budget
 
-`size_limit` (default **500** changed lines, **including tests**; only lock files and vendored deps
-are excluded via `size_exclude`) is the hard ceiling on a card, enforced twice:
-
-- **`SLC-SIZE`, at slice — blocking.** `card-slice-checker` independently estimates the card's size
-  from the codebase before any code is written. Over the limit **forces a split**, however atomic the
-  card felt. This makes `size_limit` the real ceiling on card size, tighter than any "is this a
-  vertical slice?" judgement call.
-- **`DLV-SIZE`, at deliver — advisory, escalated.** `card-deliver-checker` measures the real diff. A
-  breach cannot block (the code is written), but it **must propose a concrete split into smaller
-  PRs**, which `/kanban` surfaces for you to act on.
-
-A `DLV-SIZE` breach is, by definition, an `SLC-SIZE` estimate that was wrong — so every card records
-`estimated_lines` and `actual_lines`, and `/retro` reads the delta to catch a slicer that
-systematically under-estimates.
+`size_limit` (default **500** changed lines including tests; exclusions via `size_exclude`) is the
+hard ceiling, enforced at slice (`SLC-SIZE`, blocking — **forces a split**) and deliver (`DLV-SIZE`,
+advisory — **proposes a split**). Details in **`templates/checks/`**; the intake path, where a
+`right_sized` card is sized once, is in **`INTAKE.md` `## Check`**. Every card records
+`estimated_lines` and `actual_lines` so `/retro` catches a systematic under-estimator.
 
 ### Review happens before the PR
 

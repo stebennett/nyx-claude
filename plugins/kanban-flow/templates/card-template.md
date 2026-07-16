@@ -1,3 +1,4 @@
+<!-- The HTML/inline comments below document the schema and are STRIPPED at instantiation: an instantiated card.md carries bare frontmatter. Do not treat a comment as a field. -->
 ---
 id: CARD-000
 type: task            # feature | task | defect

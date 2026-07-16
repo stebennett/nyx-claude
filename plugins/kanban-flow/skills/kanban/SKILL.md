@@ -1,6 +1,6 @@
 ---
 name: kanban
-description: Orchestrate a project's kanban board. Reconciles state from merged PRs, renders the board, schedules ready cards to the WIP limit, runs each through slice→design→(design PR)→implement→test→review→[split]→(implementation PR) via the card-* agents with automatic rework loops. Design docs ship first, code second; an oversized branch ships as several implementation PRs. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
+description: Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
 ---
 
 # /kanban — orchestrator & dashboard
