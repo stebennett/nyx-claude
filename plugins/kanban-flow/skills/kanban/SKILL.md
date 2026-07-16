@@ -91,7 +91,8 @@ After the cheap reconcile probes and **before** §1's full card parse, run only 
 - **Merges:** the §0 step 1 fetch + merge-subject scan — did any `design_pr_url`/`pr_urls` url land?
 - **PR states, CI, reviews:** one `{gh_command} pr view <url> --json state,statusCheckRollup,reviews,comments`
   per not-yet-merged url (one call each) — any newly `MERGED`/`CLOSED`? any open PR with a **failing
-  check**, or a **human review/`REVIEWED` comment not yet addressed** (no `[kanban]` reply)?
+  check**, or a **human review/`REVIEWED` comment not yet addressed** (no top-level
+  `[kanban] review addressed — <id>` marker for it — §6b step 4 posts one per completed signal)?
 - **Card frontmatter + doc presence** (status/blocker, plus phase-/check-doc presence via `ls` and their
   `verdict:` headers — **not** a full parse): any card dispatchable (a `backlog` card with deps `done`
   and a free WIP slot; an in-flight card whose next phase doc is absent, or whose check doc reads
@@ -276,7 +277,8 @@ The split sub-step is the last thing `review` does; the card stays at **`status:
 | `split-acceptance.md` **`verdict: fail`**, budget spent | parked | leave alone (`blocked`) |
 
 **Size measurement:** once `review.md` is `verdict: pass` and complete, sum `added + deleted` over the
-branch diff's non-excluded paths (`size_exclude`) versus `size_limit`. **Trigger: pass+complete and diff
+branch diff (`origin/main...<branch>` — naming the branch, never `HEAD`), excluding `size_exclude`
+paths, versus `size_limit`. **Trigger: pass+complete and diff
 > `size_limit` (or `split_slices ≥ 2` at deliver, or any slice PR open) → read
 `references/split-shipping.md` before acting** (measurement commands, split-layer dispatch, slice
 shipping steps 0–4).
@@ -599,7 +601,10 @@ authored is addressed. Never act before the signal.
    `[kanban]` comment (review body): `[kanban] Addressed in <commit-url> — <explanation>` (`<commit-url>`
    = full `https://github.com/{owner}/{repo}/commit/<sha>`). For an item returned in `blockers`, reply
    `[kanban] Not actioned — <reason>` and surface it. One reply per item. **Never resolve threads**,
-   never approve or dismiss.
+   never approve or dismiss. **Once every item a signal authorised has its reply, post ONE top-level
+   `[kanban] review addressed — <review id | REVIEWED@<timestamp>>` marker** (idempotent: skip if that
+   marker already exists) — threaded replies are invisible to `--json comments`, and this marker is what
+   lets §0.5's probe read the signal as addressed instead of re-running a full pump every cycle.
 
 These fixes are human-directed and consume no rework budget. Merge detection stays with Reconcile (§0).
 A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment
