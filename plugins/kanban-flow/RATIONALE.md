@@ -127,3 +127,31 @@ a card whose only sin was being big enough to split. A red slice-2 CI is not sli
 the code is a different diff. Nothing is lost by the resets: the evidence is durable on `main` in
 the per-slice check docs (`deliver-check-<k>.md`) and `implement.md`'s `## Rework` sections, where
 `/retro` reads it — the counter is an allowance, not the record.
+
+## `/retro` — why the estimator populations are tallied separately, and why the inbox is an index
+
+**Two estimators, aimed separately.** `estimated_lines` on a card was set by whichever estimator
+actually made the call: the **slicer** for a card that went through the slice phase (verified under
+`SLC-SIZE`), or **`card-intake-checker`** under `INT-SIZED` for a card that arrived `right_sized:
+true` and never saw a slicer (a split child is sized once by the slicer and never re-sized). A
+`DLV-SIZE` breach is by definition a wrong estimate — but proposing a fix to the *slicer's* prompt
+for a miss `INT-SIZED` made changes nothing and the miss recurs, so the two populations are counted
+apart and the remedy aimed at the estimator that made the call. `pr-splitter` firing rides the same
+logic: it only runs when a reviewed branch still measured over `size_limit`, i.e. the pre-code
+estimate was wrong enough to need surgery after the code was written — every firing is an estimator
+miss, the symptom not the disease, so the fix belongs in the estimator's prompt, never the
+splitter's. A refusal is different in kind: whole-file slices could not be carved without cutting a
+file or landing a red slice, which is a *design* signal (entangled code), not a volume one — a
+bigger `size_limit` would not have helped.
+
+**Producer, not more checking.** A criterion that fails on most cards means the checker is right and
+the producer is systematically wrong; adding more checking there only builds a permanent rework tax
+on a defect nobody fixes at source. The remedy is always an edit to that producer's prompt or the
+doctrine it reads.
+
+**The inbox is an index, not a replacement.** `RETRO-INBOX.md`'s one-line-per-card summary exists to
+let `/retro` skip the deep read on a card whose flags are all clean — not to substitute for the
+phase docs, check docs, feedback.md, PR threads, or intake reports on a card that flags something.
+Coverage stays verifiable because `RETRO.md` still records every channel per covered card, empties
+included; a card the inbox waved through is recorded covered, and a channel skipped on a flagged
+card is still a visible gap.
