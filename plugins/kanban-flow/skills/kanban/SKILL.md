@@ -261,8 +261,9 @@ above handles it; never re-dispatch the panel over a `review.md`), dispatch one 
 **per lens, in parallel** (one Agent-tool message), passing each its `lens`, `worktree`, **the card's
 `branch` by name** (it diffs `origin/main...<branch>` — never `HEAD`), `card_id`, `card.md`,
 `design.md`, `implement.md`, `test.md`, and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
-`${CLAUDE_PLUGIN_ROOT}/templates/REVIEW-LENSES.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`). Lens
-briefs live in the plugin's `REVIEW-LENSES.md`; each expert reads only its own section. Assemble the
+`${CLAUDE_PLUGIN_ROOT}/templates/lenses/_shared.md`, `${CLAUDE_PLUGIN_ROOT}/templates/lenses/<lens>.md`,
+and `<board_dir>/PROTOCOL-ADDENDUM.md`). Each reviewer is passed `_shared.md` (the etiquette and
+method that bind every lens) and its own lens file — never another lens's. Assemble the
 panel from the branch's changed files (`git -C <worktree> diff --name-only origin/main...<branch>`).
 
 **The per-slice `[acceptance]` re-run after a carve is the same agent in `slice` mode** — a *different*

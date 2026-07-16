@@ -8,8 +8,9 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   to this card's git worktree), the full text of `card.md`, and the prior phase docs **your phase
   needs** (the orchestrator sends only those — don't expect all of them).
 - **Doctrine paths:** the absolute path to the plugin's `AGENT-PROTOCOL.md` (this file) and the
-  repo's `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives the plugin's `REVIEW-LENSES.md`
-  path. Read the protocol here, then layer the addendum — never read a `docs/cards/` copy.
+  repo's `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives the plugin's
+  `templates/lenses/_shared.md` and `templates/lenses/<lens>.md` paths. Read the protocol here,
+  then layer the addendum — never read a `docs/cards/` copy.
 - Exception: the **slice** phase runs before any worktree exists, so `card-slicer` receives no
   `worktree`; it instead receives the card's current **dependents** (ids that `depends_on` it).
 - A **rework** dispatch (implement phase only) additionally carries the blocking findings from the
