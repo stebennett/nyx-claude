@@ -376,7 +376,7 @@ spends it per slice PR). (RATIONALE.)
 | review, **`review.md` absent** | **card-lens-reviewer × lenses, in parallel** (only `review_lenses_failed`, if set) | per-lens (Section 5, review panel) |
 | review, panel passed, diff > `size_limit`, `split.md` absent | **pr-splitter** | sonnet |
 | review, `split.md` present, `split-check.md` absent | **card-split-checker** | sonnet |
-| review, split check passed with N ≥ 2, `split-acceptance.md` absent | **card-lens-reviewer × N, in SLICE MODE** — lens `acceptance`, **one per slice**, in parallel, each carrying `slice: k`, `slices: N`, slice `k`'s path list + change types, and `split.md` | opus |
+| review, split check passed with N ≥ 2, `split-acceptance.md` absent | **card-lens-reviewer × N, in SLICE MODE** — lens `acceptance`, **one per slice**, in parallel, each carrying `slice: k`, `slices: N`, slice `k`'s path list + change types, and `split.md` | sonnet — narrow trace re-check; code already opus-reviewed (RATIONALE) |
 | deliver (design PR, implementation PR, **or slice PR `k`**) | card-deliverer | haiku |
 | design PR open, `deliver-check-design.md` absent | card-deliver-checker (design mode) | sonnet |
 | implementation PR open, `deliver-check.md` absent (**slice PR `k` open, `deliver-check-<k>.md` absent**) | card-deliver-checker (implementation mode) | sonnet |
@@ -455,6 +455,11 @@ another's, `<board_dir>/PROTOCOL-ADDENDUM.md`). Assemble the panel from the chan
 | readability | always | sonnet |
 | python | diff touches `*.py` | sonnet |
 | typescript | diff touches `*.ts` / `*.tsx` | sonnet |
+
+**Filter by `config.review_panel` (missing → `full`).** `standard` = acceptance,
+functionality, tests, security + language lenses; `light` = acceptance, functionality + language
+lenses. A `gate_layer` card under `standard`/`light` reviews, but report §7 warns `⚠ CARD-NNN
+(gate_layer) reviewed under review_panel: <tier>`.
 
 **Which lenses run is read off the card, never remembered.** `review_lenses_failed` empty/absent → the
 full panel (filtered by the diff); non-empty → exactly those lenses (every other already passed and its
