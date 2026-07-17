@@ -77,6 +77,24 @@ try it, watch the first few pumps closely, especially **Reconcile** (§0) and th
 (§5) — the two places a weaker driver's degradation would surface first (a mis-read board, or a
 rubber-stamped incomplete check). The default stays Opus.
 
+### Which model to run `/kanban` under `/loop`
+
+The session model matters only for the **orchestrator itself** — every dispatched agent's model is
+pinned per dispatch by the skill's model table, whatever the session runs. Set it before starting the
+loop (`/model opus`, or `claude --model opus`), then `/loop /kanban`.
+
+- **Opus (recommended, the default).** The orchestrator's judgment calls — reconcile after odd merges,
+  stamping verdicts, adjudicating dropped findings, the completeness valve — are exactly where a
+  cheaper model rubber-stamps, and under `/loop` they run unattended with nobody watching. The idle
+  fast path (§0.5) keeps the cost contained: a pump with nothing actionable is ~10k tokens, so an
+  Opus loop on a quiet board spends little.
+- **Sonnet (the experiment above).** Viable on a busy board where loop spend genuinely hurts, with
+  the §0/§5 caveats; prefer shortening the loop interval on Opus over dropping the tier first — most
+  of a loop's cost is busy pumps, and those are dominated by the dispatched agents, whose models
+  don't change with the session.
+- **Haiku: don't.** It executes the tables but misses the judgment the check layer leans on; a
+  rubber-stamped valve is worse than no valve.
+
 ## Upgrading an existing repo
 
 Doctrine and templates are **plugin-owned** and read live, so updating the plugin

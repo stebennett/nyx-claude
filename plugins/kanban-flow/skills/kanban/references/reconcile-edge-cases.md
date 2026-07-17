@@ -67,6 +67,11 @@ Normalize state from older lifecycle versions on disk:
   Deleting is safe: the doc's absence is the "not yet run" state, so `card-tester`/the full panel
   re-runs and produces a stamped doc. **Do not infer a verdict from the old doc's prose** — a
   mis-inferred `pass` ships the very findings the panel raised. Report each doc you deleted.
+- **A `*-check*.md` with no YAML-frontmatter `verdict:` (pre-0.5 `## Verdict` form) — same rule,
+  same reason: delete it** on an in-flight card. The gate predicates key on the frontmatter, so the
+  old form matches no row and a card parked at a gate stalls. Deletion re-arms "not yet checked";
+  the checker re-runs and regenerates the doc in current form, spending nothing. Done cards' merged
+  docs stay — `/retro` reads their body tables.
 
 ## Orphan-PR adoption (reconcile side)
 
