@@ -100,6 +100,7 @@ card), in **BOTH directions**:
 `main` has that the branch never touched is another card's.
 
 **Neither direction finds anything → `status: done`**, `phase: done`, `delivered` = merge date;
+**append the card's `RETRO-INBOX.md` line exactly as §0 step 3's done-path does** (same commit);
 **now** tear down the original worktree, delete the original branch **locally and on `origin`** (the
 only moment either may be deleted), and any leftover slice worktrees. **Either direction finds
 something → work was lost**: `status: blocked`, blocker `split incomplete — <original-branch> still
