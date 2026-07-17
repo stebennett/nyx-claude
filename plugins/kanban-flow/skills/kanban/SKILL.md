@@ -68,7 +68,7 @@ Card state must survive lost commits and merges that happen while no pump runs. 
      teardown** (it checks the original branch/worktree). Quick probe: `git -C <worktree> diff --numstat
      origin/main...<original-branch>` (excluding `size_exclude`). **Empty → complete:** `status: done`,
      `phase: done`, `delivered` = merge date; **append the card's `/retro` line** to
-     `<board_dir>/RETRO-INBOX.md` in this same state commit — `CARD-NNN | delivered YYYY-MM-DD | reworks
+     `<board_dir>/RETRO-INBOX.md` (create it if absent) in this same state commit — `CARD-NNN | delivered YYYY-MM-DD | reworks
      {slice:_,design:_,implement:_,split:_,deliver:_} | elapsed Nd | est/actual lines E/A | slices N |
      human-comments M` (M = human PR-comment count across both PRs). Then tear down the original worktree,
      delete the original branch **locally and on `origin`** (the only moment either may be deleted) and
@@ -79,6 +79,7 @@ Card state must survive lost commits and merges that happen while no pump runs. 
    → **read `references/reconcile-edge-cases.md`** (closed-PR recovery — a naive unblock skips the
    closed slice).
 5. **Normalize legacy state** — scalar `pr_url`, `status: plan`, a verdict-less `test.md`/`review.md`,
+   a `*-check*.md` without frontmatter `verdict:` (pre-0.5 form) on an in-flight card,
    `split_slices: 1`, a `reworks` scalar, a `retro:` field, a non-enum status → **read
    `references/reconcile-edge-cases.md`**. None present → skip.
 6. **Drain the amendment queue** — `{board_dir}/AMENDMENTS.md` non-empty → **read
