@@ -128,6 +128,47 @@ the code is a different diff. Nothing is lost by the resets: the evidence is dur
 the per-slice check docs (`deliver-check-<k>.md`) and `implement.md`'s `## Rework` sections, where
 `/retro` reads it — the counter is an allowance, not the record.
 
+## `templates/config.md` — config tunables
+
+**Why there is no `checks.implement` switch.** Every other producer's checker can be turned off as an
+escape hatch, but the implementer's checkers are `card-tester` and the lens panel — an off switch there
+would silently skip running the test suite, not merely relax a review. The implement chain is
+unconditional by construction: a card that reaches `deliver` has been tested and reviewed, always.
+
+**Why `check_budget.deliver`/`split` default to `1`, and are spent per PR.** A deliver check that fails
+twice is failing on something another rework pass will not fix; a split that fails `card-split-checker`
+twice means the carve itself is unworkable, not that a third attempt finds one — `pr-splitter` is a
+safety net, not a routine path, so the card falls back to `SPL-NO-LOSS`'s refusal and ships as one
+oversized PR. `deliver` is allowed **per PR**, not per card: a card ships a design PR then an
+implementation PR, and a split card ships N slice PRs, each with its own deliver check and the full
+allowance. `/kanban` makes that real by resetting `reworks.deliver` (and `reworks.implement`) to `0` at
+each PR boundary and again on each slice merge with slices still to come — without which slice 1 burning
+its loops would leave slices 2..N with none. (The reset's livelock hazards are in the AGENT-PROTOCOL
+section above.)
+
+## `review_panel` + slice-mode acceptance tiering
+
+**Why the reduced panels are safe-ish, and why `full` stays the default.** The full panel runs nine
+lenses; most of a low-risk diff's risk is caught by a handful of them. `standard` keeps acceptance
+(does it meet the criteria), functionality (is it correct), tests (is it covered) and security, plus the
+language lenses — dropping design, simplicity and readability, the quality-of-code lenses whose findings
+are advisory-shaped more often than not. `light` drops tests and security too, down to acceptance +
+functionality + the language lenses: appropriate only where a human is close behind the work. Neither is
+the default, because a missing key must reproduce today's behaviour byte-for-byte — a repo that never
+sets `review_panel` gets the full nine-lens table exactly as before — and because the panel's blast
+radius (it reviews the whole diff, and a `gate_layer` card encodes the rules most expensive to get
+wrong) makes `full` the right default for the cards that matter. A `gate_layer` card knocked down to a
+reduced panel is therefore warned in the report rather than silently under-reviewed.
+
+**Why slice-mode `[acceptance]` dropped from opus to sonnet.** The whole-diff panel already reviewed the
+code — on opus, across every lens — before the carve. The per-slice `[acceptance]` re-run after a split
+asks a narrower question: does slice *k* trace to the acceptance criteria it claims, and does it stand
+alone? That is a containment-and-tracing check over already-reviewed code, not a fresh code review, and
+the orchestrator stamps the verdict either way. Sonnet is sufficient for it, and the slice panel fans
+out one reviewer per slice — the tier that multiplies most. The whole-diff acceptance lens stays on
+opus; only the post-carve re-run moves. This is the one deliberate default-behaviour change of the
+config-knobs PR.
+
 ## `/retro` — why the estimator populations are tallied separately, and why the inbox is an index
 
 **Two estimators, aimed separately.** `estimated_lines` on a card was set by whichever estimator

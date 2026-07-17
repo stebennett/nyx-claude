@@ -52,6 +52,31 @@ review, or comment `REVIEWED`), and every comment you wrote gets addressed and a
 link. A healthy card needs exactly three actions from you: merge the design PR, complete a review,
 merge the implementation PR.
 
+## Tuning token cost
+
+Two knobs and two budgets keep the system's token spend in hand:
+
+- **`review_panel`** (`config.md`) — how many lens reviewers the review panel dispatches, and the
+  panel is the single most expensive phase. `full` (default) runs the whole lens table; `standard`
+  drops to acceptance, functionality, tests, security + the language lenses; `light` to acceptance,
+  functionality + the language lenses. Use the reduced tiers on low-risk layers or a small team
+  watching spend; keep `full` for `gate_layer` cards and anything security-sensitive (a `gate_layer`
+  card under a reduced panel is warned in the report). A repo that never sets the key gets the full
+  panel, unchanged.
+- **Phase-doc length budgets** (`AGENT-PROTOCOL.md`, advisory) — `design.md` ≤150 lines,
+  `implement.md` ≤80, `test.md` ≤60, a review lens's section ≤40, a checker's evidence one line per
+  criterion. Over-budget is an advisory finding, not a block.
+- **`PROTOCOL-ADDENDUM.md` size budget** — this file rides every dispatch, so keep it under **4 KB**,
+  one line per rule.
+
+**The Sonnet-orchestrator experiment (experimental; default unchanged).** The skill says *"Run under
+Opus"*, and that stays the default. But after this optimization series the orchestrator is a
+~14k-token explicit state machine — its decisions are table lookups, not open-ended reasoning — so
+running `/kanban` under Sonnet is a plausible cost experiment. It is explicitly experimental: if you
+try it, watch the first few pumps closely, especially **Reconcile** (§0) and the **completeness valve**
+(§5) — the two places a weaker driver's degradation would surface first (a mis-read board, or a
+rubber-stamped incomplete check). The default stays Opus.
+
 ## Upgrading an existing repo
 
 Doctrine and templates are **plugin-owned** and read live, so updating the plugin
