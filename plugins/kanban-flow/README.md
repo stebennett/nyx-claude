@@ -19,7 +19,7 @@ Add this repo as a plugin marketplace, then install `kanban-flow`.
 - **Skills:** `kanban` (orchestrator), `refine` (whole-backlog intake), `requirement` (add/amend/supersede a single requirement on a running project), `req-ids` (sole authority for REQ ids in the spec), `retro` (process improvement), `adr` (ADR persistence), `kanban-init` (project scaffolder), `migrate` (one-time upgrade of an existing repo to plugin-owned doctrine).
 - **Agents — producers:** `card-slicer`, `card-designer`, `card-implementer`, `card-deliverer`.
 - **Agents — checkers:** `card-intake-checker`, `card-slice-checker`, `card-design-checker`, `card-deliver-checker`, plus `card-tester` and the `card-lens-reviewer` panel (together, the implementer's checkers). **Checkers are terminal — nothing checks a checker.** That is what stops the regress; the human is their backstop, at the intake and slice gates and at the two PR merges.
-- **Templates:** the plugin-owned doctrine (`AGENT-PROTOCOL.md`, `lenses/` — shared etiquette/method plus one file per review lens — `CHECK-CRITERIA.md`, `INTAKE.md` — the card doctrine shared by `refine` and `requirement` — and the card/PR templates) that agents read **live from the plugin** — never copied into your repo, so a plugin update reaches every project. `/kanban-init` copies only `config.md`, an empty `PROTOCOL-ADDENDUM.md` (where `/retro` layers project-specific doctrine), and empty board starters.
+- **Templates:** the plugin-owned doctrine (`AGENT-PROTOCOL.md`, `lenses/` — shared etiquette/method plus one file per review lens — `checks/`, `INTAKE.md` — the card doctrine shared by `refine` and `requirement` — and the card/PR templates) that agents read **live from the plugin** — never copied into your repo, so a plugin update reaches every project. `/kanban-init` copies only `config.md`, an empty `PROTOCOL-ADDENDUM.md` (where `/retro` layers project-specific doctrine), and empty board starters.
 
 ## Every agent is checked
 
@@ -27,7 +27,7 @@ Each agent that **produces** something has a **checker** that verifies it, and c
 **terminal** — nothing checks a checker. Checkers write nothing and mutate nothing; they return a
 verdict, and the orchestrator persists it and runs the rework loop.
 
-What makes a check more than a rubber stamp: criteria live in the plugin's `CHECK-CRITERIA.md` with
+What makes a check more than a rubber stamp: criteria live in the plugin's `checks/` doctrine with
 **stable ids**, a checker must return a verdict for **every** criterion with an evidence citation,
 and **a finding that cannot point at a line is invalid and gets dropped**. `/retro` aggregates
 verdicts by id — a criterion that never fires gets pruned, and one that fires constantly means the

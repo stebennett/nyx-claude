@@ -47,7 +47,7 @@ ownership of `MILESTONES.md`.
    existing board's cards and their milestones, the requirement(s) in scope, `spec_path`,
    **`size_limit` and `size_exclude`** (the ceiling and exclusions for `INT-SIZED`), and the
    doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
-   `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
+   `${CLAUDE_PLUGIN_ROOT}/templates/checks/_method.md`, `${CLAUDE_PLUGIN_ROOT}/templates/checks/intake.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
    and `<board_dir>/PROTOCOL-ADDENDUM.md`).
 
    `verdict: fail` → **revise the proposal against the blocking findings and re-check**, up to

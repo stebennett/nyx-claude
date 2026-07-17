@@ -92,7 +92,7 @@ You respect that boundary absolutely. Classify every existing card by `status` a
    **`card-intake-checker`** (opus) with the new cards, the milestone placements, the existing board,
    the requirement, `spec_path`, **`size_limit` and `size_exclude`** (the ceiling and exclusions for
    `INT-SIZED`), and the doctrine paths (`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
-   `${CLAUDE_PLUGIN_ROOT}/templates/CHECK-CRITERIA.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
+   `${CLAUDE_PLUGIN_ROOT}/templates/checks/_method.md`, `${CLAUDE_PLUGIN_ROOT}/templates/checks/intake.md`, `${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`,
    `<board_dir>/PROTOCOL-ADDENDUM.md`). `verdict: fail` → revise against the blocking findings and
    re-check, up to `check_budget.intake` (default 2); exhausted → present anyway with the unresolved
    findings shown as open questions. Show advisory findings alongside the proposal.
