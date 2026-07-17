@@ -1,6 +1,6 @@
 ---
 name: kanban
-description: Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
+description: "Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus."
 ---
 
 # /kanban — orchestrator & dashboard
@@ -23,7 +23,8 @@ unsplit card has one `pr_urls` entry (the N=1 case).
 
 **Direct-to-`main` commits are limited to, exhaustively:** `card.md`/`BOARD.md`/`KNOWLEDGE.md` state,
 the milestone swap on splits, a split parent's terminal `slice.md`/`slice-check.md`, the deliver check
-docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), and post-PR `feedback.md`.
+docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), post-PR `feedback.md`,
+the `RETRO-INBOX.md` append on a card reaching `done` (§0 step 3), and the drained `AMENDMENTS.md`.
 Nothing else. Every other phase doc lives on the card's current branch. **The slice phase has no
 branch/worktree**, so `slice.md`/`slice-check.md` are written into `<board_dir>/CARD-NNN-slug/` **in the
 primary checkout, UNCOMMITTED**, until the design transition (§5) copies them onto the design branch —
@@ -376,7 +377,7 @@ spends it per slice PR). (RATIONALE.)
 | review, **`review.md` absent** | **card-lens-reviewer × lenses, in parallel** (only `review_lenses_failed`, if set) | per-lens (Section 5, review panel) |
 | review, panel passed, diff > `size_limit`, `split.md` absent | **pr-splitter** | sonnet |
 | review, `split.md` present, `split-check.md` absent | **card-split-checker** | sonnet |
-| review, split check passed with N ≥ 2, `split-acceptance.md` absent | **card-lens-reviewer × N, in SLICE MODE** — lens `acceptance`, **one per slice**, in parallel, each carrying `slice: k`, `slices: N`, slice `k`'s path list + change types, and `split.md` | opus |
+| review, split check passed with N ≥ 2, `split-acceptance.md` absent | **card-lens-reviewer × N, in SLICE MODE** — lens `acceptance`, **one per slice**, in parallel, each carrying `slice: k`, `slices: N`, slice `k`'s path list + change types, and `split.md` | sonnet — narrow trace re-check; code already opus-reviewed (RATIONALE) |
 | deliver (design PR, implementation PR, **or slice PR `k`**) | card-deliverer | haiku |
 | design PR open, `deliver-check-design.md` absent | card-deliver-checker (design mode) | sonnet |
 | implementation PR open, `deliver-check.md` absent (**slice PR `k` open, `deliver-check-<k>.md` absent**) | card-deliver-checker (implementation mode) | sonnet |
@@ -455,6 +456,11 @@ another's, `<board_dir>/PROTOCOL-ADDENDUM.md`). Assemble the panel from the chan
 | readability | always | sonnet |
 | python | diff touches `*.py` | sonnet |
 | typescript | diff touches `*.ts` / `*.tsx` | sonnet |
+
+**Filter by `config.review_panel` (missing → `full`).** `standard` = acceptance,
+functionality, tests, security + language lenses; `light` = acceptance, functionality + language
+lenses. A `gate_layer` card under `standard`/`light` reviews, but report §7 warns `⚠ CARD-NNN
+(gate_layer) reviewed under review_panel: <tier>`.
 
 **Which lenses run is read off the card, never remembered.** `review_lenses_failed` empty/absent → the
 full panel (filtered by the diff); non-empty → exactly those lenses (every other already passed and its
