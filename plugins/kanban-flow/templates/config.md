@@ -76,8 +76,9 @@ and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) re
 - **checks** — every producer has a checker; every check runs by default. Turning
   one `off` (escape hatch for a noisy checker) makes `/kanban` warn every pump and on
   `BOARD.md` what ships unchecked — `slice: off` in particular removes the pre-code
-  **size_limit** cap (`SLC-SIZE`). No `implement` switch exists (tester + lens panel
-  are unconditional). Omitted → `on`. (RATIONALE.)
+  **size_limit** cap (`SLC-SIZE`), and `split: off` disables the carve entirely (an
+  oversized branch ships as one oversized PR). No `implement` switch exists (tester +
+  lens panel are unconditional). Omitted → `on`. (RATIONALE.)
 - **check_budget** — per-producer automatic rework loops before a card parks;
   `deliver`/`split` are spent **per PR** (`/kanban` resets the counters at each
   PR/slice boundary). Omitted producer → `2`, except `deliver`/`split` → `1`.
