@@ -121,9 +121,11 @@ a migration branch, never the plugin.
      on an existing backlog that must not surprise them.
    - *0.4 → 0.5:* `review_panel: full` — the review-panel size knob. `full` is byte-identical to
      pre-0.5 behaviour; say that `standard`/`light` exist, what they drop, and that `full` should
-     stay for `gate_layer` cards. Also note (no action needed): check docs written before 0.5 lack
-     the YAML `criteria:` frontmatter — `/kanban` still reads their `verdict:` headers fine, and
-     `/retro` falls back to the doc body's criteria table for them.
+     stay for `gate_layer` cards. Also note (no action needed by /migrate — the docs live on card
+     branches you never touch): check docs written before 0.5 use a `## Verdict` heading the new
+     gate predicates cannot read. `/kanban`'s legacy normalization deletes such a doc on an
+     in-flight card so its checker re-runs and regenerates it in current form; done cards' merged
+     docs stay, and `/retro` falls back to their body criteria tables.
 
 8. **Ship a PR.** Commit the deletions, addendum appends, `template_overrides` wiring and
    config changes (Conventional Commits + the project's `Co-Authored-By` trailer). Push and

@@ -12,7 +12,7 @@ Cover every `status: done` card (and any long-`blocked` card) not in a previous 
 
 **Start from the index.** Read `<board_dir>/RETRO-INBOX.md` FIRST — one line per done card, appended by `/kanban` at `done`:
 `CARD-NNN | delivered YYYY-MM-DD | reworks {slice:0,design:1,implement:2,split:0,deliver:0} | elapsed Nd | est/actual lines E/A | slices N | human-comments M`
-The line is a triage index, not a substitute for the docs. **Open a card's full phase docs only when its line flags something** — any `reworks > 0`, an est/actual divergence, `slices > 1`, or `human-comments > 0`; a card clean on every field is covered with no deep read. For a flagged card, read:
+The line is a triage index, not a substitute for the docs. **Open a card's full phase docs only when its line flags something** — any `reworks > 0`, an est/actual divergence, `slices > 1`, or `human-comments > 0`; a card clean on every field is covered with no deep read. A done card with **no line at all** (pre-0.5, or an inbox gap) is always deep-read. For a flagged card, read:
 
 **The system's trace:**
 - `card.md` metrics: `reworks` (the per-producer map — *which* producer, not the total), `started` → `delivered` elapsed, phase count, `estimated_lines` vs `actual_lines`.
