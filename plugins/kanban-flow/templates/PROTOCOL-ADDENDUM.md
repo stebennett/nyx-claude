@@ -9,6 +9,8 @@ structured-return format or the sole-writer invariant.
 `[retro-YYYY-MM-DD]`. Universal lessons belong in the plugin instead — `/retro`
 flags those as a plugin PR rather than writing them here.
 
+**Size budget:** this file rides every dispatch — keep it under 4 KB; one line per rule.
+
 <!-- No project-specific rules yet. -->
 
 ## Check criteria

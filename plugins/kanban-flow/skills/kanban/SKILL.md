@@ -1,6 +1,6 @@
 ---
 name: kanban
-description: Orchestrate a project's kanban board. Reconciles state from merged PRs, renders the board, schedules ready cards to the WIP limit, runs each through slice→design→(design PR)→implement→test→review→[split]→(implementation PR) via the card-* agents with automatic rework loops. Design docs ship first, code second; an oversized branch ships as several implementation PRs. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
+description: Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
 ---
 
 # /kanban — orchestrator & dashboard
@@ -66,9 +66,12 @@ Card state must survive lost commits and merges that happen while no pump runs. 
    - **That was the last PR** (`k = N`, or `N` is 0/1) → **the completeness backstop runs BEFORE any
      teardown** (it checks the original branch/worktree). Quick probe: `git -C <worktree> diff --numstat
      origin/main...<original-branch>` (excluding `size_exclude`). **Empty → complete:** `status: done`,
-     `phase: done`, `delivered` = merge date, tear down the original worktree, delete the original
-     branch **locally and on `origin`** (the only moment either may be deleted) and any leftover slice
-     worktrees. **Non-empty is not yet a verdict** (squash/rebase leaves the merge base behind) → **read
+     `phase: done`, `delivered` = merge date; **append the card's `/retro` line** to
+     `<board_dir>/RETRO-INBOX.md` in this same state commit — `CARD-NNN | delivered YYYY-MM-DD | reworks
+     {slice:_,design:_,implement:_,split:_,deliver:_} | elapsed Nd | est/actual lines E/A | slices N |
+     human-comments M` (M = human PR-comment count across both PRs). Then tear down the original worktree,
+     delete the original branch **locally and on `origin`** (the only moment either may be deleted) and
+     any leftover slice worktrees. **Non-empty is not yet a verdict** (squash/rebase leaves the merge base behind) → **read
      `references/reconcile-edge-cases.md`** for the two-direction procedure.
 4. For every card, check **every** not-yet-merged url (`design_pr_url` + each `pr_urls` entry):
    `{gh_command} pr view <url> --json state,mergedAt`. `MERGED` → apply step 2/3. `CLOSED` (unmerged)
@@ -175,7 +178,9 @@ checker first.
   prominently. `slice=manual` → present children + `dependents_rewire`; driver picks `approve` / `revise
   (feedback)` / `keep-as-one` (→ `right_sized: true`, design transition in §5).
   - **Carve-out (sole-writer):** create each child `docs/cards/CARD-NNN-slug/card.md` from
-    `card-template.md` (§1 resolution; ids continue from the current max) with `status: backlog`,
+    `card-template.md` (§1 resolution; ids continue from the current max) — **instantiation strips the
+    template's frontmatter comments, so the child `card.md` carries bare frontmatter** — with `status:
+    backlog`,
     **`right_sized: true`**, **`estimated_lines` copied from that child's `proposed_cards` entry** (the
     only moment it can be recorded; `DLV-SIZE`/`/retro` depend on it), the proposed
     `layer`/`type`/`depends_on` (sibling titles → new ids), and `## Notes` `Split out of <parent-id>`;

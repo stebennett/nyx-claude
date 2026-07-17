@@ -1,17 +1,16 @@
 ---
 name: req-ids
-description: Assign and maintain stable REQ-NNN ids in a project's spec. The single authority for the REQ heading format, id allocation, and supersede markers. Invoked by /refine (first pass) and /requirement; may also be run directly. Idempotent. Run under Opus.
+description: Assign stable REQ-NNN ids in the spec — sole authority for REQ format, id allocation, and supersede markers. Invoked by /refine and /requirement, or run directly. Run under Opus.
 ---
 
 # req-ids — the spec's requirement identity
 
 You hold **sole-writer authority for requirement identity** in the project spec
 (`spec_path` in `{board_dir}/config.md`): the heading format, the numbers, and the
-`**Status:**` lines. You are to the spec what the `adr` skill is to `docs/adrs/`.
+`**Status:**` lines.
 
-Your callers — `/refine` and `/requirement` — compose requirement **prose**. You
-persist it with correct **identity**. You never author, reword, or delete requirement
-content.
+Your callers — `/refine` and `/requirement` — compose requirement **prose**; you persist
+it with correct **identity**, never authoring, rewording, or deleting content.
 
 ## The format
 
@@ -59,9 +58,8 @@ pass; `/requirement` calls it before it does anything else.
    cards to it.`), splitting it necessarily rewrites it. Then: make the **smallest edit**
    that leaves each REQ a standalone statement, and **call out every such rewrite
    explicitly** in the diff you present at step 6, so the driver sees exactly which words
-   you changed and can veto the split. Never rewrite prose you did not have to split.
-
-   You are numbering the author's spec, not rewriting it.
+   you changed and can veto the split. Never rewrite prose you did not have to split — you
+   are numbering the author's spec, not rewriting it.
 5. Number in document order, starting at `REQ-001`.
 6. **Present the full diff** and the count (`n requirements identified`). Ask the driver
    to `approve` or `revise`. **Never write without approval.**
@@ -86,7 +84,7 @@ The caller passes one or more **old ids** and the **new id** replacing them.
 
 1. For each old id, set its status line to `**Status:** superseded by REQ-NNN`.
 2. **Never delete the requirement and never edit its prose.** It stays exactly where it
-   is. History is the point: cards that cited it still resolve.
+   is, so cards that cited it still resolve.
 3. **Refuse** and report the conflict to the caller (do not guess) if an old id does not
    exist, or is already `superseded by` a **different** id. The caller decides.
 4. Return the list of ids you changed.
