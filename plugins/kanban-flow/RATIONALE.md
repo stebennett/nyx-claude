@@ -1,0 +1,129 @@
+# kanban-flow — design rationale
+
+Design rationale for kanban-flow. Never dispatched to agents; read it when editing the plugin.
+
+The operational rules live in the templates and agent files an agent actually reads
+(`templates/AGENT-PROTOCOL.md`, `templates/checks/`, `templates/lenses/`, the `agents/` files). This
+file holds the *why* behind the load-bearing ones — the arguments that justify a rule but that an agent
+does not need in front of it to execute. Each section names the file and rule it explains.
+
+## `templates/checks/_method.md` — why the checker contract is enforced, not requested
+
+An LLM checking an LLM tends to rubber-stamp: handed a producer's artifact that argues its own case, a
+checker that reads the argument first is only agreeing with it, and it will not notice that it is. The
+whole check layer exists to counter that tendency, and two of its rules are *enforced* by the
+orchestrator rather than merely stated, because a rule a checker can quietly skip is not a safeguard.
+
+**Verdict-every-criterion (why an omission is malformed).** The orchestrator handed the checker its
+exact id set, so it holds that set and compares the returned `criteria` table against it before doing
+anything else. A table missing any id is a **malformed result**: the card does not advance, no gate is
+applied, the doc is not persisted, and the checker is re-dispatched with the omitted ids named. A
+`verdict: pass` over an empty or partial table is not a pass — it is a checker that did not check, and
+it is caught. This is the mirror of the location rule: the location rule stops a checker *inventing*
+findings; the completeness valve stops it *skimming*. A skim is the more dangerous of the two, because
+a `pass` that checked nothing manufactures confidence. And it costs the producer nothing — an
+incomplete check is the checker's failure, not a defect in the work, so it never spends the producer's
+rework budget.
+
+**Evidence over adjectives (why agreement must be earned).** A `pass` with thin evidence is worse than
+no check at all, because it manufactures confidence where there was none. Each passing criterion's
+evidence must state what was actually verified — not "looks fine". `/retro` reads these to tell
+diligence from a skim.
+
+## `templates/checks/split.md` — why `SPL-NO-LOSS` is the criterion that matters most
+
+A splitter that silently drops code ships a broken card, and the defect is invisible to every slice's
+own review — each slice looks complete on its own terms, so nothing downstream of the split would ever
+catch it. `SPL-NO-LOSS` is also the guarantee that makes it safe for the lens panel to have reviewed
+the whole diff *before* the split happened: if the union of the slices is exactly the change set the
+panel approved, the slices are the code it already reviewed. `pr-splitter` is therefore a
+**redistribution, not a rewrite** — never a second chance to change the code unreviewed. That is why
+the check is set-equality in *both* directions (a deletion no slice performs is lost work exactly as
+much as a dropped file), and why it is the one criterion a split check may never omit.
+
+## `templates/checks/deliver.md` — why a `DLV-SIZE` breach is advisory, not blocking
+
+The code is written and the PR is open. Re-dispatching `card-deliverer` cannot un-write it, so a
+blocking verdict would burn rework budget against a remedy that does not exist at this phase. That is
+why the breach is `advisory` — but deliberately not a shrug: the checker must propose a concrete split
+in the finding's `remedy` (which commits or file groups become which smaller PRs, in what order), which
+the orchestrator surfaces prominently for the driver, who decides whether to land the PR or split it.
+
+**Why the card's own phase docs are excluded from the count.** The delivered diff also carries
+`implement.md`, `test.md`, `review.md`, `pr-body.md` and `feedback.md` under the board dir. The budget
+measures *the change a human must review, not the paperwork describing it*, and `estimated_lines` — the
+number `actual_lines` is reported against — estimated code + tests only. Counting the docs inflates
+every card against its own estimate and can breach `size_limit` on documentation volume alone, so they
+are excluded even if a local `size_exclude` forgets to.
+
+## `templates/AGENT-PROTOCOL.md` — why a design-phase agent records ADR proposals in its phase doc
+
+Design-phase ADRs are written only once the design *check* passes, because the `adr` skill reserves a
+number the moment it writes, and an ADR the checker rejects would burn one on a decision that gets
+reworked. So the orchestrator holds proposed ADRs unwritten across the checker's whole dispatch — and a
+pump can end inside that hold, at which point the only surviving copy of anything is what was persisted
+to disk. A result block is not persisted; a `phase_doc` is. That is why a design-phase agent must write
+each proposal out in full under a `## Proposed ADRs` section (title, context, decision, consequences,
+any `supersedes`) **and** return it in `proposed_adrs`: the section is the durable copy the checker
+verdicts and the orchestrator routes from, not a replacement for the field. Nothing load-bearing may
+live only in a result block that the next pump will never see.
+Why slice docs are written uncommitted in the primary checkout and copied onto the design
+branch at the design transition, never committed to `main`: committing `slice.md` to `main`
+puts it on the design branch's *base*, so the design PR's diff would not carry it — and
+`DLV-DOCS`, which requires it to ride that PR, fails **blocking**, forever. Its remedy ("you
+persist it yourself, commit the missing doc, no rework, no budget") is a no-op because the file
+is already identical on the base; the check doc is deleted, the next pump re-checks and fails
+identically. An unbounded livelock that spends no budget and never advances the card — and under
+`/loop`, one that burns unattended. Uncommitted-in-the-primary-checkout, then copied at the
+transition, is the *only* route that puts `slice.md` in the design PR's diff. This is also why
+the state commit stages exact paths (`git add <path>`, never `git add -A`): a blanket stage
+sweeps the deliberately-untracked slice docs onto `main` and triggers exactly this livelock. The
+per-slice deliver-check filenames (`deliver-check-<k>.md`) exist against the same hazard: a
+shared `deliver-check.md` is pre-present on the next slice's branch (cut from a `main` that
+already carries slice `k`'s copy), so its "PR open + check doc absent" predicate is false and
+slices 2..N ship unchecked. A **split parent** is the one exception — no branch will ever carry
+its docs, so its `slice.md`/`slice-check.md` are its terminal record direct on `main`.
+§5's completeness valve — the single most important safeguard in the check layer, because *an LLM
+checking an LLM tends to rubber-stamp* — rejects any checker result whose check-doc `criteria:`
+frontmatter map omits an id of its target's set. That comparison needs the set **in the
+orchestrator's hands**, and *you cannot notice the absence of an id you have never seen.* Handing
+the checker absolute paths to its `checks/` files is not the same as holding their contents: a
+path lets the *checker* read the file; only the §1 read lets *you* audit what it returned. Skip
+it and a checker answering 5 of 8 `DSG-*` ids with `verdict: pass` sails through the valve, the
+gate, and into the design PR. (The fuller "enforced, not requested" argument is in the
+`templates/checks/_method.md` section above; a skim is more dangerous than an invention because a
+`pass` that checked nothing manufactures confidence.)
+Both halves are load-bearing. **Before any PR exists**, there is no PR to close, re-target, or
+rewrite — which is precisely what makes an *automatic* split (no driver gate) safe by
+construction: the hazard a split would otherwise carry (destroying something a human is in the
+middle of reading) does not exist; nothing has been published. **After the panel**, the carve
+runs once, on final approved code. Run the splitter *before* the panel and every blocking finding
+would change the code underneath the carve and stale it — file sizes shift, a fix drags code
+across a slice boundary, a slice tips over budget — forcing a re-split on every rework pass.
+Panel-first has no such loop. And nothing is lost by reviewing the whole diff first: `SPL-NO-LOSS`
+requires the union of the slices to equal the original diff exactly, so the slices are
+byte-for-byte the code the panel already approved. The splitter is a **redistribution, not a
+rewrite.**
+Every diff in the split layer names the branch (`origin/main...<original-branch>`), in the
+orchestrator and in **both** the splitter and its checker. A worktree can be moved by any agent,
+and a pump can die at any moment and leave it moved; a `HEAD` on a scratch branch is a *strict
+subset* of the card's work. A checker re-deriving from the same wrong `HEAD` agrees with it and
+passes — an independent check from a corrupted premise is not independent, and would certify
+`SPL-NO-LOSS` on a carve that omitted every file of slices `k+1..N`.
+Three deliver remedies (`DLV-BASE`/`DLV-BODY-TRUE` on either PR, `DLV-DOCS` on the design PR) have
+the orchestrator fix the problem itself and re-arm the check, spending **no** budget. Every other
+loop is bounded by `check_budget`; unbounded, these three cycle forever whenever the checker's
+finding is wrong or the fix is a no-op, and no budget is consumed so nothing ever stops them. The
+`## Notes` self-fix entry is the *only* thing that survives a pump boundary (the fix itself is on
+GitHub or the branch, and the check doc is gone), so it is what makes a second failure detectable
+from disk alone. The cap turns the second identical failure into a park (`check failed — <id>
+(self-fix did not clear it)`) rather than an infinite re-fix — and the park spends no budget
+either, because the point is to stop the loop, not to tax the producer for the checker's or the
+orchestrator's own mistake.
+`check_budget.deliver` is documented per PR and `reworks.implement` is spent per slice PR. A split
+card ships N implementation PRs; without the resets, slice 1 burning its loops would leave slices
+2..N with **zero** — the first finding on slice 2 would park the card with no rework attempted, on
+a card whose only sin was being big enough to split. A red slice-2 CI is not slice-1's fault, and
+the code is a different diff. Nothing is lost by the resets: the evidence is durable on `main` in
+the per-slice check docs (`deliver-check-<k>.md`) and `implement.md`'s `## Rework` sections, where
+`/retro` reads it — the counter is an allowance, not the record.
