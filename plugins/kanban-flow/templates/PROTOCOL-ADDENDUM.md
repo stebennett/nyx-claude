@@ -24,7 +24,7 @@ never renamed, never reused. `/retro` owns this section; it may add, edit and pr
 `LOCAL-` criteria, but never touches the plugin's.
 
 Add a `## Check criteria — <target>` subsection (`target` ∈ `intake` | `slice` |
-`design` | `deliver`) when a lesson earns one. Format matches the plugin file: a
+`design` | `split` | `deliver`) when a lesson earns one. Format matches the plugin file: a
 table of `| id | criterion | severity when failed |`.
 
 <!-- No project-specific criteria yet. -->

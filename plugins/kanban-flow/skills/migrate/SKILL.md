@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: One-time, idempotent cutover upgrading an older kanban-flow repo to plugin-owned doctrine: delete stale copies, fold customizations into PROTOCOL-ADDENDUM.md, preserve templates via template_overrides, add config keys, stamp version, open a PR.
+description: "One-time, idempotent cutover upgrading an older kanban-flow repo to plugin-owned doctrine: delete stale copies, fold customizations into PROTOCOL-ADDENDUM.md, preserve templates via template_overrides, add config keys, stamp version, open a PR."
 ---
 
 # /migrate — bring an existing repo onto plugin-owned doctrine

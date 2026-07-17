@@ -1,6 +1,6 @@
 ---
 name: refine
-description: Populate or re-slice a project's backlog: backfill REQ ids via req-ids, then propose ordered, decomposed cards and a milestone plan for approval. Intake only — never implements. Run under Opus.
+description: "Populate or re-slice a project's backlog: backfill REQ ids via req-ids, then propose ordered, decomposed cards and a milestone plan for approval. Intake only — never implements. Run under Opus."
 ---
 
 # Refine — backlog intake

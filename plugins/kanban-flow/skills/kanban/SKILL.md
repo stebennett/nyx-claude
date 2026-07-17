@@ -1,6 +1,6 @@
 ---
 name: kanban
-description: Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus.
+description: "Orchestrate the kanban board: reconcile merged PRs, schedule ready cards, run each through slice→design→implement→test→review→deliver via the card-* agents. Sole writer of BOARD.md, KNOWLEDGE.md, card.md. Safe under /loop. Run under Opus."
 ---
 
 # /kanban — orchestrator & dashboard
@@ -23,7 +23,8 @@ unsplit card has one `pr_urls` entry (the N=1 case).
 
 **Direct-to-`main` commits are limited to, exhaustively:** `card.md`/`BOARD.md`/`KNOWLEDGE.md` state,
 the milestone swap on splits, a split parent's terminal `slice.md`/`slice-check.md`, the deliver check
-docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), and post-PR `feedback.md`.
+docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), post-PR `feedback.md`,
+the `RETRO-INBOX.md` append on a card reaching `done` (§0 step 3), and the drained `AMENDMENTS.md`.
 Nothing else. Every other phase doc lives on the card's current branch. **The slice phase has no
 branch/worktree**, so `slice.md`/`slice-check.md` are written into `<board_dir>/CARD-NNN-slug/` **in the
 primary checkout, UNCOMMITTED**, until the design transition (§5) copies them onto the design branch —

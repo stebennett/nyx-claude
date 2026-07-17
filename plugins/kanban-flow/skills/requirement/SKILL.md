@@ -1,6 +1,6 @@
 ---
 name: requirement
-description: Add, amend, or supersede one requirement on a running project: interview the driver, persist via req-ids, slice into cards, apply board impact. Intake only — never implements. Run under Opus.
+description: "Add, amend, or supersede one requirement on a running project: interview the driver, persist via req-ids, slice into cards, apply board impact. Intake only — never implements. Run under Opus."
 ---
 
 # /requirement — add, amend, or supersede a requirement

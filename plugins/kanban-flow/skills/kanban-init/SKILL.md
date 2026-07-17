@@ -1,6 +1,6 @@
 ---
 name: kanban-init
-description: Scaffold a repo for kanban-flow: copy config, an empty addendum, and empty board starters into the board dir (default docs/cards/). Idempotent: never clobbers a live board. Run once, before /refine.
+description: "Scaffold a repo for kanban-flow: copy config, an empty addendum, and empty board starters into the board dir (default docs/cards/). Idempotent: never clobbers a live board. Run once, before /refine."
 ---
 
 # /kanban-init — scaffold a project for kanban-flow
