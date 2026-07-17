@@ -26,13 +26,16 @@ a migration branch, never the plugin.
    template file already registered in `template_overrides` (pointing at that path) is a
    deliberately-preserved override, **not** a leftover; only an *unregistered* copy counts.
    `REVIEW-LENSES.md` and `CHECK-CRITERIA.md` are legacy plugin-side names deleted from the
-   plugin in this series — a repo copy of either is now unambiguously a leftover. Also check
+   plugin at 0.5.0 — a repo copy of either is now unambiguously a leftover. Also check
    each `docs/cards/CARD-*/card.md` for a legacy scalar or missing `reworks`, a `reworks` map
    missing the `split` key, or a scalar `pr_url` (present or absent) — each is a Step 6 rewrite
    that has not run. Compare the plugin's current `config.md` frontmatter keys against the
-   repo's to detect any missing (additive-only).
+   repo's to detect any missing (additive-only). Check the addendum's plugin boilerplate for
+   staleness (Step 3a): a `## Check criteria` intro whose target enum lacks `split`, or a header
+   missing the size-budget line.
    **If the version is already current AND no unregistered copy is present AND no card needs its
-   frontmatter migrated AND no config key is missing → report "already migrated" and stop** (do
+   frontmatter migrated AND no config key is missing AND the addendum boilerplate is current →
+   report "already migrated" and stop** (do
    nothing destructive). Detect the work itself, not just the version stamp — it records what a
    previous run *intended*, not what it *achieved*.
 
@@ -43,6 +46,15 @@ a migration branch, never the plugin.
    older repo never had one), create it from
    `${CLAUDE_PLUGIN_ROOT}/templates/PROTOCOL-ADDENDUM.md` first, so Step 4's appends have
    a home.
+
+   **3a. Refresh its plugin boilerplate (0.5.0).** The addendum's un-headed intro and the
+   `## Check criteria` section intro are plugin boilerplate copied at init; pre-0.5 repos carry
+   a stale version. Bring exactly those up to the current template: the target enum gains
+   `split` (`intake | slice | design | split | deliver`) and the header gains the size-budget
+   line ("rides every dispatch — keep under 4 KB"). **Touch nothing else in the file** — every
+   `[retro-…]`/`[migrate-…]` entry, every `LOCAL-` criterion, and any other local rule stays
+   byte-identical. If the boilerplate was locally edited so the stale lines aren't found
+   verbatim, surface it to the driver instead of guessing.
 
 4. **Doctrine copies** — for each of `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md` and
    `CHECK-CRITERIA.md` present in `<board_dir>`, diff it against the plugin's current
@@ -101,12 +113,17 @@ a migration branch, never the plugin.
    never change an existing value, nor a `template_overrides` entry set in Step 5). Then set
    `kanban_flow_version` to the installed plugin version.
 
-   This run adds `checks`, `check_budget`, `size_limit`, `size_exclude` with plugin defaults (every
-   check `on`, **including `checks.split`** — the carve's escape hatch, which older configs predate;
-   budgets 2 except `split: 1` and `deliver: 1`; `size_limit: 500`). **Tell the driver in the PR body
-   what `size_limit` means:** from the next `/kanban` pump, `card-slice-checker` *forces a split* on
-   any card it projects over 500 changed lines including tests — a real behaviour change on an
-   existing backlog that must not surprise them.
+   **Per-version key deltas — tell the driver in the PR body what each added key changes:**
+   - *Pre-0.4 → :* `checks`, `check_budget`, `size_limit`, `size_exclude` (every check `on`,
+     **including `checks.split`**; budgets 2 except `split: 1` and `deliver: 1`; `size_limit: 500`).
+     **Say what `size_limit` means:** from the next `/kanban` pump, `card-slice-checker` *forces a
+     split* on any card it projects over 500 changed lines including tests — a real behaviour change
+     on an existing backlog that must not surprise them.
+   - *0.4 → 0.5:* `review_panel: full` — the review-panel size knob. `full` is byte-identical to
+     pre-0.5 behaviour; say that `standard`/`light` exist, what they drop, and that `full` should
+     stay for `gate_layer` cards. Also note (no action needed): check docs written before 0.5 lack
+     the YAML `criteria:` frontmatter — `/kanban` still reads their `verdict:` headers fine, and
+     `/retro` falls back to the doc body's criteria table for them.
 
 8. **Ship a PR.** Commit the deletions, addendum appends, `template_overrides` wiring and
    config changes (Conventional Commits + the project's `Co-Authored-By` trailer). Push and
