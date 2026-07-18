@@ -79,20 +79,25 @@ For a `PENDING` PR → set `renovator:skipped`, reason "CI in progress — will 
 
 **Running the fix-loop for one PR:**
 
-The normal path is a single dispatch that owns the whole `fix_attempts` budget: dispatch the fixer, it runs its push→remote-CI cycles inline and returns a terminal outcome, then you route that outcome. The `renovator:fixing` label and the persisted `attempt`/head-SHA exist only to cover the RESUME case — a prior dispatch that was interrupted (crash/timeout) or whose branch got clobbered by a Renovate rebase mid-loop. On a normal fresh start there is nothing to resume: `attempt` defaults to 1.
+The normal path is a single dispatch that owns the whole `fix_attempts` budget: dispatch the fixer, it runs its push→remote-CI cycles inline and returns a terminal outcome, then you route that outcome. The `renovator:fixing` label and the persisted `fix_base_sha` exist only to cover the RESUME case — a prior dispatch that was interrupted (crash/timeout) or whose branch got clobbered by a Renovate rebase mid-loop.
 
-1. Read persisted state from the sticky comment: `attempt` (default 1 if none) and `head_sha` (the SHA the last attempt ran against).
-2. **Clobber check:** fetch the PR's current head SHA. If a stored `head_sha` exists and the current head no longer contains the previous attempt's commits (Renovate force-rebased), reset `attempt` to 1.
-3. If `attempt` > `fix_attempts` → park `renovator:parked`, reason "attempts exhausted", keep the last summary. Stop.
-4. Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `attempt: <k>/<fix_attempts>`, and the current head SHA.
-5. Dispatch the agent (`renovate-ci-fixer` or `renovate-major-upgrader`) with `{ pr, bump, old_version, new_version, fix_attempts, attempt, fix_loop_path }`. `fix_loop_path` is the absolute path to `references/fix-loop.md` inside this skill's own directory (this skill's base directory is provided to you when the skill is invoked; join it with `references/fix-loop.md`) — the fixer agents read the shared doctrine from this path, not from a bare relative path. On resume, pass the already-consumed `attempt` so the total budget across dispatches never exceeds `fix_attempts`.
-6. The dispatch waits inline for the agent to reach a terminal outcome (it does not hand back mid-loop). On return, route by `outcome`:
+Accounting rule: `attempt` is the number of push→remote-CI cycles ALREADY consumed on this PR (0 on a fresh start), matching the fixer's `fix-loop.md` contract. Track it from git, not a guess: each push→CI cycle lands at least one commit, so the commits the fixer has pushed since the loop's base SHA are a conservative count of cycles consumed.
+
+1. Read persisted `fix_base_sha` from the sticky comment (the branch head when this fix-loop budget began; absent on a fresh start). Fetch the PR's current head SHA.
+2. **Clobber check:** if `fix_base_sha` is set but the current branch no longer contains it (`git merge-base --is-ancestor <fix_base_sha> <head>` returns non-zero — Renovate force-rebased away the fixer's commits), treat this as a fresh start: clear `fix_base_sha`.
+3. **Compute consumed cycles (`attempt`):**
+   - Fresh start (no `fix_base_sha`): `attempt` is 0; set `fix_base_sha` to the current head SHA (the base before any fixer commit).
+   - Resume (`fix_base_sha` set and still an ancestor): `attempt` is `git rev-list --count <fix_base_sha>..<head>` — the commits pushed since the loop began.
+4. If `attempt` >= `fix_attempts` → park `renovator:parked`, reason "attempts exhausted", keep the last summary. Stop.
+5. Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `fix: <attempt>/<fix_attempts>`, and `fix_base_sha`.
+6. Dispatch the agent (`renovate-ci-fixer` or `renovate-major-upgrader`) with `{ pr, bump, old_version, new_version, fix_attempts, attempt, fix_loop_path }`. `fix_loop_path` is the absolute path to `references/fix-loop.md` inside this skill's own directory (this skill's base directory is provided to you when the skill is invoked; join it with `references/fix-loop.md`) — the fixer reads the shared doctrine from this path, not a bare relative path. Because `attempt` carries the already-consumed count, the fixer's own bounding (it sums `attempt` + its new pushes against `fix_attempts`) keeps the total across dispatches within budget.
+7. The dispatch waits inline for the agent to reach a terminal outcome (it does not hand back mid-loop). On return, route by `outcome`:
    - `green` + bucket is red-CI (patch/minor) + `touched_tests: false` → dispatch `renovate-merger` exactly as in step 5 (its independent re-verify gates the merge). On `merged`, remove `renovator:*` and record outcome `fixed-merged`.
-   - `green` + (bump is major OR `touched_tests: true`) → set `renovator:review`; upsert comment: "fixed — awaiting human diff review (renovator authored these changes)", include the agent `summary`.
+   - `green` + (bump is major OR `touched_tests: true`) → set `renovator:review`; upsert comment: "fixed — awaiting human diff review (renovator authored these changes)", include the agent `summary` and its returned `attempts`.
    - `exhausted` → set `renovator:parked`; upsert comment with `summary` + "attempts exhausted".
    - `needs-human` → set `renovator:parked`; upsert comment: "needs human — reproducible but not safely fixable: " + `summary`.
    - `cannot-reproduce` → set `renovator:parked`; upsert comment: "can't reproduce CI locally — " + `summary`.
-   - If the dispatch itself was interrupted (crashed/timed out) before returning any outcome and more attempts remain → keep `renovator:fixing`; increment the persisted `attempt` by 1 (a conservative estimate — the true count consumed inside the interrupted dispatch is unknown to you). The next pass resumes it via steps 1–2 above.
+   - If the dispatch was interrupted (crashed/timed out) before returning any outcome → leave `renovator:fixing` and `fix_base_sha` in place; the NEXT pass recomputes `attempt` from the commit count (steps 1–3), which accurately reflects cycles actually consumed — do NOT guess an increment. If that recomputed `attempt` has reached `fix_attempts`, step 4 parks it.
 
 ### 8. Report
 Print a compact table — one row per candidate: `PR # | title | bump | bucket | outcome` (outcome ∈ merged / fixed-merged / review / fixing / parked / skipped / rebasing / locked). This is the human's after-action view of the pass.
@@ -120,7 +125,7 @@ Two layers per PR:
   **renovator** · state: `<working|skipped|parked|fixing|review>` · <reason>
   - update: `<dep>` <old> → <new> (<bump>)
   - CI: <last conclusion>
-  - fix: `<attempt>/<fix_attempts>` · head `<short-sha>`
+  - fix: `<attempt>/<fix_attempts>` · base `<short fix_base_sha>`
   - summary: <agent summary, when parked/review>
   - updated: <UTC timestamp>
   ```
