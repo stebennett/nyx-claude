@@ -35,7 +35,7 @@ Run the recipe in the worktree. On failure, make an adaptation change (step 4) a
 - If the only path to green you can find is a forbidden change, STOP and return outcome `needs-human` — that is a human's call.
 
 ### 5. Confirm on remote CI
-When the recipe passes locally, commit and push ONCE to the PR branch. Wait for remote CI to settle (`gh pr checks <pr>`).
+When the recipe passes locally, commit and push ONCE to the PR branch. Each push→CI cycle must add at least one NEW commit — do not amend or force-push over a commit from a previous cycle; the orchestrator counts your commits to track how much of the `fix_attempts` budget you have used. Wait for remote CI to settle (`gh pr checks <pr>`).
 - Remote green → outcome `green`.
 - Remote red where local passed → read the failure, do ONE more local iteration (step 3) informed by it, then push again. Each push consumes one `fix_attempts`.
 - You stay in this one dispatch across all push→CI cycles, waiting for each remote result inline; you do not hand back between cycles.

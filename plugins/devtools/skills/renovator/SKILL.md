@@ -83,13 +83,13 @@ The normal path is a single dispatch that owns the whole `fix_attempts` budget: 
 
 Accounting rule: `attempt` is the number of push→remote-CI cycles ALREADY consumed on this PR (0 on a fresh start), matching the fixer's `fix-loop.md` contract. Track it from git, not a guess: each push→CI cycle lands at least one commit, so the commits the fixer has pushed since the loop's base SHA are a conservative count of cycles consumed.
 
-1. Read persisted `fix_base_sha` from the sticky comment (the branch head when this fix-loop budget began; absent on a fresh start). Fetch the PR's current head SHA.
+1. Read persisted `fix_base_sha` from the sticky comment (the branch head when this fix-loop budget began; absent on a fresh start). Fetch the PR's current head SHA. Also read the persisted `dispatches` count (default 0) — the number of times a fixer has been dispatched for this PR in the current budget.
 2. **Clobber check:** if `fix_base_sha` is set but the current branch no longer contains it (`git merge-base --is-ancestor <fix_base_sha> <head>` returns non-zero — Renovate force-rebased away the fixer's commits), treat this as a fresh start: clear `fix_base_sha`.
 3. **Compute consumed cycles (`attempt`):**
    - Fresh start (no `fix_base_sha`): `attempt` is 0; set `fix_base_sha` to the current head SHA (the base before any fixer commit).
    - Resume (`fix_base_sha` set and still an ancestor): `attempt` is `git rev-list --count <fix_base_sha>..<head>` — the commits pushed since the loop began.
-4. If `attempt` >= `fix_attempts` → park `renovator:parked`, reason "attempts exhausted", keep the last summary. Stop.
-5. Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `fix: <attempt>/<fix_attempts>`, and `fix_base_sha`.
+4. If `attempt` >= `fix_attempts` (cycles consumed) OR `dispatches` >= `fix_attempts` (dispatches made — this catches a fixer that keeps crashing before it can push a commit) → park `renovator:parked`; reason "attempts exhausted" when `attempt`-based, or "no progress after repeated fix attempts" when `dispatches`-based; keep the last summary. Stop.
+5. Increment the persisted `dispatches` count (do this now, before dispatching, so an interrupted dispatch still counts against the bound). Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `fix: <attempt>/<fix_attempts>`, `fix_base_sha`, and `dispatches`.
 6. Dispatch the agent (`renovate-ci-fixer` or `renovate-major-upgrader`) with `{ pr, bump, old_version, new_version, fix_attempts, attempt, fix_loop_path }`. `fix_loop_path` is the absolute path to `references/fix-loop.md` inside this skill's own directory (this skill's base directory is provided to you when the skill is invoked; join it with `references/fix-loop.md`) — the fixer reads the shared doctrine from this path, not a bare relative path. Because `attempt` carries the already-consumed count, the fixer's own bounding (it sums `attempt` + its new pushes against `fix_attempts`) keeps the total across dispatches within budget.
 7. The dispatch waits inline for the agent to reach a terminal outcome (it does not hand back mid-loop). On return, route by `outcome`:
    - `green` + bucket is red-CI (patch/minor) + `touched_tests: false` → dispatch `renovate-merger` exactly as in step 5 (its independent re-verify gates the merge). On `merged`, remove `renovator:*` and record outcome `fixed-merged`.
@@ -125,7 +125,7 @@ Two layers per PR:
   **renovator** · state: `<working|skipped|parked|fixing|review>` · <reason>
   - update: `<dep>` <old> → <new> (<bump>)
   - CI: <last conclusion>
-  - fix: `<attempt>/<fix_attempts>` · base `<short fix_base_sha>`
+  - fix: `<attempt>/<fix_attempts>` · base `<short fix_base_sha>` · dispatches `<dispatches>`
   - summary: <agent summary, when parked/review>
   - updated: <UTC timestamp>
   ```
