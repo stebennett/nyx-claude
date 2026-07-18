@@ -99,7 +99,7 @@ Accounting rule: `attempt` is the number of push→remote-CI cycles ALREADY cons
    - `exhausted` → set `renovator:parked`; upsert comment with `summary` + "attempts exhausted".
    - `needs-human` → set `renovator:parked`; upsert comment: "needs human — reproducible but not safely fixable: " + `summary`.
    - `cannot-reproduce` → set `renovator:parked`; upsert comment: "can't reproduce CI locally — " + `summary`.
-   - If the dispatch was interrupted (crashed/timed out) before returning any outcome → leave `renovator:fixing` and `fix_base_sha` in place; the NEXT pass recomputes `attempt` from the commit count (steps 1–3), which accurately reflects cycles actually consumed — do NOT guess an increment. If that recomputed `attempt` has reached `fix_attempts`, step 4 parks it.
+   - If the dispatch was interrupted (crashed/timed out) before returning any outcome → leave `renovator:fixing` and `fix_base_sha` in place; the NEXT pass recomputes `attempt` from the commit count (steps 1–3 of this fix-loop procedure), which accurately reflects cycles actually consumed — do NOT guess an increment. If that recomputed `attempt` has reached `fix_attempts`, this procedure's step 4 (the budget gate above, not the top-level Classify step) parks it.
 
 ### 8. Report
 Print a compact table — one row per candidate: `PR # | title | bump | bucket | outcome` (outcome ∈ merged / fixed-merged / review / fixing / parked / skipped / rebasing / locked). This is the human's after-action view of the pass.
