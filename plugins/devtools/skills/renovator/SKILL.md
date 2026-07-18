@@ -1,13 +1,13 @@
 ---
 name: renovator
-description: Autonomously drain a repository's open Renovate dependency PRs — merge the provably-safe green patch/minor ones and park the rest with state annotations. Each invocation is one full pass; safe to run under /loop. Dispatches a haiku merger agent per merge so this orchestrator's context stays flat regardless of PR count. Use when asked to process, merge, or triage Renovate dependency update PRs.
+description: Autonomously drain a repository's open Renovate dependency PRs — merge the provably-safe green patch/minor ones, dispatch bounded fix-loops for red-CI and major-version PRs, and park what can't be safely resolved, all with state annotations. Each invocation is one full pass; safe to run under /loop. Dispatches a haiku merger agent per merge and a sonnet/opus fixer agent per fix-loop so this orchestrator's context stays flat regardless of PR count. Use when asked to process, merge, or triage Renovate dependency update PRs.
 ---
 
 # renovator — drain the Renovate PR queue
 
-You are the coordinator. You classify each open Renovate PR and dispatch work; you NEVER merge or edit a branch yourself — the `renovate-merger` agent performs merges in its own isolated context. Keep your context lean: hold only the PR list and one-line verdicts, not per-PR `gh` output.
+You are the coordinator. You classify each open Renovate PR and dispatch work; you NEVER merge or edit a branch yourself — the `renovate-merger` agent performs merges and the `renovate-ci-fixer`/`renovate-major-upgrader` agents run fix-loops, each in its own isolated context. Keep your context lean: hold only the PR list and one-line verdicts, not per-PR `gh` output.
 
-**v1 scope:** auto-merge green patch/minor PRs; PARK everything else (major versions, red CI). The major-upgrade and red-CI fix-loops are a later phase — do not attempt them.
+**v2 scope:** auto-merge green patch/minor PRs; dispatch a bounded fix-loop for `RED` (patch/minor) and `MAJOR` PRs via the `renovate-ci-fixer`/`renovate-major-upgrader` agents (per `enable_ci_fixer`/`enable_major_upgrader`); park whatever a fix-loop can't safely resolve, or route a green major/test-touching fix to `renovator:review` for a human.
 
 Runs fully autonomously, including under `/loop`. The human's window into a pass is the after-action report (step 8) plus the per-PR state annotations.
 
@@ -20,6 +20,9 @@ Read `.claude/renovator.json` from the repo root if it exists; otherwise use the
 | `merge_method` | `"squash"` | `gh pr merge` method |
 | `require_checks` | `true` | a PR with zero checks is skipped, never merged |
 | `max_merges_per_pass` | `1` | merges performed per pass (serialize-and-rebase throttle) |
+| `enable_ci_fixer` | `true` | attempt red-CI patch/minor fixes (else park as v1) |
+| `enable_major_upgrader` | `true` | attempt major-version upgrades (else park as v1) |
+| `fix_attempts` | `3` | max push→remote-CI cycles a fixer runs before parking |
 
 Read it with, e.g.:
 `jq -r '.renovate_authors // ["renovate[bot]"]' .claude/renovator.json 2>/dev/null` (fall back to defaults if the file or key is absent).
@@ -28,10 +31,12 @@ Read it with, e.g.:
 
 ### 1. Preflight
 - Confirm `gh auth status` succeeds and you are in a git repo with an `origin` remote (`git remote get-url origin`). If either fails, STOP and report exactly what is missing — do nothing else.
-- Ensure the three lifecycle labels exist (idempotent; `--force` updates an existing label):
+- Ensure the five lifecycle labels exist (idempotent; `--force` updates an existing label):
   - `gh label create renovator:working --color FBCA04 --description "renovator is processing this PR" --force`
   - `gh label create renovator:skipped --color EDEDED --description "renovator skipped this PR; will retry" --force`
   - `gh label create renovator:parked --color D93F0B --description "renovator parked this PR for review / v2" --force`
+  - `gh label create renovator:fixing --color 1D76DB --description "renovator is running a fix-loop on this PR" --force`
+  - `gh label create renovator:review --color 0E8A16 --description "renovator fixed this PR; awaiting human diff review" --force`
 
 ### 2. Fetch candidate PRs
 - `gh pr list --state open --limit 100 --json number,title,author,mergeStateStatus,statusCheckRollup,labels`
@@ -39,6 +44,7 @@ Read it with, e.g.:
 
 ### 3. Skip locked PRs
 - Any candidate already carrying the `renovator:working` label is owned by another run/agent — do not touch it this pass; record it with outcome `locked` for the report (step 8) and exclude it from classification.
+- A candidate carrying `renovator:fixing` is an in-flight fix-loop; do NOT skip it — it is resumed in step 7 (read its persisted `attempt` from the sticky comment and continue).
 
 ### 4. Classify
 - Assign each remaining candidate a bucket per `references/classification.md` (bump type × CI status): `GREEN_SAFE`, `MAJOR`, `RED`, or `PENDING`. Record, for each candidate, the bump type and the `old_version` → `new_version` transition (the orchestrator reads the old version from the base-branch manifest/lockfile when the title names only the new version, per `references/classification.md`) — you pass these to the merger and use them in the report and annotation.
@@ -58,20 +64,45 @@ Process `GREEN_SAFE` PRs, performing at most `max_merges_per_pass` merges this p
 - After this pass's merge lands, for every remaining `GREEN_SAFE` candidate NOT merged this pass: run `gh pr update-branch <n>` to update the branch with its base — this MERGES base into the head branch (it is not a rebase) and re-triggers CI. If it errors because the branch is already up to date or has conflicts, that is non-fatal — the PR resurfaces next pass. Set `renovator:skipped` and upsert the comment (state `skipped`, reason "rebasing after sibling merge"). They are re-evaluated next pass.
 - If no merge happened this pass (nothing was `GREEN_SAFE`), skip this step.
 
-### 7. Park the rest
-- `MAJOR` → set `renovator:parked`, upsert comment: bucket `major`, the version transition, reason "major version — needs manual upgrade (renovator v2 will automate this)".
-- `RED` → set `renovator:parked`, upsert comment: bucket `red`, reason "CI failing — needs manual fix (renovator v2 will automate this)".
-- `PENDING` → set `renovator:skipped`, upsert comment: reason "CI in progress — will retry".
+### 7. Dispatch fix-loops (or park if disabled)
+Process at most ONE fix-loop this pass (they push commits — serialize like merges). Prefer resuming a `renovator:fixing` PR over starting a new one.
+
+For a `RED` PR (or a `renovator:fixing` PR whose bump is patch/minor):
+- If `enable_ci_fixer` is false → park as v1 (`renovator:parked`, "CI failing — fixer disabled").
+- Else run the fix-loop (below) with the `renovate-ci-fixer` agent.
+
+For a `MAJOR` PR (or a `renovator:fixing` PR whose bump is major):
+- If `enable_major_upgrader` is false → park as v1 (`renovator:parked`, "major version — upgrader disabled").
+- Else run the fix-loop (below) with the `renovate-major-upgrader` agent.
+
+For a `PENDING` PR → set `renovator:skipped`, reason "CI in progress — will retry" (unchanged from v1).
+
+**Running the fix-loop for one PR:**
+
+The normal path is a single dispatch that owns the whole `fix_attempts` budget: dispatch the fixer, it runs its push→remote-CI cycles inline and returns a terminal outcome, then you route that outcome. The `renovator:fixing` label and the persisted `attempt`/head-SHA exist only to cover the RESUME case — a prior dispatch that was interrupted (crash/timeout) or whose branch got clobbered by a Renovate rebase mid-loop. On a normal fresh start there is nothing to resume: `attempt` defaults to 1.
+
+1. Read persisted state from the sticky comment: `attempt` (default 1 if none) and `head_sha` (the SHA the last attempt ran against).
+2. **Clobber check:** fetch the PR's current head SHA. If a stored `head_sha` exists and the current head no longer contains the previous attempt's commits (Renovate force-rebased), reset `attempt` to 1.
+3. If `attempt` > `fix_attempts` → park `renovator:parked`, reason "attempts exhausted", keep the last summary. Stop.
+4. Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `attempt: <k>/<fix_attempts>`, and the current head SHA.
+5. Dispatch the agent (`renovate-ci-fixer` or `renovate-major-upgrader`) with `{ pr, bump, old_version, new_version, fix_attempts, attempt, fix_loop_path }`. `fix_loop_path` is the absolute path to `references/fix-loop.md` inside this skill's own directory (this skill's base directory is provided to you when the skill is invoked; join it with `references/fix-loop.md`) — the fixer agents read the shared doctrine from this path, not from a bare relative path. On resume, pass the already-consumed `attempt` so the total budget across dispatches never exceeds `fix_attempts`.
+6. The dispatch waits inline for the agent to reach a terminal outcome (it does not hand back mid-loop). On return, route by `outcome`:
+   - `green` + bucket is red-CI (patch/minor) + `touched_tests: false` → dispatch `renovate-merger` exactly as in step 5 (its independent re-verify gates the merge). On `merged`, remove `renovator:*` and record outcome `fixed-merged`.
+   - `green` + (bump is major OR `touched_tests: true`) → set `renovator:review`; upsert comment: "fixed — awaiting human diff review (renovator authored these changes)", include the agent `summary`.
+   - `exhausted` → set `renovator:parked`; upsert comment with `summary` + "attempts exhausted".
+   - `needs-human` → set `renovator:parked`; upsert comment: "needs human — reproducible but not safely fixable: " + `summary`.
+   - `cannot-reproduce` → set `renovator:parked`; upsert comment: "can't reproduce CI locally — " + `summary`.
+   - If the dispatch itself was interrupted (crashed/timed out) before returning any outcome and more attempts remain → keep `renovator:fixing`; increment the persisted `attempt` by 1 (a conservative estimate — the true count consumed inside the interrupted dispatch is unknown to you). The next pass resumes it via steps 1–2 above.
 
 ### 8. Report
-Print a compact table — one row per candidate: `PR # | title | bump | bucket | outcome` (outcome ∈ merged / parked / skipped / rebasing / locked). This is the human's after-action view of the pass.
+Print a compact table — one row per candidate: `PR # | title | bump | bucket | outcome` (outcome ∈ merged / fixed-merged / review / fixing / parked / skipped / rebasing / locked). This is the human's after-action view of the pass.
 
 ## State annotation
 
 Two layers per PR:
 
-- **Labels** — mutually exclusive: exactly one of `renovator:working` / `renovator:skipped` / `renovator:parked` at a time. Before adding one, remove the others:
-  `gh pr edit <n> --add-label renovator:parked --remove-label renovator:working --remove-label renovator:skipped`
+- **Labels** — mutually exclusive: exactly one of `renovator:working` / `renovator:skipped` / `renovator:parked` / `renovator:fixing` / `renovator:review` at a time. Before adding one, remove the others:
+  `gh pr edit <n> --add-label renovator:parked --remove-label renovator:working --remove-label renovator:skipped --remove-label renovator:fixing --remove-label renovator:review`
 - **Sticky comment** — exactly ONE renovator comment per PR, found by the hidden marker `<!-- renovator-state -->` on its first line. Upsert it:
   1. Find it: `gh pr view <n> --json comments --jq '.comments[] | select(.body | startswith("<!-- renovator-state -->")) | .url'` (empty ⇒ none yet).
   2. If none, create: `gh pr comment <n> --body "<body>"`.
@@ -86,9 +117,11 @@ Two layers per PR:
   Comment `<body>` template (first line is the marker):
   ```
   <!-- renovator-state -->
-  **renovator** · state: `<working|skipped|parked>` · <reason>
+  **renovator** · state: `<working|skipped|parked|fixing|review>` · <reason>
   - update: `<dep>` <old> → <new> (<bump>)
   - CI: <last conclusion>
+  - fix: `<attempt>/<fix_attempts>` · head `<short-sha>`
+  - summary: <agent summary, when parked/review>
   - updated: <UTC timestamp>
   ```
   Timestamp via `date -u +%Y-%m-%dT%H:%M:%SZ` (portable; avoid the GNU-only `-Iseconds` date flag).
@@ -98,8 +131,9 @@ Two layers per PR:
 ## Under /loop
 Each invocation is one full pass. `PENDING`/rebasing/parked PRs resolve over subsequent passes as Renovate rebases and CI re-runs. No state persists outside the PRs themselves (labels + the one comment).
 
-## Never do (v1)
-- Never merge more than `max_merges_per_pass` per pass.
-- Never merge a `MAJOR`, `RED`, or `PENDING` PR.
-- Never edit a branch, resolve a conflict, or fix CI — that is v2.
+## Never do
+- Never merge more than `max_merges_per_pass` per pass; never run more than one fix-loop per pass.
+- Never merge a `MAJOR` upgrade or any fix that edited a test — those go to `renovator:review` for a human.
+- Never let a fixer fake green (delete/skip a test, blanket-suppress an error, or loosen an assertion to pass) — that is a park.
+- Never exceed `fix_attempts` push→CI cycles on a PR — park instead.
 - Never merge a PR whose author is not in `renovate_authors`.
