@@ -37,5 +37,7 @@ Create `.claude/renovator.json` in the repo root to override defaults:
 | `require_checks` | `true` | when true, a PR with zero CI checks is skipped rather than merged. |
 | `max_merges_per_pass` | `1` | merges performed per pass; the rest are rebased and picked up next pass. |
 
+> ⚠️ Setting `require_checks: false` lets renovator merge dependency PRs that have **no CI signal at all**, unattended. Only relax it for repos where that is genuinely safe.
+
 ### PR annotations
 `renovator` labels each PR it touches — `renovator:working` (being processed / lock), `renovator:skipped` (transient, will retry), `renovator:parked` (needs review) — and maintains a single sticky status comment per PR.

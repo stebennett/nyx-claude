@@ -27,9 +27,11 @@ When the title names only the new version, read the old version from the depende
 | `Update dependency foo (major)` grouped with `bar (patch)` | mixed | major |
 
 ## CI status — from the check rollup
-- every check `SUCCESS` → **green**
-- any `FAILURE` / `ERROR` / `CANCELLED` → **red**
-- any `PENDING` / `IN_PROGRESS`, OR zero checks when `require_checks` is true → **pending**
+Each `statusCheckRollup` entry is either a **CheckRun** (has `status`+`conclusion`) or a legacy **StatusContext** (has `state`). Read `conclusion` (or `status` while still running) for CheckRuns and `state` for StatusContexts, then classify the rollup:
+- **red** — any entry is `FAILURE`/`ERROR`/`CANCELLED`/`TIMED_OUT`/`ACTION_REQUIRED`/`STARTUP_FAILURE`.
+- **pending** — no red, but any entry is still settling: `QUEUED`/`IN_PROGRESS`/`PENDING`/`WAITING`/`STALE`.
+- **green** — no red, no pending, AND at least one entry is `SUCCESS`. `SKIPPED`/`NEUTRAL` entries are non-blocking but do not count as the required success.
+- **no signal** — the rollup is empty, or has entries but none is `SUCCESS` (e.g. all `SKIPPED`/`NEUTRAL`): treat as zero-checks — **pending** when `require_checks` is true (default), otherwise **green** (the relaxed `require_checks` path).
 
 > When `require_checks` is false, a patch/minor PR with zero checks resolves to green → `GREEN_SAFE` and is merged — this is the intended effect of relaxing `require_checks`. The `renovate-merger` agent applies the same `require_checks` rule as its final gate, so the two never disagree.
 

@@ -34,27 +34,28 @@ Read it with, e.g.:
   - `gh label create renovator:parked --color D93F0B --description "renovator parked this PR for review / v2" --force`
 
 ### 2. Fetch candidate PRs
-- `gh pr list --state open --limit 100 --json number,title,author,headRefName,mergeStateStatus,statusCheckRollup,labels`
+- `gh pr list --state open --limit 100 --json number,title,author,mergeStateStatus,statusCheckRollup,labels`
 - Keep only PRs whose `author.login` is a member of `renovate_authors`. These are your candidates.
 
 ### 3. Skip locked PRs
-- Any candidate already carrying the `renovator:working` label is owned by another run/agent — skip it this pass (do not touch it).
+- Any candidate already carrying the `renovator:working` label is owned by another run/agent — do not touch it this pass; record it with outcome `locked` for the report (step 8) and exclude it from classification.
 
 ### 4. Classify
-- Assign each remaining candidate a bucket per `references/classification.md` (bump type × CI status): `GREEN_SAFE`, `MAJOR`, `RED`, or `PENDING`. Record the bump type and version transition for the report and annotation.
+- Assign each remaining candidate a bucket per `references/classification.md` (bump type × CI status): `GREEN_SAFE`, `MAJOR`, `RED`, or `PENDING`. Record, for each candidate, the bump type and the `old_version` → `new_version` transition (the orchestrator reads the old version from the base-branch manifest/lockfile when the title names only the new version, per `references/classification.md`) — you pass these to the merger and use them in the report and annotation.
 
 ### 5. Merge green candidates (serialized)
 Process `GREEN_SAFE` PRs, performing at most `max_merges_per_pass` merges this pass (default 1), one at a time — never concurrently (siblings share lockfiles):
 - Set state → working: add `renovator:working`, remove any other `renovator:*` label, and upsert the sticky comment with state `working` (see State annotation).
-- Dispatch a `renovate-merger` subagent, passing `{ pr, bump, renovate_authors, merge_method, require_checks }`.
+- Dispatch a `renovate-merger` subagent, passing `{ pr, bump, old_version, new_version, renovate_authors, merge_method, require_checks }`.
 - On return, remove `renovator:working`, then:
   - `outcome: merged` → upsert the sticky comment's final line "merged by renovator"; the PR closes on merge.
   - `outcome: aborted`, `reason: behind` or `not-green` → set `renovator:skipped`, upsert comment with the reason (transient — will retry).
   - `outcome: aborted`, `reason: conflict` → set `renovator:parked`, upsert comment "merge conflict — needs manual resolution".
+  - `outcome: aborted`, `reason: blocked` → set `renovator:parked`, upsert comment "blocked by branch protection (e.g. a required review) — needs a human".
   - `outcome: aborted`, `reason: bump-mismatch` or `identity` → set `renovator:parked`, upsert comment with the reason (the merger disagreed with classification — a human should look).
 
 ### 6. Drain the rest (active rebase)
-- After this pass's merge lands, for every remaining `GREEN_SAFE` candidate NOT merged this pass: run `gh pr update-branch <n>` so it rebases onto the new base and CI re-runs. Set `renovator:skipped` and upsert the comment (state `skipped`, reason "rebasing after sibling merge"). They are re-evaluated next pass.
+- After this pass's merge lands, for every remaining `GREEN_SAFE` candidate NOT merged this pass: run `gh pr update-branch <n>` to update the branch with its base — this MERGES base into the head branch (it is not a rebase) and re-triggers CI. If it errors because the branch is already up to date or has conflicts, that is non-fatal — the PR resurfaces next pass. Set `renovator:skipped` and upsert the comment (state `skipped`, reason "rebasing after sibling merge"). They are re-evaluated next pass.
 - If no merge happened this pass (nothing was `GREEN_SAFE`), skip this step.
 
 ### 7. Park the rest
@@ -74,7 +75,12 @@ Two layers per PR:
 - **Sticky comment** — exactly ONE renovator comment per PR, found by the hidden marker `<!-- renovator-state -->` on its first line. Upsert it:
   1. Find it: `gh pr view <n> --json comments --jq '.comments[] | select(.body | startswith("<!-- renovator-state -->")) | .url'` (empty ⇒ none yet).
   2. If none, create: `gh pr comment <n> --body "<body>"`.
-  3. If one exists, edit it in place via the REST API using its id (derive the numeric id from the comment url, then `gh api -X PATCH repos/{owner}/{repo}/issues/comments/{id} -f body="<body>"`).
+  3. If one exists, edit it in place. The REST PATCH needs the **numeric** comment id — this is the trailing number of the comment `url` (`…#issuecomment-123456`), NOT the `.id` field from `--json comments` (that is a GraphQL node id and will not work). Extract it from the url and PATCH:
+     ```
+     url=$(gh pr view <n> --json comments --jq '.comments[] | select(.body | startswith("<!-- renovator-state -->")) | .url' | head -n1)
+     id=${url##*issuecomment-}
+     gh api -X PATCH repos/{owner}/{repo}/issues/comments/"$id" -f body="<body>"
+     ```
   Never post a second renovator comment.
 
   Comment `<body>` template (first line is the marker):
