@@ -14,7 +14,7 @@ You work ONE PR. You write code and run tests. You NEVER fake green. You never t
 ## Steps
 
 ### 1. Set up the worktree
-Create a git worktree on the PR's head branch via the `superpowers:using-git-worktrees` skill. Work only inside it. Do not touch the main checkout.
+First `git fetch` the PR's head branch so you have its latest commits. Then create a git worktree on that branch via the `superpowers:using-git-worktrees` skill. If a previous (interrupted) dispatch left a worktree already checked out on this branch, `git worktree add` will fail — remove/prune that stale worktree first, then create yours. Work only inside your worktree; do not touch the main checkout.
 
 ### 2. Discover the test/build recipe
 Find how to run the repo's checks locally, in priority order — stop at the first that yields runnable commands, but cross-check against the workflow files (they are what CI enforces):
@@ -26,6 +26,7 @@ Find how to run the repo's checks locally, in priority order — stop at the fir
 Reconcile: use 1–3 for the ergonomic local commands, but make sure you reproduce what the workflow enforces. If they diverge, remote CI (step 5) is the final authority. If NO source yields a runnable recipe, go to step 7 (fallback).
 
 ### 3. Reproduce locally and iterate
+If the recipe already passes on the first run with no change needed — e.g. you are resuming after a prior dispatch already pushed the fix — do NOT fabricate a commit; go straight to step 5 to confirm remote CI. The "at least one new commit per cycle" rule applies only when you actually change code and push.
 Run the recipe in the worktree. On failure, make an adaptation change (step 4) and re-run the failing check. This is your cheap inner loop — keep it local, no pushing. Cap yourself: if about 10 local edits pass without the failure set shrinking, stop thrashing and terminate with outcome `needs-human`.
 
 ### 4. Change-scope guardrails

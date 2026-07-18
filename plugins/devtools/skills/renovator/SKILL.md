@@ -39,18 +39,18 @@ Read it with, e.g.:
   - `gh label create renovator:review --color 0E8A16 --description "renovator fixed this PR; awaiting human diff review" --force`
 
 ### 2. Fetch candidate PRs
-- `gh pr list --state open --limit 100 --json number,title,author,mergeStateStatus,statusCheckRollup,labels`
+- `gh pr list --state open --limit 100 --json number,title,author,headRefName,mergeStateStatus,statusCheckRollup,labels`
 - Keep only PRs whose `author.login` is a member of `renovate_authors`. These are your candidates.
 
 ### 3. Skip locked PRs
 - Any candidate already carrying the `renovator:working` label is owned by another run/agent — do not touch it this pass; record it with outcome `locked` for the report (step 8) and exclude it from classification.
-- A candidate carrying `renovator:fixing` is an in-flight fix-loop; do NOT skip it — it is resumed in step 7 (read its persisted `attempt` from the sticky comment and continue).
+- A candidate carrying `renovator:fixing` is an in-flight fix-loop. It MUST NOT be treated as a step-5 merge candidate — a green fixing PR must never be merged by step 5, because its test-edit gate has not been checked. Handle it ONLY in step 7 (resume), which re-derives the merge gate before any merge. Exclude `renovator:fixing` PRs from the `GREEN_SAFE` set that step 5 processes.
 
 ### 4. Classify
 - Assign each remaining candidate a bucket per `references/classification.md` (bump type × CI status): `GREEN_SAFE`, `MAJOR`, `RED`, or `PENDING`. Record, for each candidate, the bump type and the `old_version` → `new_version` transition (the orchestrator reads the old version from the base-branch manifest/lockfile when the title names only the new version, per `references/classification.md`) — you pass these to the merger and use them in the report and annotation.
 
 ### 5. Merge green candidates (serialized)
-Process `GREEN_SAFE` PRs, performing at most `max_merges_per_pass` merges this pass (default 1), one at a time — never concurrently (siblings share lockfiles):
+Exclude any PR labeled `renovator:fixing` from this step — those are handled only by step 7. Process `GREEN_SAFE` PRs, performing at most `max_merges_per_pass` merges this pass (default 1), one at a time — never concurrently (siblings share lockfiles):
 - Set state → working: add `renovator:working`, remove any other `renovator:*` label, and upsert the sticky comment with state `working` (see State annotation).
 - Dispatch a `renovate-merger` subagent, passing `{ pr, bump, old_version, new_version, renovate_authors, merge_method, require_checks }`.
 - On return, remove `renovator:working`, then:
@@ -83,8 +83,8 @@ The normal path is a single dispatch that owns the whole `fix_attempts` budget: 
 
 Accounting rule: `attempt` is the number of push→remote-CI cycles ALREADY consumed on this PR (0 on a fresh start), matching the fixer's `fix-loop.md` contract. Track it from git, not a guess: each push→CI cycle lands at least one commit, so the commits the fixer has pushed since the loop's base SHA are a conservative count of cycles consumed.
 
-1. Read persisted `fix_base_sha` from the sticky comment (the branch head when this fix-loop budget began; absent on a fresh start). Fetch the PR's current head SHA. Also read the persisted `dispatches` count (default 0) — the number of times a fixer has been dispatched for this PR in the current budget.
-2. **Clobber check:** if `fix_base_sha` is set but the current branch no longer contains it (`git merge-base --is-ancestor <fix_base_sha> <head>` returns non-zero — Renovate force-rebased away the fixer's commits), treat this as a fresh start: clear `fix_base_sha`.
+1. `git fetch origin <headRefName>` so the branch's commit objects are local — the orchestrator learned this PR via the API and has not fetched it, so SHA math below would otherwise run against missing objects. If the fetch itself fails, skip this PR this pass (report outcome `skipped`, reason "could not fetch branch"). Then read persisted `fix_base_sha` and `dispatches` (default 0) from the sticky comment, and take the PR's current head SHA from the fetched ref.
+2. **Clobber check:** run `git merge-base --is-ancestor <fix_base_sha> <head>` and branch on its EXIT CODE (do not conflate error with "not an ancestor"): exit 0 → still an ancestor, normal resume; exit 1 → the branch no longer contains `fix_base_sha` (Renovate force-rebased away the fixer's commits), so treat this as a clobber — a fresh start AND reset `dispatches` to 0; exit 2 or higher → a git error (e.g. a missing object), NOT a clobber — skip this PR this pass and retry next (do not clear `fix_base_sha`).
 3. **Compute consumed cycles (`attempt`):**
    - Fresh start (no `fix_base_sha`): `attempt` is 0; set `fix_base_sha` to the current head SHA (the base before any fixer commit).
    - Resume (`fix_base_sha` set and still an ancestor): `attempt` is `git rev-list --count <fix_base_sha>..<head>` — the commits pushed since the loop began.
@@ -92,8 +92,9 @@ Accounting rule: `attempt` is the number of push→remote-CI cycles ALREADY cons
 5. Increment the persisted `dispatches` count (do this now, before dispatching, so an interrupted dispatch still counts against the bound). Set `renovator:fixing`; upsert the sticky comment with state `fixing`, `fix: <attempt>/<fix_attempts>`, `fix_base_sha`, and `dispatches`.
 6. Dispatch the agent (`renovate-ci-fixer` or `renovate-major-upgrader`) with `{ pr, bump, old_version, new_version, fix_attempts, attempt, fix_loop_path }`. `fix_loop_path` is the absolute path to `references/fix-loop.md` inside this skill's own directory (this skill's base directory is provided to you when the skill is invoked; join it with `references/fix-loop.md`) — the fixer reads the shared doctrine from this path, not a bare relative path. Because `attempt` carries the already-consumed count, the fixer's own bounding (it sums `attempt` + its new pushes against `fix_attempts`) keeps the total across dispatches within budget.
 7. The dispatch waits inline for the agent to reach a terminal outcome (it does not hand back mid-loop). On return, route by `outcome`:
-   - `green` + bucket is red-CI (patch/minor) + `touched_tests: false` → dispatch `renovate-merger` exactly as in step 5 (its independent re-verify gates the merge). On `merged`, remove `renovator:*` and record outcome `fixed-merged`.
-   - `green` + (bump is major OR `touched_tests: true`) → set `renovator:review`; upsert comment: "fixed — awaiting human diff review (renovator authored these changes)", include the agent `summary` and its returned `attempts`.
+   - `green` + bump is **major** → set `renovator:review` (a major upgrade NEVER auto-merges); upsert comment "fixed — awaiting human diff review (renovator authored these changes)", include the agent `summary` and its returned `attempts`.
+   - `green` + bump is **patch/minor**: independently derive whether a test was touched — run `git diff --name-only <fix_base_sha>..<head>` and match each changed path against the repo's test paths (treat as a test if the path contains a `test/`, `tests/`, `spec/`, or `__tests__/` segment, or the filename matches `*_test.*` / `*.test.*` / `*.spec.*` / `*_spec.*`). Auto-merge ONLY if BOTH the agent returned `touched_tests: false` AND the diff shows no test path changed → dispatch `renovate-merger` exactly as in step 5 (its independent re-verify gates the merge); on `merged`, remove `renovator:*` and record `fixed-merged`.
+   - `green` + bump is patch/minor but EITHER the agent returned `touched_tests: true` OR the diff shows a test path changed → set `renovator:review` (do not merge); upsert comment "fixed with test changes — awaiting human diff review", include the agent `summary`.
    - `exhausted` → set `renovator:parked`; upsert comment with `summary` + "attempts exhausted".
    - `needs-human` → set `renovator:parked`; upsert comment: "needs human — reproducible but not safely fixable: " + `summary`.
    - `cannot-reproduce` → set `renovator:parked`; upsert comment: "can't reproduce CI locally — " + `summary`.
