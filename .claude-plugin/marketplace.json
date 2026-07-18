@@ -23,6 +23,11 @@
       "name": "productivity",
       "source": "./plugins/productivity",
       "description": "Skills for working more productively with Claude Code. 'handoff' distils the current session into a single self-contained document; 'continue' reads it back in a fresh session and proposes an approved plan to resume the work — preserving context across sessions."
+    },
+    {
+      "name": "devtools",
+      "source": "./plugins/devtools",
+      "description": "Developer-workflow automation. First skill 'renovator' autonomously merges provably-safe green patch/minor Renovate dependency PRs and parks major-version and red-CI updates with PR state annotations."
     }
   ]
 }

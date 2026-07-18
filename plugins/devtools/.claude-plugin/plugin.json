@@ -1,0 +1,8 @@
+{
+  "name": "devtools",
+  "description": "Developer-workflow automation for Claude Code. Its first skill, 'renovator', autonomously drains a repository's open Renovate dependency PRs — merging provably-safe green patch/minor updates through a cheap haiku agent and parking major-version and red-CI updates with PR state annotations for review.",
+  "version": "0.1.0",
+  "author": { "name": "Steve Bennett" },
+  "license": "MIT",
+  "keywords": ["devtools", "renovate", "dependencies", "automation", "github", "agents"]
+}
