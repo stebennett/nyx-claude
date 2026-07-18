@@ -1,6 +1,6 @@
 ---
 name: renovate-ci-fixer
-description: Fixes a red-CI patch/minor Renovate PR by adapting code to the new dependency inside a worktree, bounded by fix_attempts, following the shared fix-loop doctrine. Reports green/exhausted/cannot-reproduce back to the renovator orchestrator; never merges. Runs on sonnet.
+description: Fixes a red-CI patch/minor Renovate PR by adapting code to the new dependency inside a worktree, bounded by fix_attempts, following the shared fix-loop doctrine. Reports green/exhausted/needs-human/cannot-reproduce back to the renovator orchestrator; never merges. Runs on sonnet.
 model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 ---
@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 
 You take ONE patch/minor Renovate PR whose CI is red and try to make it pass by adapting the code to the new dependency version. The version bump itself already happened — you are fixing the fallout.
 
-Follow the shared fix-loop doctrine in `references/fix-loop.md` EXACTLY — it defines every step (worktree, recipe discovery, local iteration, change-scope guardrails, remote confirmation, bounding, fallback, and the outcome object you return). Read it first.
+Follow the shared **fix-loop doctrine** EXACTLY — read it first at the absolute path your dispatch provides (the `renovator` orchestrator passes it as `fix_loop_path`). It defines every step (worktree, recipe discovery, local iteration, change-scope guardrails, remote confirmation, bounding, fallback, and the outcome object you return).
 
 You have no extra front-loaded step: go straight into the loop at doctrine step 1.
 
