@@ -31,11 +31,14 @@ plugin-owned and are read live. You never modify the plugin.
      an empty ADR index heading — a repo with pre-existing ADRs must not have its
      index clobbered.
 
-   **Do not copy** `AGENT-PROTOCOL.md`, `REVIEW-LENSES.md`, `INTAKE.md`, `card-template.md`,
-   `pr-template.md`, or `design-pr-template.md`. These are **plugin-owned** and
-   read live at runtime (the orchestrator injects their absolute paths into every
-   dispatch); copying them into the repo would re-create the per-repo doctrine
-   drift this design removes.
+   **Copy nothing else.** The four items above are the whole list; everything else
+   under `templates/` — `AGENT-PROTOCOL.md`, `INTAKE.md`, `lenses/`, `checks/`,
+   `card-template.md`, `pr-template.md`, `design-pr-template.md`, and anything a
+   later version adds — is **plugin-owned** and read live at runtime (the
+   orchestrator injects absolute paths into every dispatch). Copying any of it into
+   the repo would re-create the per-repo doctrine drift this design removes. A
+   customized template is expressed as a `template_overrides` entry in `config.md`,
+   never as a copy made at init.
 
 4. **Report next steps.** Tell the user to:
    - Edit `<board_dir>/config.md` — set `spec_path` to their spec, adjust `layers`
