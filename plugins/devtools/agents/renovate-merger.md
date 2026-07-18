@@ -14,6 +14,7 @@ You merge exactly one Renovate dependency PR, or you abort. You never edit files
 - `bump` — the expected bump type, `patch` or `minor`.
 - `renovate_authors` — JSON array of accepted author logins (default `["renovate[bot]"]`).
 - `merge_method` — `squash` | `merge` | `rebase` (default `squash`).
+- `require_checks` — whether a zero-check PR is allowed to merge. `true` (default) = not allowed; `false` = a PR with zero checks may merge.
 
 ## Do
 1. Re-fetch the PR live:
@@ -21,7 +22,7 @@ You merge exactly one Renovate dependency PR, or you abort. You never edit files
 2. Independently re-verify ALL of the following. If ANY fails, abort — do NOT merge:
    - **identity** — `author.login` is a member of `renovate_authors`. Else abort `identity`.
    - **bump** — re-parse the version transition from `title`; the bump is still `patch` or `minor` and equals the `bump` you were given. If the old and new versions cannot both be extracted and compared with confidence, that is a mismatch. Else abort `bump-mismatch`.
-   - **green** — if `statusCheckRollup` is empty (zero checks), abort `not-green`. If non-empty, every entry must be `SUCCESS` (none `FAILURE`/`ERROR`/`CANCELLED`/`PENDING`/`IN_PROGRESS`). Else abort `not-green`.
+   - **green** — if `statusCheckRollup` is empty (zero checks), abort `not-green` when `require_checks` is true; when `require_checks` is false, a zero-check PR is allowed — skip the SUCCESS check and proceed to the mergeable check. If non-empty, every entry must be `SUCCESS` (none `FAILURE`/`ERROR`/`CANCELLED`/`PENDING`/`IN_PROGRESS`). Else abort `not-green`.
    - **mergeable** — `mergeStateStatus` is `CLEAN`. If `BEHIND` abort `behind`; if `DIRTY` abort `conflict`; anything else (`BLOCKED`, `UNKNOWN`, …) abort `not-green`.
 3. Merge: `gh pr merge <pr> --<merge_method> --delete-branch`.
 

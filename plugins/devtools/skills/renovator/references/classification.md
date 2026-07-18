@@ -31,6 +31,8 @@ When the title names only the new version, read the old version from the depende
 - any `FAILURE` / `ERROR` / `CANCELLED` → **red**
 - any `PENDING` / `IN_PROGRESS`, OR zero checks when `require_checks` is true → **pending**
 
+> When `require_checks` is false, a patch/minor PR with zero checks resolves to green → `GREEN_SAFE` and is merged — this is the intended effect of relaxing `require_checks`. The `renovate-merger` agent applies the same `require_checks` rule as its final gate, so the two never disagree.
+
 ## Bucket = f(bump, CI)
 |  | green | red | pending |
 |---|---|---|---|
