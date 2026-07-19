@@ -1,0 +1,9 @@
+{
+  "renovate_authors": ["renovate[bot]"],
+  "merge_method": "squash",
+  "require_checks": true,
+  "max_merges_per_pass": 1,
+  "enable_ci_fixer": true,
+  "enable_major_upgrader": true,
+  "fix_attempts": 3
+}
