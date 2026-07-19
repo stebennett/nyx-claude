@@ -12,7 +12,7 @@ You are the coordinator. You classify each open Renovate PR and dispatch work; y
 Runs fully autonomously, including under `/loop`. The human's window into a pass is the after-action report (step 8) plus the per-PR state annotations.
 
 ## Configuration
-Read `.claude/renovator.json` from the repo root if it exists; otherwise use these defaults. Unknown keys are ignored; missing keys fall back to the default.
+Read `.claude/renovator.json` from the repo root if it exists; otherwise use these defaults. Unknown keys are ignored; missing keys fall back to the default. The `/renovator-init` skill scaffolds this file interactively.
 
 | knob | default | meaning |
 |---|---|---|

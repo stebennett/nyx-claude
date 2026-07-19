@@ -33,6 +33,8 @@ New labels: `renovator:fixing` (a fix-loop is in progress), `renovator:review` (
 Invoke the `renovator` skill from within the target repository (its `origin` remote is the repo acted on).
 
 ### Configuration (optional)
+Run `/renovator-init` to scaffold `.claude/renovator.json` interactively — it detects the Renovate bot login from your open PRs and prompts for the key knobs. Or create the file by hand:
+
 Create `.claude/renovator.json` in the repo root to override defaults:
 
     {
