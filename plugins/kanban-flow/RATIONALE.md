@@ -128,6 +128,50 @@ the code is a different diff. Nothing is lost by the resets: the evidence is dur
 the per-slice check docs (`deliver-check-<k>.md`) and `implement.md`'s `## Rework` sections, where
 `/retro` reads it — the counter is an allowance, not the record.
 
+## `agents/pump-gate.md` — why a two-pass gate, and why haiku is safe for it
+
+Under `/loop` most pumps have nothing to do, and the old §0.5 idle fast path decided that *inside* the
+Opus session — after the ~14k-token SKILL body was already in context, with its probe tool-calls and the
+reasoning over them accruing on the expensive tier. `pump-gate` relocates that exact predicate into a
+dispatched **haiku** subagent run **ahead of §0**: the probes and the decision land on the cheap model,
+and the orchestrator loads reconcile/cards/doctrine only once the gate returns `run`. On a quiet board
+that is the recurring cost removed.
+
+**Why haiku is safe here even though the README says "Haiku: don't" for the orchestrator.** That warning
+is about the orchestrator's *stateful judgment* — stamping verdicts, adjudicating dropped findings, the
+completeness valve — where a weaker model rubber-stamps. The gate does none of that. It **writes no board
+state and mutates no card**; it only returns run-vs-idle, and the orchestrator re-derives everything
+authoritatively in §0 regardless. A gate is a filter, not a source of truth, so the tier that is wrong
+for the orchestrator is right for the gate.
+
+**Why the decision is the OR of every trigger, and why "no free slots" is not "idle".** The request's
+headline — merges landed + a slot free → run; no slots → stop — is the *scheduling* dimension only,
+governing whether **new backlog work** can start. But an in-flight card advancing, an open PR's failing
+CI, and an unaddressed review all run inside a slot the card **already holds** and need no new slot. So
+the verdict ORs in the full §0.5 trigger set (merge, ci_fail, review_pending, dispatchable,
+free_slot_ready_backlog, driver, amendments); "no free slots" contributes to a stop only when there is
+also nothing in-flight to advance, no CI/review, no driver item, and no amendment — i.e. genuinely idle.
+A gate that stopped on "no slots" alone would freeze every in-flight card and every open PR mid-flight.
+
+**Why it errs toward `run`, and why a dispatch failure is `run`.** The two failure modes are asymmetric:
+a false *idle* silently starves the board under `/loop`, unattended, with nobody watching; a false *run*
+costs exactly one pump and the orchestrator then finds nothing and stops. So every ambiguity — an
+unreadable probe, a gate dispatch that errors — resolves to `run`. This is the same "when in doubt, run"
+rule §0.5 carried, now enforced from the gate's side.
+
+**Why the gate skips §0 on idle, and what that defers.** On `run` the full §0–§7 runs unchanged; on
+`idle` the orchestrator stops before §0 reconcile. Every actionable reconcile trigger — a merge, a closed
+PR, a non-empty `AMENDMENTS.md` — is one of the gate's probes, so skipping §0 on idle skips only work
+that is provably absent. The one thing the gate does **not** probe is §0's legacy normalization (scalar
+`pr_url`, `status: plan`, verdict-less docs); that is idempotent one-time drift from a pre-upgrade board,
+not time-sensitive, and it is picked up by the first pump the gate lets through once any real work
+arrives. `pump_gate: off` restores the always-reconcile behaviour for debugging.
+
+**Why the gate's `git fetch` is not wasted.** Subagents share the working tree, so the gate's `git fetch
+origin main` updates the local refs the orchestrator reads next — §0's fetch reuses them. The gate may
+also hand forward `summary.merged_urls`/`ci_failing_urls` so §0/§6 skip re-probing those PRs; that is an
+optimization the orchestrator can trust or re-derive, never a dependency.
+
 ## `templates/config.md` — config tunables
 
 **Why there is no `checks.implement` switch.** Every other producer's checker can be turned off as an

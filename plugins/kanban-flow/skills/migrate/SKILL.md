@@ -126,6 +126,11 @@ a migration branch, never the plugin.
      gate predicates cannot read. `/kanban`'s legacy normalization deletes such a doc on an
      in-flight card so its checker re-runs and regenerates it in current form; done cards' merged
      docs stay, and `/retro` falls back to their body criteria tables.
+   - *0.5 → 0.6:* `pump_gate: on` — the pre-flight gate switch (SKILL.md §0.0). `on` is the new
+     default and changes no card outcome: each pump first runs the cheap `pump-gate` haiku agent to
+     decide idle-vs-run, so a quiet board under `/loop` stops before loading the board instead of
+     after. Say that `off` bypasses the gate and reconciles directly (a debugging escape hatch), and
+     that the gate writes no state and errs toward running.
 
 8. **Ship a PR.** Commit the deletions, addendum appends, `template_overrides` wiring and
    config changes (Conventional Commits + the project's `Co-Authored-By` trailer). Push and

@@ -3,7 +3,8 @@
 A design plan for adding a cheap Haiku "pre-flight" agent that decides whether a full `/kanban` pump is
 worth running, so a quiet board under `/loop` stops spending Opus context on pumps that would do nothing.
 
-Status: **proposal, not yet implemented.** This file is the plan; the change lands in a follow-up.
+Status: **Part A implemented** (the `pump-gate` haiku agent + SKILL.md §0.0 + config knob + docs, plugin
+`0.6.0`). **Part B (deferred pump body) remains a follow-on**, unimplemented.
 
 ---
 
@@ -121,7 +122,7 @@ print `idle — M in flight awaiting human/CI, K in backlog` **without loading a
 
 ### SKILL.md integration
 
-Insert a new **§0.4 Pre-flight gate** ahead of §0 (Reconcile):
+Insert a new **§0.0 Pre-flight gate** ahead of §0 (Reconcile):
 
 1. **Dispatch `pump-gate` (haiku) as the first action**, passing `board_dir`.
 2. `decision: idle` → print the idle line from `summary` and **STOP**. Nothing else loads.
@@ -138,7 +139,7 @@ dispatch/model table (`pre-flight | pump-gate | haiku`) and in the model-pinning
 Part A moves the *probes* off Opus, but the ~14k-token SKILL body still loads on every idle pump, so it
 becomes the dominant remaining idle cost. To cash in the full saving, split SKILL.md:
 
-- A **lean front-door SKILL.md**: frontmatter + the §0.4 gate dispatch + idle handling + a single
+- A **lean front-door SKILL.md**: frontmatter + the §0.0 gate dispatch + idle handling + a single
   instruction: *"on `decision: run`, `Read references/pump.md` and execute §0–§7 from there."*
 - `references/pump.md`: the current §0–§7 orchestration body, loaded **only on a run verdict**, via the
   same on-demand pattern as `reconcile-edge-cases.md` / `split-shipping.md`.
@@ -153,7 +154,7 @@ risk, so it is presented separately and can land after Part A is validated.
 
 - `agents/pump-gate.md` — **new.** Haiku agent per §4: inputs, probe set, decision predicate,
   err-toward-run bias, structured return. Mirror the house style of `card-tester.md`.
-- `skills/kanban/SKILL.md` — add §0.4 pre-flight gate; **remove §0.5** (folded into the agent); register
+- `skills/kanban/SKILL.md` — add §0.0 pre-flight gate; **remove §0.5** (folded into the agent); register
   `pump-gate`/`haiku` in the dispatch/model table and the model-pinning note; tweak the frontmatter
   `description` to mention the pre-flight gate if it helps triggering.
 - `RATIONALE.md` — new section *"why a two-pass gate, and why Haiku is safe for it"*: the
@@ -166,7 +167,7 @@ risk, so it is presented separately and can land after Part A is validated.
 **Part A (optional):**
 
 - `templates/config.md` — add a `pump_gate: on | off` tunable (default `on`) as a debugging escape hatch;
-  SKILL §0.4 skips the gate and runs §0 directly when `off`.
+  SKILL §0.0 skips the gate and runs §0 directly when `off`.
 
 **Part B (follow-on, separate change):**
 

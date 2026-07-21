@@ -30,9 +30,31 @@ branch/worktree**, so `slice.md`/`slice-check.md` are written into `<board_dir>/
 primary checkout, UNCOMMITTED**, until the design transition (§5) copies them onto the design branch —
 **never to `main`** (RATIONALE: the `DLV-DOCS` livelock), except a **split parent** (terminal record).
 
-Each invocation runs one **pump cycle**: reconcile → load → render → resolve gates/blockers → schedule
-& advance (in waves) → re-render → report. A card stops mid-lifecycle only at a manual gate,
-`needs-input`, an exhausted rework budget, an open PR awaiting merge, or `done` — safe under `/loop`.
+Each invocation runs one **pump cycle**: pre-flight gate → reconcile → load → render → resolve
+gates/blockers → schedule & advance (in waves) → re-render → report. A card stops mid-lifecycle only at
+a manual gate, `needs-input`, an exhausted rework budget, an open PR awaiting merge, or `done` — safe
+under `/loop`.
+
+## 0.0 Pre-flight gate (run this FIRST, before anything else)
+
+Most pumps under `/loop` have nothing to do. Loading the board to discover that is the recurring cost
+this gate removes. **Your very first action is the gate** (after one cheap read of `config.md`'s
+`pump_gate` flag — `off`, default `on`, bypasses it and goes straight to §0): **dispatch the `pump-gate`
+agent (haiku)**, passing `board_dir` (default `docs/cards`), and do nothing else until it returns. It
+runs the cheap probes — merges landed, open-PR CI/reviews, WIP slots, dispatchable/driver cards,
+amendments — in its own cheap context and returns `decision: run | idle` with a `summary`.
+
+- **`decision: idle`** → print `idle — {summary.in_flight} in flight awaiting human/CI,
+  {summary.backlog} in backlog` and **STOP**. Skip §0 and §1 entirely — parse no cards, load no doctrine
+  or id-sets. (This is the old §0.5 idle fast path, now decided in the gate's context instead of yours.)
+- **`decision: run`** → proceed to §0. You may thread `summary.merged_urls`/`ci_failing_urls` into §0/§6
+  to skip re-probing PRs the gate already resolved; §0 re-derives authoritative git state regardless, so
+  trusting them is an optimization, not a dependency. The gate's `git fetch origin main` updated the
+  shared working tree — §0's fetch reuses it.
+
+The gate **errs toward `run`** and writes no state, so a `run` you'd have called idle costs one pump and
+nothing more; only *you* reconcile, stamp verdicts, and mutate cards. If the gate dispatch itself fails,
+treat it as `run` (never skip a pump on a tooling error).
 
 ## 0. Reconcile (self-healing state)
 
@@ -89,25 +111,6 @@ Card state must survive lost commits and merges that happen while no pump runs. 
 
 **Trigger:** a CLOSED-unmerged PR, an `AMENDMENTS.md` block, any legacy field, or a non-empty
 completeness backstop → **read `references/reconcile-edge-cases.md`** before acting.
-
-## 0.5 Idle fast path
-
-After the cheap reconcile probes and **before** §1's full card parse, run only these checks:
-- **Merges:** the §0 step 1 fetch + merge-subject scan — did any `design_pr_url`/`pr_urls` url land?
-- **PR states, CI, reviews:** one `{gh_command} pr view <url> --json state,statusCheckRollup,reviews,comments`
-  per not-yet-merged url (one call each) — any newly `MERGED`/`CLOSED`? any open PR with a **failing
-  check**, or a **human review/`REVIEWED` comment not yet addressed** (no top-level
-  `[kanban] review addressed — <id>` marker for it — §6b step 4 posts one per completed signal)?
-- **Card frontmatter + doc presence** (status/blocker, plus phase-/check-doc presence via `ls` and their
-  `verdict:` headers — **not** a full parse): any card dispatchable (a `backlog` card with deps `done`
-  and a free WIP slot; an in-flight card whose next phase doc is absent, or whose check doc reads
-  `verdict: fail`)? Any card needing the driver (a gate awaiting an answer, a `blocked` card, a
-  `needs-input`)? Is `AMENDMENTS.md` non-empty?
-
-**If ALL hold** — no merge, no open PR failing CI or with an unaddressed review, nothing dispatchable, no
-gate/blocker/amendment for the driver, every in-flight card awaiting human/CI — **print `idle — M in
-flight awaiting human/CI, K in backlog` and STOP** (skip the re-render unless state changed). **Any false
-→ full pump** (§1 on). When in doubt, run the full pump.
 
 ## 1. Load state
 
@@ -369,6 +372,7 @@ spends it per slice PR). (RATIONALE.)
 
 | status / condition | dispatch | model |
 |---|---|---|
+| **pre-flight (§0.0), every pump before §0** | **pump-gate** | **haiku** |
 | slice, `slice.md` absent | card-slicer | sonnet |
 | slice, `slice.md` present, `slice-check.md` absent | card-slice-checker | sonnet |
 | design, `design.md` absent | card-designer | opus |
@@ -390,7 +394,9 @@ models for exactly the lenses in `review_lenses_failed`.**
 (`card-intake-checker` is dispatched by `/refine` and `/requirement`, not by you.)
 
 **Model pinning:** you run under Opus; every dispatch passes the table's `model` explicitly so no agent
-inherits the session model. **`card-deliver-checker` is `sonnet`, not `haiku`** (`DLV-BODY-TRUE`
+inherits the session model. **`pump-gate` is `haiku`** — it only decides run vs. idle from cheap probes
+and mutates nothing, so the weaker tier is safe (and it errs toward `run`); it is the one dispatch that
+carries no `card_id`/phase docs, only `board_dir`. **`card-deliver-checker` is `sonnet`, not `haiku`** (`DLV-BODY-TRUE`
 claim-by-claim diff-reading and a `DLV-SIZE` breach's split proposal are judgement/design work, and it
 is the last check before a human merges); `card-deliverer` stays `haiku`. In every dispatch prompt
 include `card_id`, `card_dir`, the full `card.md`, and **only the phase docs the phase needs**.
@@ -616,7 +622,8 @@ authored is addressed. Never act before the signal.
    never approve or dismiss. **Once every item a signal authorised has its reply, post ONE top-level
    `[kanban] review addressed — <review id | REVIEWED@<timestamp>>` marker** (idempotent: skip if that
    marker already exists) — threaded replies are invisible to `--json comments`, and this marker is what
-   lets §0.5's probe read the signal as addressed instead of re-running a full pump every cycle.
+   lets the pre-flight gate's probe (§0.0) read the signal as addressed instead of triggering a full
+   pump every cycle.
 
 These fixes are human-directed and consume no rework budget. Merge detection stays with Reconcile (§0).
 A healthy card needs exactly three human actions: merge the design PR, complete a review (or comment
