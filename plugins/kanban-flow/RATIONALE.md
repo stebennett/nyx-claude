@@ -137,6 +137,17 @@ dispatched **haiku** subagent run **ahead of §0**: the probes and the decision 
 and the orchestrator loads reconcile/cards/doctrine only once the gate returns `run`. On a quiet board
 that is the recurring cost removed.
 
+**Why the pump body is a separate file (`references/pump.md`), not the front-door `SKILL.md`.** The gate
+moves the *probes* off the Opus tier, but a skill loads its whole `SKILL.md` on trigger — so if the §0–§7
+state machine lived in `SKILL.md` it would enter the Opus context on every idle pump anyway, and "loads
+the board only on `run`" would be a half-truth. Splitting the body out makes it literal: `SKILL.md` is a
+lean front-door (frontmatter + the §0.0 gate), and the ~700-line body lives in `references/pump.md`, read
+via the same on-demand pattern as `reconcile-edge-cases.md`/`split-shipping.md` — **only** when the gate
+returns `run`. An idle pump now loads the lean front-door and one haiku dispatch, nothing more. The two
+existing reference files cross-referenced the body as `SKILL.md §N`; those pointers moved to `pump.md §N`
+with the body (the section numbers are unchanged), and §0.0 alone stays in the front-door because it is
+what decides whether `pump.md` loads at all.
+
 **Why haiku is safe here even though the README says "Haiku: don't" for the orchestrator.** That warning
 is about the orchestrator's *stateful judgment* — stamping verdicts, adjudicating dropped findings, the
 completeness valve — where a weaker model rubber-stamps. The gate does none of that. It **writes no board

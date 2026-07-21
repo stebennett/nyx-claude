@@ -89,7 +89,7 @@ and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) re
   `deliver`/`split` are spent **per PR** (`/kanban` resets the counters at each
   PR/slice boundary). Omitted producer → `2`, except `deliver`/`split` → `1`.
   (RATIONALE.)
-- **review_panel** — how many lenses the review panel dispatches (SKILL.md §5).
+- **review_panel** — how many lenses the review panel dispatches (the pump body, §5).
   `full` (default; a missing key reads as `full`) — the whole table: acceptance,
   design, functionality, security, simplicity, tests, readability + the language
   lenses (`python`/`typescript`, when the diff matches). `standard` — acceptance,

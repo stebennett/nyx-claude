@@ -3,8 +3,10 @@
 A design plan for adding a cheap Haiku "pre-flight" agent that decides whether a full `/kanban` pump is
 worth running, so a quiet board under `/loop` stops spending Opus context on pumps that would do nothing.
 
-Status: **Part A implemented** (the `pump-gate` haiku agent + SKILL.md §0.0 + config knob + docs, plugin
-`0.6.0`). **Part B (deferred pump body) remains a follow-on**, unimplemented.
+Status: **Part A + Part B implemented** (plugin `0.6.0`). Part A: the `pump-gate` haiku agent + SKILL.md
+§0.0 + `pump_gate` config knob. Part B: the §0–§7 pump body moved to `references/pump.md`, loaded only on
+a `run` verdict, leaving a lean front-door `SKILL.md`; the two existing reference files' cross-references
+were repointed from `SKILL.md` to `pump.md`.
 
 ---
 
