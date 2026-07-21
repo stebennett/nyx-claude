@@ -44,3 +44,8 @@ A plugin is discovered only once it is both present under `plugins/` **and** lis
 2. Add the plugin's components (`commands/`, `agents/`, `skills/`, `hooks/hooks.json`, `.mcp.json` — all optional).
 3. Register it in `.claude-plugin/marketplace.json` under `plugins` with a `source` pointing at its directory.
 4. Reference in-plugin paths with `${CLAUDE_PLUGIN_ROOT}` so they resolve regardless of install location.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow, conventions, and how to test a
+plugin locally (including testing an unmerged branch) before opening a PR.
