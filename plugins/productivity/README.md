@@ -64,8 +64,108 @@ decisions/open-questions boundary, self-checks against the definition-of-done, a
 context runs low again — writes a fresh handoff that `supersedes` the one it consumed,
 continuing the chain.
 
-## The cycle
+## The handoff cycle
 
 `handoff` (session running low) → writes document → **you** carry it to a new session →
 `continue` (fresh session) → plan → your approval → work resumes. Repeat as often as a
 long task needs; each handoff `supersedes` the last.
+
+### `task-observer`
+
+Continuous skill discovery and improvement — the *"One Skill to Rule Them All"* task
+observer. Invoke it at the start of any task-oriented session (any interaction where you
+will use tools and produce deliverables) so skill-improvement opportunities are captured
+throughout the work rather than lost between sessions.
+
+**What it does.** While you work, it watches for friction, corrections, and recurring
+patterns worth preserving — signals for a **new** skill, for **improving** an existing
+one, or for **simplifying** one that has grown — and logs them silently to an observation
+log in a stable per-project workspace. It surfaces them as a grouped summary at end of
+session (log-and-defer by default), and runs a comprehensive **review** (scheduled, or a
+7-day in-session fallback) that cross-checks open observations against your skills,
+propagates cross-cutting principles, and stages updated skills for your sign-off — nothing
+goes live without you installing it.
+
+**Setup — reliable activation.** The skill self-initialises on its first invocation (it
+creates its own `skill-observations/` log, principles file, and review-date marker in a
+stable per-project workspace — nothing to scaffold by hand). But description-level matching
+alone can miss invocation when the agent is deep in a task, so pair it with a
+configuration-level instruction that fires it every session. Add this block to your
+`CLAUDE.md` (or your harness's project-instructions file):
+
+```
+At the start of any task-oriented session — any interaction where you will
+use tools and produce deliverables — invoke the task-observer skill before
+beginning work. This ensures skill improvement opportunities are captured
+throughout the session.
+
+When loading any skill, check the observation log for OPEN observations
+tagged to that skill. Apply their insights to the current work, even if
+the skill file hasn't been updated yet. This enables immediate application
+of observations before they're permanently integrated during the weekly
+review.
+```
+
+One caveat on *where* it stores state: it anchors on a stable path that outlives the
+session (in Claude Code, the project identity under `~/.claude/projects/<project-id>/`),
+**not** your current working directory — so a cwd inside an ephemeral git worktree or
+temporary clone is re-anchored, since state written there is lost at teardown. The full
+activation, compaction, and no-filesystem guidance lives in `references/environments.md`.
+
+**Working with it day to day.**
+
+- **It stays out of your way.** Once loaded, it logs observations in the background without
+  interrupting your work, and it will *not* aggressively push new-skill or improvement
+  ideas at you. If you want it more proactive, that's a cue to edit the skill (see below).
+- **Ask for the tally.** A reliable habit is to ask near the end of a session — *"Any
+  observations logged?"* — for a grouped summary of everything captured. You can also ask
+  it to re-analyse the whole conversation for opportunities it may have missed. Pairing
+  this with something you already do at session end (archiving the task, writing a handoff)
+  makes it stick.
+- **What gets stored where.** Under the stable per-project workspace it writes only to its
+  own subdirectories: `skill-observations/` (the observation log at
+  `skill-observations/log.md`, the cross-cutting-principles file, and an `archive/` of
+  resolved entries) and `skill-updates/` (staged skill changes awaiting your install).
+  Nothing else in the workspace is touched, and **no skill update is ever installed
+  automatically** — updates are staged for you to review and install yourself. You don't
+  normally need to read the log directly; the skill handles it.
+- **Cross-cutting principles compound.** Some observations reveal principles that apply
+  across your whole skill library (e.g. *"every skill with rules needs a mechanism to
+  enforce them"*). These are captured separately and checked automatically whenever a skill
+  is created or updated — raising the quality floor across all your skills over time.
+- **Open-source vs internal.** It classifies skills as **open-source** (methodology-driven,
+  project-agnostic) or **internal** (your/client/project specifics, personal preferences),
+  defaulting to open-source and stripping specifics where it can. The boundary is also a
+  confidentiality boundary with layered safeguards — worth knowing so you can tag
+  observations correctly when prompted. Whether you ever publish a skill is always your
+  call.
+- **The review is a safety net.** If 7+ days pass with open observations waiting, it offers
+  (one line, never a gate) to run a comprehensive review that cross-checks every open
+  observation against every skill, checks principle compliance, applies what it safely can,
+  and summarises the rest for you. If you update skills more often than weekly you may
+  rarely hit it; a scheduled cadence (e.g. a few mornings a week) suits heavier use — see
+  `references/weekly-review.md`.
+- **It pairs with `skill-creator`.** The observer decides *what* to build or improve; the
+  built-in `skill-creator` handles *how*.
+- **Make it your own.** This is now your meta-skill — if it's too passive, too noisy, or
+  missing things, just tell Claude what isn't working and have it revise the skill.
+- **Getting kickstarted.** You don't have to wait for it to suggest skills. Seed a few
+  proactively — a personal writing-style skill is a good first one (have Claude analyse
+  your best pre-AI writing, then paste your edits back over time and let the observer refine
+  it). Bigger workflows follow the same pattern.
+
+**Reference files (loaded on demand).** The core `SKILL.md` stays lean; episodic
+procedure lives in [`skills/task-observer/references/`](skills/task-observer/references/):
+`weekly-review.md` (the review procedure and approval policy), `skill-authoring.md`
+(taxonomy, licensing, confidentiality layers, editing rules), and `environments.md`
+(activation setup, compaction behaviour, and a handoff-doc mode for storage-less
+environments).
+
+**Inspiration & attribution.** This skill is adapted from the *"One Skill to Rule Them
+All"* task-observer skill created by Eoghan Henn / [rebelytics.com](https://rebelytics.com)
+([github.com/rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all)),
+which was the basis for it and its inspiration. The original is licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); this version has been modified
+(the skill's own files carry no author, branding, or external links) and is distributed
+under the same licence. Credit for the underlying methodology belongs to the original
+author.
