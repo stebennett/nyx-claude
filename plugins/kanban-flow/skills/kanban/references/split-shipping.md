@@ -1,8 +1,8 @@
 # Split shipping — the split sub-step and shipping N implementation PRs
 
-Loaded by `SKILL.md` §5 when: `review.md` is `verdict: pass` **and complete** and the branch diff
+Loaded by `pump.md` §5 when: `review.md` is `verdict: pass` **and complete** and the branch diff
 > `size_limit` (`checks.split: on`); OR `split_slices ≥ 2` at deliver; OR any slice PR is open.
-Assumes you hold `SKILL.md` — its split-sub-step state table (the authority on which row fires) and
+Assumes you hold `pump.md` — its split-sub-step state table (the authority on which row fires) and
 its check-loop discipline (a failing check doc stays on disk as the rework's input; delete it only
 in the commit that persists the work answering it).
 
@@ -41,7 +41,7 @@ and the intermediate `main` carries neither copy, or both).
 ## Dispatching `pr-splitter`, its checker, and the acceptance re-run
 
 The split uses the **same dispatch-vs-handle loop as every producer/checker pair**; the state
-table in `SKILL.md` is its statement. The card stays at **`status: review`** throughout (no `split`
+table in `pump.md` is its statement. The card stays at **`status: review`** throughout (no `split`
 status).
 
 1. **`pr-splitter` returns → persist `split.md`** on the implementation branch like any phase doc.
@@ -51,7 +51,7 @@ status).
    without `--no-renames`), `design.md`, `implement.md`, `review.md`, `size_limit`, `size_exclude`
    (+ blocking findings on rework).
 2. **`split.md` present + `split-check.md` absent → dispatch `card-split-checker`** (inputs per
-   `SKILL.md` §5's checker contract — it re-derives the change set from the named branch, never
+   `pump.md` §5's checker contract — it re-derives the change set from the named branch, never
    `HEAD`). Its result goes through the **completeness valve** (all six `SPL-*` ids — `SPL-NO-LOSS`,
    `SPL-GREEN`, `SPL-SIZE`, `SPL-ORDER`, `SPL-FILES`, `SPL-COHERENT` — or malformed → re-dispatch
    the checker naming the omitted ids, spend no budget) and the location-or-dropped rule.
@@ -156,7 +156,7 @@ The next slice is read off disk: **`k = len(pr_urls) + 1`**. Preparing slice `k`
 4. **Append** the returned url to `pr_urls` (order = shipping order = slice number), commit
    `card-deliverer`'s returned `deliver.md` to `main` as **`deliver-<k>.md`**, then dispatch
    `card-deliver-checker` in implementation mode and persist its check as **`deliver-check-<k>.md`**
-   on `main` (the per-slice suffix is load-bearing — SKILL §5 deliver row: a shared
+   on `main` (the per-slice suffix is load-bearing — pump.md §5 deliver row: a shared
    `deliver-check.md` is pre-present on slice `k+1`'s branch and leaves slices 2..N unchecked). The
    card stays at `status: deliver` with that PR open; **Reconcile opens slice `k+1` when slice `k`
    merges** (§0 step 3), from the `main` that now contains it.

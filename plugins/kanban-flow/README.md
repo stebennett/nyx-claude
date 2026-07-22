@@ -85,15 +85,18 @@ loop (`/model opus`, or `claude --model opus`), then `/loop /kanban`.
 
 - **Opus (recommended, the default).** The orchestrator's judgment calls — reconcile after odd merges,
   stamping verdicts, adjudicating dropped findings, the completeness valve — are exactly where a
-  cheaper model rubber-stamps, and under `/loop` they run unattended with nobody watching. The idle
-  fast path (§0.5) keeps the cost contained: a pump with nothing actionable is ~10k tokens, so an
-  Opus loop on a quiet board spends little.
+  cheaper model rubber-stamps, and under `/loop` they run unattended with nobody watching. The
+  **pre-flight gate** (§0.0) keeps the quiet-board cost contained: every pump's first action is a cheap
+  `pump-gate` **haiku** agent that decides run-vs-idle from cheap probes (merges, WIP slots, open-PR
+  CI/reviews, dispatchable and driver cards) in *its own* context — so an idle pump never loads the
+  board into the Opus session at all. Set `pump_gate: off` in `config.md` to bypass it for debugging.
 - **Sonnet (the experiment above).** Viable on a busy board where loop spend genuinely hurts, with
   the §0/§5 caveats; prefer shortening the loop interval on Opus over dropping the tier first — most
   of a loop's cost is busy pumps, and those are dominated by the dispatched agents, whose models
   don't change with the session.
-- **Haiku: don't.** It executes the tables but misses the judgment the check layer leans on; a
-  rubber-stamped valve is worse than no valve.
+- **Haiku: don't** — *for the orchestrator.* It executes the tables but misses the judgment the check
+  layer leans on; a rubber-stamped valve is worse than no valve. (The pre-flight **gate** runs on haiku
+  precisely because it makes no such judgment — it writes no state and errs toward `run`; RATIONALE.)
 
 ## Upgrading an existing repo
 

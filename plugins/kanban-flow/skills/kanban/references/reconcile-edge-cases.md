@@ -1,7 +1,7 @@
 # Reconcile edge cases
 
-Loaded by `SKILL.md` §0 on any of: a CLOSED-unmerged PR, an `AMENDMENTS.md` block, a legacy field,
-or a non-empty completeness backstop. Assumes you hold `SKILL.md`; off-happy-path procedures only.
+Loaded by `pump.md` §0 on any of: a CLOSED-unmerged PR, an `AMENDMENTS.md` block, a legacy field,
+or a non-empty completeness backstop. Assumes you hold `pump.md`; off-happy-path procedures only.
 Step numbers are §0's.
 
 ## Closed PR recovery (§0 step 4)
@@ -115,5 +115,5 @@ both), **keep the original branch and worktree** (local + remote — the only co
 
 ## Un-actioned-findings check
 
-Stated inline at `SKILL.md` §0 step 3 — it runs on every merged implementation PR, not only behind
+Stated inline at `pump.md` §0 step 3 — it runs on every merged implementation PR, not only behind
 this file's trigger.
