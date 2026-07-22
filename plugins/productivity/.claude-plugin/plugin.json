@@ -1,8 +1,8 @@
 {
   "name": "productivity",
-  "description": "Skills for working more productively with Claude Code. 'handoff' distils the current session into a single self-contained document; 'continue' reads that document in a fresh session and proposes an approved plan to resume the work — together preserving context across sessions.",
-  "version": "0.2.0",
+  "description": "Skills for working more productively with Claude Code. 'handoff' distils the current session into a single self-contained document; 'continue' reads that document in a fresh session and proposes an approved plan to resume the work; 'task-observer' watches task sessions for skill-improvement opportunities and runs skill creation/refinement reviews.",
+  "version": "0.3.0",
   "author": { "name": "Steve Bennett" },
   "license": "MIT",
-  "keywords": ["productivity", "handoff", "continue", "context", "session", "continuity", "skills"]
+  "keywords": ["productivity", "handoff", "continue", "self-improve", "task-observer", "skill-improvement", "context", "session", "continuity", "skills"]
 }
