@@ -73,7 +73,8 @@ Card state must survive lost commits and merges that happen while no pump runs. 
      `phase: done`, `delivered` = merge date; **append the card's `/retro` line** to
      `<board_dir>/RETRO-INBOX.md` (create it if absent) in this same state commit — `CARD-NNN | delivered YYYY-MM-DD | reworks
      {slice:_,design:_,implement:_,split:_,deliver:_} | elapsed Nd | est/actual lines E/A | slices N |
-     human-comments M` (M = human PR-comment count across both PRs). Then tear down the original worktree,
+     human-comments M | levels S/D` (S = levels selected, D = levels derived, from `design.md`'s
+     `### Levels` block; omit the field for a card with no block) (M = human PR-comment count across both PRs). Then tear down the original worktree,
      delete the original branch **locally and on `origin`** (the only moment either may be deleted) and
      any leftover slice worktrees. **Non-empty is not yet a verdict** (squash/rebase leaves the merge base behind) → **read
      `references/reconcile-edge-cases.md`** for the two-direction procedure.
@@ -99,11 +100,15 @@ Read `{board_dir}/config.md` first — the tunables (`spec_path`, `gh_command`, 
 `checks`, `check_budget`, `size_limit`, `size_exclude`, `layers`, `gate_layer`, `adr_dir`,
 `coverage_target`). Never hardcode. Defaults: missing `checks` producer → `on` (**incl.
 `checks.split`**); missing `check_budget` producer → `2` (`deliver` and **`split`** → `1`); missing
-`size_limit` → `500`; `board_dir` → `docs/cards`. If the frontmatter carries a `testing:` block with `harness_paths` (a glob list), append those globs
-to the **effective `size_exclude`** used everywhere this pump — slice estimation, §5's size
-measurement, the split layer, and the deliver checks — declared test harness (fixtures, factories,
-container setup, browser config, page objects) is amortised infrastructure and never counts against
-a card; test *cases* still count. Read every `docs/cards/CARD-*/card.md` and parse
+`size_limit` → `500`; `board_dir` → `docs/cards`. **Parse the optional `testing:` block.** Validate per `templates/config.md`'s documented semantics
+(scope required and `card|pr`; `card` needs `command`; `needs_env` needs the full `env` block;
+`unit` reserved; custom `layers` need an explicit `derive`). **On any validation error: surface the
+exact error prominently in §7 and treat levels as unconfigured this pump** — never dispatch against
+half-parsed values. "Levels configured" everywhere below means `testing.levels` present and
+non-empty. Always (valid or not, levels or not): append `testing.harness_paths` globs to the
+**effective `size_exclude`** used everywhere this pump — slice estimation, §5's size measurement,
+the split layer, the deliver checks; harness is amortised infrastructure, test *cases* still count.
+Read every `docs/cards/CARD-*/card.md` and parse
 frontmatter (missing `started`/`delivered`/`design_pr_url`/`estimated_lines`/`actual_lines` → empty).
 **`pr_urls` is an ordered list** of implementation PR urls in shipping order; **`split_slices`** is how
 many slices the card ships as (absent/`0` → one PR; `1` reads as `0`). **`reworks` is a per-producer
@@ -117,7 +122,11 @@ parse `## M<N> — <title>` headings and each `**Cards:**` line into a `card →
 `${CLAUDE_PLUGIN_ROOT}/templates/checks/ids.md` (~200 tokens) and every `## Check criteria — <target>`
 section of `<board_dir>/PROTOCOL-ADDENDUM.md` (absent → no `LOCAL-` ids), and **hold the id set per
 target** — `intake` | `slice` | `design` | `split` | `deliver` — each being its `ids.md` ids
-(`INT-*`/`SLC-*`/`DSG-*`/`SPL-*`/`DLV-*`) **plus** the addendum's `LOCAL-` ids for that target. **This
+(`INT-*`/`SLC-*`/`DSG-*`/`SPL-*`/`DLV-*`) **plus** the addendum's `LOCAL-` ids for that target.
+**When levels are configured, the `design` set additionally holds `DSG-LEVELS`, `DSG-SEAMS`,
+`DSG-DATA`** (marked conditional in `ids.md`); unconfigured, it does not — the valve rejects a
+design-check result that verdicts ids the held set lacks exactly as it rejects one that omits ids
+it holds. **This
 read makes §5's completeness valve real** — the valve rejects any checker result whose `criteria:` map
 omits an id of its target's set (RATIONALE).
 
@@ -294,7 +303,8 @@ trigger a gate.
 
 The dispatch/model table says which agent fires per status; the state tables say when. This section
 carries only the transition mechanics not on those tables. Rework re-dispatches the *producer* with the
-blocking findings verbatim (the stale check doc deleted when the new phase doc is persisted, §5
+blocking findings verbatim (an implementer rework for test/level failures also carries the
+`templates/testing/DIAGNOSIS.md` path when levels are configured) (the stale check doc deleted when the new phase doc is persisted, §5
 discipline); the slicer's dispatch adds the card's **dependents**, and a slice-check `verdict: pass`
 records `estimated_lines`. Returned phase docs commit to the **implementation branch**.
 
@@ -362,7 +372,7 @@ spends it per slice PR). (RATIONALE.)
 | design, `design.md` absent | card-designer | opus |
 | design, `design.md` present, `design-check.md` absent | card-design-checker | opus |
 | implement, `implement.md` absent (or a failing `test.md`/`review.md` present) | card-implementer | sonnet |
-| test, `test.md` absent | card-tester | haiku |
+| test, `test.md` absent | card-tester | haiku — **sonnet when levels are configured** (env lifecycle + failure classification are judgement; per-card, not a lens multiplier) |
 | review, **`review.md` absent** | **card-lens-reviewer × lenses, in parallel** (only `review_lenses_failed`, if set) | per-lens (Section 5, review panel) |
 | review, panel passed, diff > `size_limit`, `split.md` absent | **pr-splitter** | sonnet |
 | review, `split.md` present, `split-check.md` absent | **card-split-checker** | sonnet |
@@ -385,8 +395,14 @@ claim-by-claim diff-reading and a `DLV-SIZE` breach's split proposal are judgeme
 is the last check before a human merges); `card-deliverer` stays `haiku`. In every dispatch prompt
 include `card_id`, `card_dir`, the full `card.md`, and **only the phase docs the phase needs**.
 
-**Producers:** slicer → none; designer → slice.md; implementer → design.md (+ findings on rework);
-tester → design.md's test strategy + implement.md; **the lens panel** → design.md + implement.md +
+**Producers:** slicer → none; designer → slice.md (**plus, when levels are configured:** level definitions, derive map, seam
+list, journeys, `templates/testing/LEVELS.md` — and `templates/testing/JOURNEYS.md` when a
+`journey` level is configured and the card touches `harness_paths`); implementer → design.md (+ findings on rework);
+tester → design.md's test strategy + implement.md — **plus, when the card's `design.md` has a
+`### Levels` block:** the selected levels' commands, the `env` block, the seam list with schema
+paths, and the `templates/testing/LEVELS.md` + `templates/testing/DIAGNOSIS.md` doctrine paths
+(**level commands are sent ONLY when that block exists** — the block is the per-card opt-in marker;
+a pre-opt-in card runs the legacy gates on haiku); **the lens panel** → design.md + implement.md +
 test.md, plus **the branch by name** (diffs `origin/main...<branch>`, never `HEAD`) — and **in slice
 mode** additionally `slice: k`, `slices: N`, that slice's path list + change types, the criteria it
 claims, `split.md`, the original branch by name; **`pr-splitter`** and its inputs →
@@ -404,7 +420,9 @@ the same list — they must agree byte-for-byte:
   section, which is where the ADR proposals come from** (`DSG-ADR-NEEDED` cannot be verdicted without
   them; read from the file, never a `proposed_adrs` list in memory) — the **spec sections `design.md`
   cites**, **`KNOWLEDGE.md`** (`DSG-KNOWLEDGE`), and the **ADR index** (`docs/adrs/README.md` —
-  `DSG-ADR-NEEDED`).
+  `DSG-ADR-NEEDED`). **When levels are configured, additionally:** the level definitions, derive map, seam list, and
+`templates/testing/LEVELS.md` — the inputs the conditional `DSG-LEVELS`/`DSG-SEAMS`/`DSG-DATA`
+criteria depend on.
 - **card-split-checker** → `card.md`, the `worktree` and **the original branch BY NAME** — it
   re-derives the change set itself, `git diff --no-renames --name-status origin/main...<original-branch>`
   (the same `--no-renames` the splitter used), because `SPL-NO-LOSS` is worthless taken on trust —
@@ -432,6 +450,7 @@ worktree, before any PR opens**. At `status: review` with **`review.md` absent**
 table handles it; never re-dispatch over a `review.md`), dispatch one `card-lens-reviewer` **per lens,
 in parallel**, each given `lens`, `worktree`, **the card's `branch` by name** (diffs
 `origin/main...<branch>`, never `HEAD`), `card_id`, `card.md`, `design.md`, `implement.md`, `test.md`,
+the seam list (when the project declares one — the `[tests]` lens's seam audit needs it),
 and the doctrine paths (`AGENT-PROTOCOL.md`, `lenses/_shared.md`, its own `lenses/<lens>.md` — never
 another's, `<board_dir>/PROTOCOL-ADDENDUM.md`). Assemble the panel from the changed files (`git -C
 <worktree> diff --name-only origin/main...<branch>`).
@@ -654,6 +673,12 @@ re-dispatched for a malformed result** (card, checker, omitted ids); any **`DLV-
 split verbatim. **If any `checks` producer is `off`, warn every pump** — name it and the consequence
 (`slice=off`: *`size_limit` unenforced before code, only `DLV-SIZE`'s after-the-fact warning remains*;
 `split=off`: *an oversized branch is never carved*).
+
+**Testing layer** (only when levels are configured): any `testing:` validation error (verbatim,
+prominently — the pump ran as unconfigured); per-card level telemetry (`CARD-NNN — levels 2
+selected / 3 derived`, declines named); level-gate blockers by classification (product / test /
+environment / flake). When suggesting `/retro`, include the running deferral picture ("journey
+declined on 9 of 10 cards").
 
 ## Rules
 
