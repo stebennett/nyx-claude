@@ -26,7 +26,9 @@ not apply:
   names *which one* each consumer gets.
 - **As-of semantics** — per-record figures come from the record's stored snapshot, not live reference
   data; replay order is deterministic (date, then id).
-- **Determinism** — fixed clock, fixed seed, ordered queries, no network in tests.
+- **Determinism** — fixed clock, fixed seed, ordered queries, always; unit/domain tests hermetic
+  (no I/O, no network); higher-level tests may use the project's declared test environment but must
+  stay deterministic (pinned images, seeded data, readiness waits — never fixed sleeps).
 
 **Walk:** Read `card.md`'s acceptance criteria and write your own list of the tasks you would expect,
 *before* reading `design.md`'s task list. Then read the design. Map criteria → tasks (a criterion with

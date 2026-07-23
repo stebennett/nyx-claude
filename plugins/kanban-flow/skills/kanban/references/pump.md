@@ -99,7 +99,11 @@ Read `{board_dir}/config.md` first — the tunables (`spec_path`, `gh_command`, 
 `checks`, `check_budget`, `size_limit`, `size_exclude`, `layers`, `gate_layer`, `adr_dir`,
 `coverage_target`). Never hardcode. Defaults: missing `checks` producer → `on` (**incl.
 `checks.split`**); missing `check_budget` producer → `2` (`deliver` and **`split`** → `1`); missing
-`size_limit` → `500`; `board_dir` → `docs/cards`. Read every `docs/cards/CARD-*/card.md` and parse
+`size_limit` → `500`; `board_dir` → `docs/cards`. If the frontmatter carries a `testing:` block with `harness_paths` (a glob list), append those globs
+to the **effective `size_exclude`** used everywhere this pump — slice estimation, §5's size
+measurement, the split layer, and the deliver checks — declared test harness (fixtures, factories,
+container setup, browser config, page objects) is amortised infrastructure and never counts against
+a card; test *cases* still count. Read every `docs/cards/CARD-*/card.md` and parse
 frontmatter (missing `started`/`delivered`/`design_pr_url`/`estimated_lines`/`actual_lines` → empty).
 **`pr_urls` is an ordered list** of implementation PR urls in shipping order; **`split_slices`** is how
 many slices the card ships as (absent/`0` → one PR; `1` reads as `0`). **`reworks` is a per-producer
