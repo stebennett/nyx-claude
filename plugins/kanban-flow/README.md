@@ -68,6 +68,11 @@ decline. Unconfigured boards are byte-for-byte unchanged. Doctrine:
 `templates/testing/LEVELS.md`, `templates/testing/DIAGNOSIS.md`; spec:
 `docs/superpowers/specs/2026-07-23-kanban-testing-levels-design.md` in the marketplace repo.
 
+Scope-`pr` levels (journeys, experience gates) ride the implementation PR's CI — the plugin's §6a
+CI gate already refuses a red PR; flakes resolved by rerun land in `QUARANTINE.md` with a linked
+defect card and an aging escalation; an optional `nightly_main` workflow probe files defect cards
+for what leaked past the PRs. Doctrine: `templates/testing/JOURNEYS.md`.
+
 ## Tuning token cost
 
 Two knobs and two budgets keep the system's token spend in hand:
