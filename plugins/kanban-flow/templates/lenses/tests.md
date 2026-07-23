@@ -49,8 +49,9 @@ single happy-path test for a function full of branches; `@settings(deadline=None
 strategy; a `toContain`/substring assertion whose negative case contains the positive; a fixture
 symmetric across the very branch it means to discriminate; only one of a component's render
 variants exercised; a multi-outcome error handler tested with a single failure stub; a skipped test (`.skip`, `.only`,
-`xit`, `t.Skip`) with no matching row in the board's `QUARANTINE.md` (skipping is quarantine's
-job, and quarantine is written by the orchestrator, not by a diff).
+`xit`, `t.Skip`) with no matching row in the board's `QUARANTINE.md`, when the board keeps one
+(skipping is quarantine's job, and quarantine is written by the orchestrator, not by a diff; a
+board with no `QUARANTINE.md` is judged by the pre-existing rules alone).
 
 **Don't flag:** coverage % by itself (card-tester owns the number — you own whether the tests
 *mean* anything). On a card whose `design.md` has a `### Levels` block: a gap at a level that block
