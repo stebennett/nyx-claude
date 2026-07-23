@@ -11,7 +11,7 @@ You improve the delivery system from its own record — the phase docs — so th
 Cover every `status: done` card (and any long-`blocked` card) not in a previous retro (`docs/cards/RETRO.md`).
 
 **Start from the index.** Read `<board_dir>/RETRO-INBOX.md` FIRST — one line per done card, appended by `/kanban` at `done`:
-`CARD-NNN | delivered YYYY-MM-DD | reworks {slice:0,design:1,implement:2,split:0,deliver:0} | elapsed Nd | est/actual lines E/A | slices N | human-comments M`
+`CARD-NNN | delivered YYYY-MM-DD | reworks {slice:0,design:1,implement:2,split:0,deliver:0} | elapsed Nd | est/actual lines E/A | slices N | human-comments M | levels S/D`
 The line is a triage index, not a substitute for the docs. **Open a card's full phase docs only when its line flags something** — any `reworks > 0`, an est/actual divergence, `slices > 1`, or `human-comments > 0`; a card clean on every field is covered with no deep read. A done card with **no line at all** (pre-0.5, or an inbox gap) is always deep-read. For a flagged card, read:
 
 **The system's trace:**
@@ -39,6 +39,12 @@ Ask, XP/lean style — **human signal first**:
 - **Gate value:** did manual gates change outcomes? Did auto gates let anything bad through to PR review?
 - **Panel signal:** per lens in `review.md`, how many **blocking** findings, and did they hold? Blockers that keep landing point at an upstream phase to strengthen; a lens that never blocks needs a sharper brief in `templates/lenses/<lens>.md` or retirement; a lens the implementer keeps rebutting is miscalibrated — tighten its **Don't flag**.
 - **Is the check layer earning its keep?** From the §1 by-criterion tally (across every covered card's check docs and intake reports) — three signals, three *different* remedies: a criterion that **never fails** isn't paying its dispatch → prune (`LOCAL-` you own, plugin you report — §3); one that **fails on most cards** means the **producer** is wrong → edit that producer's prompt/doctrine, not more checking (RATIONALE `## /retro`); a defect that **reached the human or shipped uncaught** → propose a new criterion, with an id, in the right section.
+- **Are levels being declined into oblivion?** From `design.md` `### Levels` blocks and
+  `DSG-LEVELS` verdicts across covered cards: the deferral rate per level. Ninety percent of cards
+  declining `journey` is either an honest architecture fact or the old escape hatch wearing a
+  rationale — read the rationales and decide which. Tally level-gate blockers by classification
+  (`test.md` `## Levels`): recurring `environment` blockers are a harness card, not a card defect;
+  recurring `test` classifications point at the designer's examples, not the implementer.
 - **Who is under-estimating — the slicer, or intake?** Compare `estimated_lines` with `actual_lines`; tally the slicer (`SLC-SIZE`, sliced cards) and intake (`INT-SIZED`, `right_sized: true` cards) populations **separately** and aim each remedy at the estimator that made the call (RATIONALE `## /retro`). A **`pr-splitter` firing** (`split_slices > 0`) is that miss surfacing post-code — fix the estimator, never the splitter. A **refusal** (`split_slices: 0`) is a **design** signal (entangled code) — route a recurring one to a `KNOWLEDGE.md` Gotcha or a card aimed at the boundaries `split.md`'s `## Verdict` names.
 - **Which checker rubber-stamps?** Thin `evidence` on a passing criterion ("looks complete") is skimming — the Method demands evidence of what was checked.
 
