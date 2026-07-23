@@ -57,6 +57,17 @@ review, or comment `REVIEWED`), and every comment you wrote gets addressed and a
 link. A healthy card needs exactly three actions from you: merge the design PR, complete a review,
 merge the implementation PR.
 
+### Test levels (opt-in)
+
+Uncomment the `testing:` block in `config.md` to make integration/contract/functional (and, with
+CI, journey/experience) testing first-class: cards **derive** the levels their layer owes, the
+designer **selects or declines each in writing** (`DSG-LEVELS/SEAMS/DATA` check it), `card-tester`
+runs the selected card-scope levels (zero tests = failure; environments via a trap-guarded
+lifecycle; sonnet for the judgement), and the `tests` lens blocks any level gap the design didn't
+decline. Unconfigured boards are byte-for-byte unchanged. Doctrine:
+`templates/testing/LEVELS.md`, `templates/testing/DIAGNOSIS.md`; spec:
+`docs/superpowers/specs/2026-07-23-kanban-testing-levels-design.md` in the marketplace repo.
+
 ## Tuning token cost
 
 Two knobs and two budgets keep the system's token spend in hand:

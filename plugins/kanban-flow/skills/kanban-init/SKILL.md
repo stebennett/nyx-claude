@@ -44,7 +44,9 @@ plugin-owned and are read live. You never modify the plugin.
    - Edit `<board_dir>/config.md` — set `spec_path` to their spec, adjust `layers`
      to their architecture, set `gate_layer`, set `gh_command` if they use a bot
      identity wrapper, and review `wip_limit`, `gates`, and `coverage_target` for
-     their project.
+     their project. The commented `testing:` block enables test levels
+     (integration/contract/functional/journey/experience) — leave it commented until the project
+     has the commands and harness to back it.
    - Run `/refine` to populate the backlog, then `/kanban` to start driving cards.
 
 ## Rules

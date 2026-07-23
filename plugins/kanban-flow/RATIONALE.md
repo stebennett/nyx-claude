@@ -251,3 +251,22 @@ phase docs, check docs, feedback.md, PR threads, or intake reports on a card tha
 Coverage stays verifiable because `RETRO.md` still records every channel per covered card, empties
 included; a card the inbox waved through is recorded covered, and a channel skipped on a flagged
 card is still a visible gap.
+
+## Test levels — why conditional criteria, a per-card marker, and a sonnet tester
+
+**Conditional ids.** `DSG-LEVELS/SEAMS/DATA` join the held design id set only when
+`testing.levels` is configured, so the completeness valve stays exact in both regimes: an
+unconfigured board's checker isn't asked to verdict criteria that cannot apply, and a configured
+board's checker can't skip them. The alternative — always-present criteria verdicting `na` — would
+make `na` ambiguous between "checked, doesn't apply" and "project never opted in", poisoning
+`/retro`'s deferral tally.
+
+**The `### Levels` block is the per-card regime marker.** Downstream conditionals (tester level
+gates, the `tests` lens exemption arms) key on its presence in `design.md`, never on config — so a
+project opting in mid-flight strands nothing: cards designed before opt-in carry no block and run
+the legacy path end-to-end; no agent needs config access to know which regime a card is under.
+
+**Tester on sonnet only when levels are configured.** Running gates and reading exit codes is
+haiku work; environment lifecycle and four-way failure classification (product/test/environment/
+flake) are judgement. It is a per-card dispatch, not a per-lens multiplier, so the cost is bounded
+and reversible by de-configuring.

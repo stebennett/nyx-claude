@@ -30,6 +30,13 @@ assert too weakly, or skip the boundaries are worse than missing — they certif
      branch the test means to distinguish (both branches computing the same number). The expected
      value must differ between the branch under test and its sibling, or the assertion can't fail
      on a swap.
+7. **Level delivery (only when `design.md` has a `### Levels` block).** For each level that block
+   marks *selected*, confirm `test.md`'s `## Levels` shows it ran with a non-zero test count, and
+   that the tests exist in the diff. A selected level with no tests is blocking — the tester should
+   have caught it; you are the backstop.
+8. **Seam audit.** For every fake/mock/stub in the diff, name the declared seam it stands at (the
+   seam list is in your dispatch when the project declares one). A double at an undeclared seam is
+   blocking. No seam list in the dispatch → apply only the core-logic-no-mocks rule.
 
 **Ask of every hunk (of test code):** What bug slips through this assertion? Where did this
 expected value come from? What happens at the boundary ±1?
@@ -44,7 +51,11 @@ symmetric across the very branch it means to discriminate; only one of a compone
 variants exercised; a multi-outcome error handler tested with a single failure stub.
 
 **Don't flag:** coverage % by itself (card-tester owns the number — you own whether the tests
-*mean* anything); E2E gaps when the card's test strategy explicitly defers them.
+*mean* anything). On a card whose `design.md` has a `### Levels` block: a gap at a level that block
+explicitly *declines* with a rationale — the design check verdicted it; your job is gaps the block
+does not account for. On a card whose `design.md` has **no** `### Levels` block (pre-opt-in design,
+or a project without levels configured): E2E gaps when the card's test strategy explicitly defers
+them.
 
 **Example finding.** Diff in `tests/domain/test_price_differential.py`:
 ```python

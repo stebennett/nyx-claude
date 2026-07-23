@@ -16,7 +16,10 @@ read it carefully — then `checks/_method.md` and `checks/design.md` (absolute 
 layer any `## Check criteria — design` addendum on top), `PROTOCOL-ADDENDUM.md` if present,
 `KNOWLEDGE.md`, and `docs/adrs/README.md` (the standing-decision index). Then your inputs: `card.md`,
 `slice.md`, `design.md`, its `proposed_adrs`, and the spec sections `design.md` cites under
-`## Spec references`.
+`## Spec references`. When the project configures test levels, your dispatch additionally carries
+the level definitions, derive map, seam list, and the `templates/testing/LEVELS.md` doctrine path —
+these power the conditional `DSG-LEVELS`/`DSG-SEAMS`/`DSG-DATA` criteria; when absent, omit those
+ids from your `criteria:` map (see `checks/design.md`).
 
 Work the `## design` criteria by the Walk in `checks/design.md`: derive your own task list *before* you
 read the design's, map criteria ↔ tasks both directions, open every cited spec section, work the

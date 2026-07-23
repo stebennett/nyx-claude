@@ -48,6 +48,37 @@ layers:
   - web
 gate_layer: domain
 coverage_target: "90% on the core logic layer"
+# testing:                      # OPTIONAL — uncomment to enable test levels. The switch is
+#   levels:                     #   `testing.levels` non-empty ("levels configured"). TODO: set commands.
+#     integration: { command: "make test-integration", scope: card, needs_env: true }
+#     contract:    { command: "make test-contract",    scope: card }
+#     functional:  { command: "make test-functional",  scope: card, needs_env: true }
+#     journey:     { scope: pr }
+#     experience:  { scope: pr }
+#   derive:                     # level -> layers that owe it. Defaults cover the conventional
+#     integration: [db, api, infra]   # five layers; custom layers MUST supply this map.
+#     contract:    [api]
+#     functional:  [api, web]
+#     journey:     [web]
+#     experience:  [web]
+#   seams:                      # declared boundaries where fakes are permitted
+#     - { name: postgres, kind: database, integration: real }
+#   env:                        # required iff any level has needs_env: true
+#     up: "make test-env-up"
+#     down: "make test-env-down"
+#     ready: "make test-env-ready"
+#     base_url_env: E2E_BASE_URL
+#   journeys:                   # 5-10, product-owned, changed rarely
+#     - { id: J1, name: "TODO: first critical user journey" }
+#   experience:
+#     viewports: [390x844, 1280x800]
+#     accessibility: { ruleset: wcag21aa, max_violations: 0 }
+#     budgets: { lcp_ms: 2500, cls: 0.1, tbt_ms: 300 }
+#     selector_convention: "data-testid"
+#   harness_paths: ["tests/harness/**", "tests/factories/**"]
+#   quarantine_age_days: 5
+#   nightly_main: off           # or: { workflow: nightly.yml }
+#   telemetry: { flake_rate_max: 0.02 }   # advisory only — never blocks
 ---
 
 # kanban-flow configuration
@@ -105,10 +136,23 @@ and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) re
 - **size_exclude** — glob paths omitted from both counts: lock files, vendored deps,
   **plus the board (`docs/cards/**`)** so a card's phase docs don't count against it.
   Add generated code (protobuf, OpenAPI); move it with `board_dir`. (RATIONALE.)
-- **testing.harness_paths** — optional glob list (inside the optional `testing:` block) of declared
-  test-harness locations (fixtures, factories, container setup, browser config, page objects),
-  appended to the effective `size_exclude` at every use. Harness is amortised infrastructure; test
-  cases still count. Safe to set with or without the rest of the `testing:` block.
+- **testing** — optional block enabling test levels (spec:
+  `docs/superpowers/specs/2026-07-23-kanban-testing-levels-design.md`). The switch for every new
+  obligation is **`testing.levels` present and non-empty** ("levels configured"). Semantics:
+  `levels` maps level name → `{command?, scope, needs_env?}`; `scope` required, `card | pr`;
+  `scope: card` requires `command`; `scope: pr` takes none; `needs_env: true` wraps the level in
+  the `env` lifecycle and requires the `env` block (all four keys). The name `unit` is reserved —
+  the existing suite/coverage/property/lint gates own it. `derive` maps each level to the layers
+  that owe it; built-in defaults cover the conventional `[infra, domain, db, api, web]` — if
+  levels are configured, `derive` is omitted, and `layers` is not a subset of those five, loading
+  fails naming the missing map. `seams` lists the boundaries where fakes are permitted (absent →
+  seam rules inert, `DSG-SEAMS` verdicts `na`). `journeys` is expected non-empty when a `journey`
+  level exists (missing → load warning). `harness_paths` — see the size budget above; works
+  without levels. `quarantine_age_days` (default 5) and `nightly_main` (`off` or
+  `{workflow: <file>}`) drive the flake/escaped-defect machinery. `telemetry` is advisory only.
+  **On any validation error the pump surfaces the exact error in its report and treats levels as
+  unconfigured for that pump** — loud and safe, never half-parsed. Agents never read this block;
+  values arrive per dispatch.
 - **layers** — the architectural layers, **in order** — the scheduler's tie-break
   rank for the next ready card. Tag each card's `layer` with one.
 - **gate_layer** — the layer that triggers the `design: domain` stop (riskiest

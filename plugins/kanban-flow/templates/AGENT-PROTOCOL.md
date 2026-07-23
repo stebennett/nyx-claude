@@ -7,6 +7,9 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
 - `card_id`, `card_dir` (e.g. docs/cards/CARD-001-slug), `worktree` (absolute path to this card's git
   worktree), the full text of `card.md`, and the prior phase docs **your phase needs** (the
   orchestrator sends only those).
+- **Testing values arrive only when the project configures them:** level definitions/commands, the
+  derive map, the seam list, journeys, environment commands, and `templates/testing/*` doctrine
+  paths. Their absence means the project has not opted in — never assume or invent them.
 - **Doctrine paths:** the plugin's `AGENT-PROTOCOL.md` (this file) and the repo's
   `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives `templates/lenses/_shared.md` +
   `<lens>.md`. Read the protocol here, then layer the addendum — never a `docs/cards/` copy.
@@ -105,8 +108,8 @@ phase_doc: |
 ```
 
 **Phase-doc length budgets** (advisory — over-budget is an advisory finding): `design.md` ≤150 lines,
-`implement.md` ≤80, `test.md` ≤60; a checker's evidence is one line per criterion; a review lens's
-section is ≤40 lines.
+`implement.md` ≤80, `test.md` ≤80 (per-level gate sections included); a checker's evidence is one
+line per criterion; a review lens's section is ≤40 lines.
 
 - `status: needs-input` → orchestrator surfaces `open_questions` to the driver and re-dispatches you with answers.
 - `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode, up to `check_budget.implement` loops (`config.md`; never assume a number), then parks the card.

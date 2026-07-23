@@ -32,6 +32,32 @@ First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dis
 - **Stack gotchas to design around:** name the project's known framework/library traps that bite designs (an ORM's migration mode for schema changes, a driver-level pragma set per connection, version-specific framework semantics, seed/import loading that must be idempotent). Key a fractional-step lookup table by string/integer sub-units, never by float.
 - Choose the smallest design that satisfies the acceptance criteria; name the existing code you reuse.
 
+## Test levels (only when your dispatch carries testing config)
+
+When the dispatch includes level definitions, a derive map, and (optionally) seams and journeys,
+your `## Test strategy` section MUST contain a `### Levels` block. Derive the owed set: level L is
+owed iff this card's `layer` is in `derive[L]`; **add** (never remove) any level whose layers your
+task list plainly crosses into — a `domain` card whose tasks touch web templates owes the
+web-derived levels too. Then one line per owed level, exactly one of:
+
+    ### Levels
+    - integration: selected — real postgres via harness; covers AC-2, AC-3
+    - contract: declined — no seam schema touched by this card
+    - journey: declined — no user-visible flow changes; J1/J2 unaffected
+
+Declining is legitimate and free — but only in writing, with a rationale the checker can judge.
+A selected level must name a configured level. For each selected level, the task list contains the
+tests that deliver it; a selected level that would produce zero tests is a design defect. Name the
+seams your interfaces touch and their fake/real stance per level, and state test-data/seeding needs
+for any selected level that needs an environment (read the LEVELS.md doctrine path in your dispatch
+for the patterns). For `scope: pr` levels (journeys, experience), name which configured journeys
+this card can plausibly affect — the PR body will carry that claim.
+
+**Executable acceptance examples.** Wherever an acceptance criterion admits a worked example,
+record it in `design.md` as a concrete example table — given/when/then as data, exact expected
+literals computed independently of any implementation (spec arithmetic, never the code's formula).
+The implementer automates these verbatim; the `[tests]` lens polices their provenance.
+
 ## Return
 - `status: complete`, `gate: design` (always — the orchestrator applies the gate policy).
 - `phase_doc` is the full `design.md` with sections: `## Intent`, `## Acceptance criteria`, `## In scope`, `## Out of scope`, `## Dependencies & assumptions`, `## Approach` (incl. alternatives), `## Interfaces`, `## Data flow`, `## Implementation task list`, `## Test strategy`, `## Spec references`, `## Proposed ADRs`.
