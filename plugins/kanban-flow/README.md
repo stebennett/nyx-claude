@@ -73,6 +73,11 @@ CI gate already refuses a red PR; flakes resolved by rerun land in `QUARANTINE.m
 defect card and an aging escalation; an optional `nightly_main` workflow probe files defect cards
 for what leaked past the PRs. Doctrine: `templates/testing/JOURNEYS.md`.
 
+With an `experience` level configured, `web`-layer cards get a static `[experience]` lens (states,
+selectors, keyboard, a11y structure — it dispatches under every `review_panel` tier for web
+cards); runtime gates (axe, Core Web Vitals) and the advisory judged artefact stay in CI per
+`templates/testing/EXPERIENCE.md`.
+
 ## Tuning token cost
 
 Two knobs and two budgets keep the system's token spend in hand:

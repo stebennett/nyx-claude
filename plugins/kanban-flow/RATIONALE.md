@@ -270,3 +270,14 @@ the legacy path end-to-end; no agent needs config access to know which regime a 
 haiku work; environment lifecycle and four-way failure classification (product/test/environment/
 flake) are judgement. It is a per-card dispatch, not a per-lens multiplier, so the cost is bounded
 and reversible by de-configuring.
+
+## The `[experience]` lens — why static-only
+
+A lens runs in a worktree with a diff; axe scans and Web Vitals need a running app — putting them
+in a lens either silently no-ops or drags environment provisioning into the review panel, the
+plugin's costliest phase. So the split: static review (states, selectors, keyboard, structure) is
+lens work; runtime measurement is a `scope: pr` CI gate triaged by §6a; judgement (rubric
+walkthroughs, annotated screenshots) is advisory and human — an agent gate that judges UX
+auto-passes garbage or auto-blocks taste. The lens dispatches under every `review_panel` tier for
+`web`-layer cards because a reduced tier that silently drops the one lens web cards exist for is a
+foot-gun, mirroring the gate-layer warning pattern.

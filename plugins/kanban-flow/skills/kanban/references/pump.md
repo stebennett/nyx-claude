@@ -461,8 +461,9 @@ worktree, before any PR opens**. At `status: review` with **`review.md` absent**
 table handles it; never re-dispatch over a `review.md`), dispatch one `card-lens-reviewer` **per lens,
 in parallel**, each given `lens`, `worktree`, **the card's `branch` by name** (diffs
 `origin/main...<branch>`, never `HEAD`), `card_id`, `card.md`, `design.md`, `implement.md`, `test.md`,
-the seam list (when the project declares one — the `[tests]` lens's seam audit needs it),
-and the doctrine paths (`AGENT-PROTOCOL.md`, `lenses/_shared.md`, its own `lenses/<lens>.md` — never
+the seam list (when the project declares one — the `[tests]` lens's seam audit needs it), the
+`selector_convention` and the `templates/testing/EXPERIENCE.md` doctrine path (experience lens
+only), and the doctrine paths (`AGENT-PROTOCOL.md`, `lenses/_shared.md`, its own `lenses/<lens>.md` — never
 another's, `<board_dir>/PROTOCOL-ADDENDUM.md`). Assemble the panel from the changed files (`git -C
 <worktree> diff --name-only origin/main...<branch>`).
 
@@ -477,11 +478,14 @@ another's, `<board_dir>/PROTOCOL-ADDENDUM.md`). Assemble the panel from the chan
 | readability | always | sonnet |
 | python | diff touches `*.py` | sonnet |
 | typescript | diff touches `*.ts` / `*.tsx` | sonnet |
+| experience | diff touches the `web` layer AND a level named `experience` is configured | sonnet |
 
 **Filter by `config.review_panel` (missing → `full`).** `standard` = acceptance,
 functionality, tests, security + language lenses; `light` = acceptance, functionality + language
 lenses. A `gate_layer` card under `standard`/`light` reviews, but report §7 warns `⚠ CARD-NNN
-(gate_layer) reviewed under review_panel: <tier>`.
+(gate_layer) reviewed under review_panel: <tier>`. The `experience` lens belongs to the `full` tier —
+but for a `web`-layer card it dispatches under every tier (same pattern as the gate-layer warning:
+reduced tiers must not silently drop the one lens web cards exist for).
 
 **Which lenses run is read off the card, never remembered.** `review_lenses_failed` empty/absent → the
 full panel (filtered by the diff); non-empty → exactly those lenses (every other already passed and its
