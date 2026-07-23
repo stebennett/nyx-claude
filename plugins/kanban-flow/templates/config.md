@@ -105,6 +105,10 @@ and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) re
 - **size_exclude** — glob paths omitted from both counts: lock files, vendored deps,
   **plus the board (`docs/cards/**`)** so a card's phase docs don't count against it.
   Add generated code (protobuf, OpenAPI); move it with `board_dir`. (RATIONALE.)
+- **testing.harness_paths** — optional glob list (inside the optional `testing:` block) of declared
+  test-harness locations (fixtures, factories, container setup, browser config, page objects),
+  appended to the effective `size_exclude` at every use. Harness is amortised infrastructure; test
+  cases still count. Safe to set with or without the rest of the `testing:` block.
 - **layers** — the architectural layers, **in order** — the scheduler's tie-break
   rank for the next ready card. Tag each card's `layer` with one.
 - **gate_layer** — the layer that triggers the `design: domain` stop (riskiest
