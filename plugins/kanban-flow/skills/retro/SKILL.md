@@ -45,6 +45,9 @@ Ask, XP/lean style — **human signal first**:
   rationale — read the rationales and decide which. Tally level-gate blockers by classification
   (`test.md` `## Levels`): recurring `environment` blockers are a harness card, not a card defect;
   recurring `test` classifications point at the designer's examples, not the implementer.
+ Read `QUARANTINE.md` ages (an aging row is a card nobody pulled), nightly-probe defect filings
+  (the escaped-defect feed — the real measure of whether any of this works), and whether flake
+  rate breaches `testing.telemetry.flake_rate_max` — all advisory, all human-decided.
 - **Who is under-estimating — the slicer, or intake?** Compare `estimated_lines` with `actual_lines`; tally the slicer (`SLC-SIZE`, sliced cards) and intake (`INT-SIZED`, `right_sized: true` cards) populations **separately** and aim each remedy at the estimator that made the call (RATIONALE `## /retro`). A **`pr-splitter` firing** (`split_slices > 0`) is that miss surfacing post-code — fix the estimator, never the splitter. A **refusal** (`split_slices: 0`) is a **design** signal (entangled code) — route a recurring one to a `KNOWLEDGE.md` Gotcha or a card aimed at the boundaries `split.md`'s `## Verdict` names.
 - **Which checker rubber-stamps?** Thin `evidence` on a passing criterion ("looks complete") is skimming — the Method demands evidence of what was checked.
 

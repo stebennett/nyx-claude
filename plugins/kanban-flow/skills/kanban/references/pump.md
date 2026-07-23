@@ -26,7 +26,11 @@ unsplit card has one `pr_urls` entry (the N=1 case).
 **Direct-to-`main` commits are limited to, exhaustively:** `card.md`/`BOARD.md`/`KNOWLEDGE.md` state,
 the milestone swap on splits, a split parent's terminal `slice.md`/`slice-check.md`, the deliver check
 docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), post-PR `feedback.md`,
-the `RETRO-INBOX.md` append on a card reaching `done` (§0 step 3), and the drained `AMENDMENTS.md`.
+the `RETRO-INBOX.md` append on a card reaching `done` (§0 step 3), the drained `AMENDMENTS.md`,
+**`QUARANTINE.md`**, and **defect-card creation from quarantine or
+nightly filings** (a new `docs/cards/CARD-NNN-slug/card.md` in `backlog` — the one card-creation
+authority you hold, granted for `type: defect` from these two sources only; ids continue from the
+current max, same mechanic as the split carve-out).
 Nothing else. Every other phase doc lives on the card's current branch. **The slice phase has no
 branch/worktree**, so `slice.md`/`slice-check.md` are written into `<board_dir>/CARD-NNN-slug/` **in the
 primary checkout, UNCOMMITTED**, until the design transition (§5) copies them onto the design branch —
@@ -88,6 +92,13 @@ Card state must survive lost commits and merges that happen while no pump runs. 
    `references/reconcile-edge-cases.md`**. None present → skip.
 6. **Drain the amendment queue** — `{board_dir}/AMENDMENTS.md` non-empty → **read
    `references/reconcile-edge-cases.md`**. Absent → skip.
+6a. **Nightly probe** (only when levels are configured AND `testing.nightly_main` names a
+    workflow): `{gh_command} run list --workflow <file> --branch main --limit 1` and inspect the
+    latest completed run. For each failing journey/experience result: grep open `type: defect`
+    cards' `## Notes` for a matching `journey: <id>` (or `test: <id>`) line; **no match → file one
+    defect card** (same authority and mechanic as the §6a quarantine filing; the `## Notes` line
+    is the idempotency key — one card per failure across pumps, never a gate, `done` semantics
+    untouched). Not configured → skip.
 7. Note any other drift you can't self-heal (a card id in a merged PR with no card dir, a worktree
    with no card) in the report — don't guess.
 
@@ -597,7 +608,12 @@ Every pump, before addressing, check the PR's CI: `{gh_command} pr checks <url>`
     next pump. After **3** without progress → `status: blocked` ("CI infrastructure unavailable"). Never
     treat a red PR as reviewable.
   - **Ambiguous / flaky** (failed once, passes locally, no relevant diff): infrastructure treatment
-    first; a second consecutive failure of the same job is real.
+    first; a second consecutive failure of the same job is real. **When a rerun resolves a test as
+    a flake** (red → green, no relevant diff) **and levels are configured:** in ONE state commit,
+    append/update the test's row in `<board_dir>/QUARANTINE.md` (columns: `test | level | first
+    failed | last failed | card`) and — if the row is new — create its linked `type: defect` card
+    in `backlog` (title `CARD-NNN — flaky: <test id>`, a `test: <test id>` line in `## Notes` as
+    the match key). Deleting the test is never the resolution.
 
 ### 6b. Address loop (every pump per open PR, CI green)
 
@@ -678,7 +694,10 @@ split verbatim. **If any `checks` producer is `off`, warn every pump** — name 
 prominently — the pump ran as unconfigured); then, only when levels are configured: per-card level telemetry (`CARD-NNN — levels 2
 selected / 3 derived`, declines named); level-gate blockers by classification (product / test /
 environment / flake). When suggesting `/retro`, include the running deferral picture ("journey
-declined on 9 of 10 cards").
+declined on 9 of 10 cards"). List every open `QUARANTINE.md` row with its age; **a row older than
+`testing.quarantine_age_days` (default 5) escalates to a report headline** (like a disabled
+check). Name any defect card filed this pump from quarantine or the nightly probe, with its
+source.
 
 ## Rules
 
