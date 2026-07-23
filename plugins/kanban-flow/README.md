@@ -40,6 +40,11 @@ advisory — **proposes a split**). Details in **`templates/checks/`**; the inta
 `right_sized` card is sized once, is in **`INTAKE.md` `## Check`**. Every card records
 `estimated_lines` and `actual_lines` so `/retro` catches a systematic under-estimator.
 
+Declared test-harness paths (`testing.harness_paths` in `config.md`) are excluded from the count —
+harness is amortised infrastructure; test cases still count. Test doctrine distinguishes
+determinism from hermeticity: unit/domain tests are hermetic, higher levels may use the project's
+declared test environment (pinned, seeded, readiness-waited).
+
 ### Review happens before the PR
 
 The lens panel (`card-lens-reviewer`, one agent per lens, in parallel) reviews the branch diff at the
