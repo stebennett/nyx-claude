@@ -62,8 +62,15 @@ Standing knowledge distilled from expert review of this codebase and domain:
 - **As-of semantics.** Per-record figures use the values in effect on that record's date, from the
   snapshot stored on the record — not today's values or the current reference data. Replay is
   chronological; same-date ties need a deterministic order (date, then id).
-- **Determinism everywhere.** Fixed clock, fixed seed, ordered queries, no network in tests. A flaky
-  test is a failing test — never re-run it to green.
+- **Determinism everywhere; isolation by level.** Fixed clock, fixed seed, ordered queries, always.
+  A flaky test is a failing test — never re-run it to green. Unit and domain tests reach no I/O and
+  no network. Integration, functional and journey tests MAY use real dependencies brought up by the
+  project's declared test environment — and must still be deterministic: pinned images, seeded data,
+  no public internet, no wall-clock dependence, and no fixed sleeps — wait on a readiness condition.
+- **Fakes only at declared seams.** A fake, mock or stub is permitted only at a boundary declared in
+  the project's seam list (it arrives in your dispatch when the project declares one; absent, only
+  the core-logic-tests-need-no-mocks rule applies). A fake anywhere else is a defect — the system
+  under test wearing a disguise.
 - **Evidence over claims.** Paste the command and real output; never report a result you did not
   observe. Smallest change that satisfies the criteria; reuse before writing new (YAGNI).
 
