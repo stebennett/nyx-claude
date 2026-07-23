@@ -131,6 +131,14 @@ a migration branch, never the plugin.
      decide idle-vs-run, so a quiet board under `/loop` stops before loading the board instead of
      after. Say that `off` bypasses the gate and reconciles directly (a debugging escape hatch), and
      that the gate writes no state and errs toward running.
+   - *0.6 → 0.8:* the commented `testing:` block — test levels (opt-in; the switch is
+     `testing.levels` non-empty). Since it ships commented, "adding the missing key" here means
+     appending the commented block from the plugin's current `templates/config.md` frontmatter,
+     verbatim, to the repo's — never uncommenting it. Say in the PR body that uncommenting it
+     changes behaviour: new design criteria (`DSG-LEVELS/SEAMS/DATA`), a level-aware tester on
+     sonnet, and the `tests` lens blocking undocumented level gaps on newly-designed cards;
+     pre-opt-in in-flight cards are untouched (the `### Levels` block in `design.md` is the
+     per-card marker).
 
 8. **Ship a PR.** Commit the deletions, addendum appends, `template_overrides` wiring and
    config changes (Conventional Commits + the project's `Co-Authored-By` trailer). Push and
