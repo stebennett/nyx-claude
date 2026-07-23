@@ -402,7 +402,7 @@ tester → design.md's test strategy + implement.md — **plus, when the card's 
 `### Levels` block:** the selected levels' commands, the `env` block, the seam list with schema
 paths, and the `templates/testing/LEVELS.md` + `templates/testing/DIAGNOSIS.md` doctrine paths
 (**level commands are sent ONLY when that block exists** — the block is the per-card opt-in marker;
-a pre-opt-in card runs the legacy gates on haiku); **the lens panel** → design.md + implement.md +
+a pre-opt-in card runs only the legacy gates); **the lens panel** → design.md + implement.md +
 test.md, plus **the branch by name** (diffs `origin/main...<branch>`, never `HEAD`) — and **in slice
 mode** additionally `slice: k`, `slices: N`, that slice's path list + change types, the criteria it
 claims, `split.md`, the original branch by name; **`pr-splitter`** and its inputs →
@@ -674,8 +674,8 @@ split verbatim. **If any `checks` producer is `off`, warn every pump** — name 
 (`slice=off`: *`size_limit` unenforced before code, only `DLV-SIZE`'s after-the-fact warning remains*;
 `split=off`: *an oversized branch is never carved*).
 
-**Testing layer** (only when levels are configured): any `testing:` validation error (verbatim,
-prominently — the pump ran as unconfigured); per-card level telemetry (`CARD-NNN — levels 2
+**Testing layer** (only when a `testing:` block is present): any validation error (verbatim,
+prominently — the pump ran as unconfigured); then, only when levels are configured: per-card level telemetry (`CARD-NNN — levels 2
 selected / 3 derived`, declines named); level-gate blockers by classification (product / test /
 environment / flake). When suggesting `/retro`, include the running deferral picture ("journey
 declined on 9 of 10 cards").
