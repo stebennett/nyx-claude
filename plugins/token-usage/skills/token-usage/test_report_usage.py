@@ -1,5 +1,9 @@
 import unittest
 from datetime import datetime, timezone, timedelta, date
+import io
+import json
+import tempfile
+from pathlib import Path
 
 import report_usage as ru
 
@@ -145,6 +149,65 @@ class TestFormatTable(unittest.TestCase):
         # opus total 12,749,379 + fable total 488,268 = 13,237,647
         self.assertIn("13,237,647", out)
         self.assertIn("TOTAL", out)
+
+
+class TestIterRecords(unittest.TestCase):
+    def test_reads_jsonl_and_skips_malformed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sub = root / "proj"
+            sub.mkdir()
+            (sub / "a.jsonl").write_text(
+                json.dumps({"type": "assistant", "n": 1}) + "\n"
+                + "not json\n"
+                + "\n"
+                + json.dumps({"type": "user", "n": 2}) + "\n"
+            )
+            records = list(ru.iter_records(root))
+            self.assertEqual([r["n"] for r in records], [1, 2])
+
+
+class TestMain(unittest.TestCase):
+    def _run(self, argv, root, now):
+        out, err = io.StringIO(), io.StringIO()
+        code = ru.main(argv, root=root, now=now, out=out, err=err)
+        return code, out.getvalue(), err.getvalue()
+
+    def test_reports_table(self):
+        now = datetime(2026, 7, 24, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "s.jsonl").write_text(json.dumps(_assistant(
+                "a", "claude-opus-4-8", "2026-07-20T00:00:00Z", inp=100, out=200)) + "\n")
+            code, out, err = self._run([], root, now)
+        self.assertEqual(code, 0)
+        self.assertIn("claude-opus-4-8", out)
+        self.assertIn("last 7 days", out)
+
+    def test_window_override_excludes_old(self):
+        now = datetime(2026, 7, 24, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "s.jsonl").write_text(json.dumps(_assistant(
+                "a", "opus", "2026-07-10T00:00:00Z", inp=100)) + "\n")
+            # 7-day default excludes Jul 10; 30d includes it.
+            code7, out7, _ = self._run([], root, now)
+            code30, out30, _ = self._run(["30d"], root, now)
+        self.assertIn("No usage data", out7)
+        self.assertIn("opus", out30)
+
+    def test_missing_root(self):
+        now = datetime(2026, 7, 24, tzinfo=timezone.utc)
+        code, out, err = self._run([], Path("/no/such/dir/xyz"), now)
+        self.assertEqual(code, 0)
+        self.assertIn("No usage data", out)
+
+    def test_bad_window(self):
+        now = datetime(2026, 7, 24, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out, err = self._run(["7w"], Path(tmp), now)
+        self.assertEqual(code, 2)
+        self.assertIn("window", err.lower())
 
 
 if __name__ == "__main__":

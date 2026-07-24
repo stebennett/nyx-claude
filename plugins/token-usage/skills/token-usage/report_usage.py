@@ -6,6 +6,9 @@ a table of input / output / cache-read / cache-write tokens grouped by model.
 Standard library only.
 """
 from datetime import datetime, timezone
+import json
+import sys
+from pathlib import Path
 
 
 def parse_window(arg):
@@ -140,3 +143,54 @@ def format_table(totals, days, start, end):
     ]
     lines.extend(render(row) for row in rows)
     return "\n".join(lines)
+
+
+def iter_records(root):
+    """Yield parsed JSON objects from every *.jsonl under root, skipping bad lines/files."""
+    for path in sorted(Path(root).rglob("*.jsonl")):
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        yield json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            continue
+
+
+def main(argv, root=None, now=None, out=None, err=None):
+    from datetime import timedelta
+
+    if out is None:
+        out = sys.stdout
+    if err is None:
+        err = sys.stderr
+    if now is None:
+        now = datetime.now(timezone.utc)
+    if root is None:
+        root = Path.home() / ".claude" / "projects"
+
+    try:
+        days = parse_window(argv[0] if argv else None)
+    except ValueError as exc:
+        print("error: {}".format(exc), file=err)
+        return 2
+
+    cutoff = now - timedelta(days=days)
+
+    root = Path(root)
+    totals = aggregate(iter_records(root), cutoff) if root.exists() else {}
+    if not totals:
+        print("No usage data found for the last {} days.".format(days), file=out)
+        return 0
+
+    print(format_table(totals, days, cutoff.date(), now.date()), file=out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
