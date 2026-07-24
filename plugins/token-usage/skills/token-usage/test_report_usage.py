@@ -166,6 +166,14 @@ class TestIterRecords(unittest.TestCase):
             records = list(ru.iter_records(root))
             self.assertEqual([r["n"] for r in records], [1, 2])
 
+    def test_skips_invalid_utf8_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "bad.jsonl").write_bytes(b'\xff\xfe not utf8\n')
+            (root / "good.jsonl").write_text(json.dumps({"type": "assistant", "n": 5}) + "\n")
+            records = list(ru.iter_records(root))
+            self.assertEqual([r["n"] for r in records], [5])
+
 
 class TestMain(unittest.TestCase):
     def _run(self, argv, root, now):

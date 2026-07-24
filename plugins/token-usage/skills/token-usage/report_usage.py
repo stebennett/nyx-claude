@@ -158,7 +158,7 @@ def iter_records(root):
                         yield json.loads(line)
                     except json.JSONDecodeError:
                         continue
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             continue
 
 
