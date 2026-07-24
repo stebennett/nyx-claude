@@ -169,3 +169,23 @@ which was the basis for it and its inspiration. The original is licensed under
 (the skill's own files carry no author, branding, or external links) and is distributed
 under the same licence. Credit for the underlying methodology belongs to the original
 author.
+
+### `token-usage`
+
+Reports how many tokens you've used — input, output, cache read, cache write — broken
+down **by model**, aggregated across every project on the machine.
+
+**What it does.** A dependency-free Python script parses Claude Code's local session
+transcripts under `~/.claude/projects/**/*.jsonl`, dedups assistant messages by id,
+filters to a time window, and prints a per-model table with a `TOTAL` row. No network
+access; standard library only.
+
+**How to invoke.** Ask something like *"how many tokens have I used this week, by
+model?"*, or run the script directly:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/token-usage/report_usage.py" [WINDOW]
+```
+
+`WINDOW` defaults to the last 7 days; pass `<N>d` or a bare number of days (e.g. `30d`)
+for a different period.
