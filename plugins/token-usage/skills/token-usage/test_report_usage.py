@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 import report_usage as ru
 
@@ -111,6 +111,40 @@ class TestAggregate(unittest.TestCase):
             _assistant(None, "opus", "2026-07-20T00:00:00Z", inp=5),
         ]
         self.assertEqual(ru.aggregate(records, self.cutoff)["opus"]["input"], 10)
+
+
+class TestFormatTable(unittest.TestCase):
+    def _table(self):
+        totals = {
+            "claude-opus-4-8": {"input": 123456, "output": 45678, "cache_read": 12345678, "cache_write": 234567},
+            "claude-fable-5": {"input": 12345, "output": 6789, "cache_read": 456789, "cache_write": 12345},
+        }
+        return ru.format_table(totals, 7, date(2026, 7, 17), date(2026, 7, 24))
+
+    def test_header_names_window_and_scope(self):
+        out = self._table()
+        self.assertIn("last 7 days", out)
+        self.assertIn("2026-07-17", out)
+        self.assertIn("2026-07-24", out)
+        self.assertIn("all projects", out)
+
+    def test_has_column_headers(self):
+        out = self._table()
+        for col in ("Model", "Input", "Output", "Cache Read", "Cache Write", "Total"):
+            self.assertIn(col, out)
+
+    def test_thousands_separated(self):
+        self.assertIn("12,345,678", self._table())
+
+    def test_sorted_by_total_desc(self):
+        out = self._table()
+        self.assertLess(out.index("claude-opus-4-8"), out.index("claude-fable-5"))
+
+    def test_total_row_sums_all(self):
+        out = self._table()
+        # opus total 12,749,379 + fable total 488,268 = 13,237,647
+        self.assertIn("13,237,647", out)
+        self.assertIn("TOTAL", out)
 
 
 if __name__ == "__main__":

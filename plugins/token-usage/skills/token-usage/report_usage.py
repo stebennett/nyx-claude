@@ -83,3 +83,60 @@ def aggregate(records, cutoff):
         for key in ("input", "output", "cache_read", "cache_write"):
             bucket[key] += usage[key]
     return totals
+
+
+_COLUMNS = [
+    ("model", "Model"),
+    ("input", "Input"),
+    ("output", "Output"),
+    ("cache_read", "Cache Read"),
+    ("cache_write", "Cache Write"),
+    ("total", "Total"),
+]
+
+
+def _row_total(counts):
+    return counts["input"] + counts["output"] + counts["cache_read"] + counts["cache_write"]
+
+
+def format_table(totals, days, start, end):
+    """Render the aggregated totals as a plain-text table (non-empty totals)."""
+    rows = []
+    for model in sorted(totals, key=lambda m: _row_total(totals[m]), reverse=True):
+        counts = totals[model]
+        rows.append({"model": model, **counts, "total": _row_total(counts)})
+
+    grand = {key: sum(r[key] for r in rows) for key in ("input", "output", "cache_read", "cache_write", "total")}
+    grand["model"] = "TOTAL"
+    rows.append(grand)
+
+    def cell(row, key):
+        value = row[key]
+        return value if key == "model" else "{:,}".format(value)
+
+    widths = {}
+    for key, label in _COLUMNS:
+        widths[key] = max([len(label)] + [len(cell(row, key)) for row in rows])
+
+    def render(row, align_left_first=True):
+        parts = []
+        for i, (key, _label) in enumerate(_COLUMNS):
+            text = cell(row, key)
+            if i == 0:
+                parts.append(text.ljust(widths[key]))
+            else:
+                parts.append(text.rjust(widths[key]))
+        return "  ".join(parts).rstrip()
+
+    header_cells = []
+    for i, (key, label) in enumerate(_COLUMNS):
+        header_cells.append(label.ljust(widths[key]) if i == 0 else label.rjust(widths[key]))
+    header_row = "  ".join(header_cells).rstrip()
+
+    lines = [
+        "Token usage — last {} days ({} → {}), all projects".format(days, start, end),
+        "",
+        header_row,
+    ]
+    lines.extend(render(row) for row in rows)
+    return "\n".join(lines)
