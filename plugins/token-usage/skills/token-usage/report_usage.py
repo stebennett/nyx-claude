@@ -31,6 +31,8 @@ def parse_window(arg):
 
 def parse_timestamp(ts):
     """Parse an ISO-8601 timestamp (trailing 'Z' allowed) to an aware UTC datetime."""
+    if not isinstance(ts, str):
+        raise ValueError("timestamp must be a string")
     normalized = ts.replace("Z", "+00:00")
     dt = datetime.fromisoformat(normalized)
     if dt.tzinfo is None:

@@ -116,6 +116,12 @@ class TestAggregate(unittest.TestCase):
         ]
         self.assertEqual(ru.aggregate(records, self.cutoff)["opus"]["input"], 10)
 
+    def test_skips_non_string_timestamp(self):
+        good = _assistant("g", "opus", "2026-07-20T00:00:00Z", inp=7)
+        bad = _assistant("b", "opus", 12345, inp=99)  # non-string timestamp
+        totals = ru.aggregate([good, bad], self.cutoff)
+        self.assertEqual(totals["opus"]["input"], 7)
+
 
 class TestFormatTable(unittest.TestCase):
     def _table(self):
