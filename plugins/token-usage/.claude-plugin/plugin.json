@@ -1,0 +1,8 @@
+{
+  "name": "token-usage",
+  "version": "0.1.0",
+  "description": "Report Claude Code token usage (input, output, cache read, cache write) per model across all projects over a time window (default last 7 days).",
+  "author": {
+    "name": "Steve Bennett"
+  }
+}

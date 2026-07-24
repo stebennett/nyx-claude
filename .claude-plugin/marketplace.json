@@ -28,6 +28,11 @@
       "name": "devtools",
       "source": "./plugins/devtools",
       "description": "Developer-workflow automation. First skill 'renovator' autonomously merges provably-safe green patch/minor Renovate dependency PRs and parks major-version and red-CI updates with PR state annotations."
+    },
+    {
+      "name": "token-usage",
+      "source": "./plugins/token-usage",
+      "description": "Report Claude Code token usage (input, output, cache read, cache write) per model across all projects over a time window (default last 7 days)."
     }
   ]
 }
