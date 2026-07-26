@@ -20,8 +20,8 @@ Three invocation forms — none, a PR number, or a repo reference — resolve to
 
 ## Disambiguation
 
-Disambiguation is total, not heuristic — every argument falls into exactly one of three
-buckets, checked in this order:
+Every argument is classified by checking these rules in order, and every argument matches
+exactly one:
 
 1. **No argument at all.** Fall back to the origin of the working directory's repo, queue
    pass, no `target_pr`.
@@ -31,18 +31,34 @@ buckets, checked in this order:
 3. **The argument contains a `/`.** It is a repo reference (bare `o/r`, a repo URL, an SSH
    remote, or a PR URL/`o/r#42` form that also carries a PR number). Extract `target_repo`
    from it with the recipes below, and `target_pr` too if the form carries one.
+4. **Anything else — an argument that is neither all digits nor contains a `/`.** This is
+   malformed input, not a fourth valid form: a bare word like `banana`, a typo like
+   `owner-repo`, or any other string matching none of rules 2–3. Hard stop: report the
+   literal argument received and the accepted forms (a PR number, `owner/repo`,
+   `owner/repo#42`, a full repo or PR URL, or an SSH remote), and do nothing else. Never
+   guess a target from a malformed argument.
 
-If neither rule 2 nor rule 3 matches, and there is no argument and no git repo in the
-working directory, that is a hard stop: report exactly what is missing (no target named,
-and the working directory is not a git repo) and do nothing else. Never guess a target.
+There is one further hard stop, orthogonal to the four rules above: **no argument and no
+git repo in the working directory.** Rule 1 needs the cwd's origin and rule 2 needs it too;
+if there is no argument (or an all-digits one) and the working directory is not a git repo,
+report exactly what is missing (no target named, and the working directory is not a git
+repo) and do nothing else. Never guess a target.
+
+With the malformed-input case named as its own outcome, classification is total: every
+possible argument — including no argument — resolves to a defined outcome, either a
+`target_repo`/`target_pr` pair or one of the two named hard stops.
 
 ## Extraction recipes
 
 ```bash
 # from a git remote URL (https or ssh) → owner/repo
+# Two stages on purpose: BSD ERE has no non-greedy quantifier, so a
+# `([^/]+/[^/]+?)(\.git)?$` form is a hard parse error on stock macOS.
+# Match first, strip the optional .git second.
 origin_repo() {
   git remote get-url origin 2>/dev/null \
-    | sed -nE 's#^(https://github\.com/|git@github\.com:)([^/]+/[^/]+?)(\.git)?$#\2#p'
+    | sed -nE 's#^(https://github\.com/|git@github\.com:)([^/]+/[^/]+)$#\2#p' \
+    | sed -E 's#\.git$##'
 }
 
 # from a PR URL → owner/repo and number
