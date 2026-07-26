@@ -968,7 +968,8 @@ The intake half: preflight, config, selection, triage, requirements, and review 
 
 **Interfaces:**
 - Consumes: `references/target-resolution.md` (Task 2) and the config keys it defines.
-- Produces, for Task 8 to consume: the per-PR variables `target_repo`, `target_pr`, `self_login`, `can_merge`, `n` (PR number), `head_sha`, `round`, `prior_recommendations`, `requirements`, `pr_body`, `size`, `workdir`, `worktree`, `diff_path`.
+- Produces, for Task 8 to consume: the per-PR variables `target_repo`, `target_pr`, `self_login`, `can_merge`, `n` (PR number), `pr_title`, `head_sha`, `round`, `prior_recommendations`, `requirements`, `pr_body`, `size`, `workdir`, `worktree`, `diff_path`.
+- **Every one of these must be bound by an explicit assignment, in BOTH queue mode and single-PR mode** — single-PR mode skips the `gh pr list` call that queue mode harvests several of them from, so anything sourced there needs a supplementary `gh pr view --json` fetch. Three separate review rounds caught a variable consumed in steps 7–11 but never bound here (`workdir`, `worktree`, `pr_title`); treat this list as a checklist to verify against the file, not as a description to skim.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1178,7 +1179,9 @@ A lens returning `status: needs-input` is not a finding: note it in the report a
 
 `{ pr, target_repo, pr_title, pr_body, requirements, prior_recommendations, round, head_sha, findings, verdict_doctrine_path }`
 
-where `findings` is the concatenation of every lens's `findings` array and `verdict_doctrine_path` is the absolute path to `references/verdict.md`. State: **pass it the findings, never the diff** — withholding the diff is deliberate, because giving it the code invites a fourth, unaccountable review.
+where `findings` is the **complete set of lens envelopes** — not a flattened concatenation
+of their `findings` arrays — because `verdict.md`'s Coverage rule reads each envelope's
+`status` to detect a lens that could not review, and flattening destroys that. `verdict_doctrine_path` is the absolute path to `references/verdict.md`. State: **pass it the findings, never the diff** — withholding the diff is deliberate, because giving it the code invites a fourth, unaccountable review.
 
 **`### 9. Deliver the review`** — submit exactly one review per round:
 
