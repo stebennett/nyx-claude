@@ -370,9 +370,13 @@ Create `plugins/devtools/skills/pr-reviewer/references/target-resolution.md`. It
 4. **Extraction recipes** as runnable snippets:
    ```bash
    # from a git remote URL (https or ssh) → owner/repo
+   # Two stages on purpose: BSD ERE has no non-greedy quantifier, so a
+   # `([^/]+/[^/]+?)(\.git)?$` form is a hard parse error on stock macOS.
+   # Match first, strip the optional .git second.
    origin_repo() {
      git remote get-url origin 2>/dev/null \
-       | sed -nE 's#^(https://github\.com/|git@github\.com:)([^/]+/[^/]+?)(\.git)?$#\2#p'
+       | sed -nE 's#^(https://github\.com/|git@github\.com:)([^/]+/[^/]+)$#\2#p' \
+       | sed -E 's#\.git$##'
    }
 
    # from a PR URL → owner/repo and number
