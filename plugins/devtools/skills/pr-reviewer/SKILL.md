@@ -116,11 +116,14 @@ Drop, in order, recording the reason for each: drafts; authors in `renovate_auth
 `reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working`
 (another run owns it — outcome `locked`).
 
-Each survivor's `number` becomes `n`, and its `headRefOid` becomes `head_sha`, for the rest
-of that PR's processing (steps 4–6 here, and every step Task 8 adds). Single-PR mode
-skipped this call, so fetch `head_sha` fresh instead:
+Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, and its `title`
+becomes `pr_title`, for the rest of that PR's processing (steps 4–6 here, and every step
+Task 8 adds). Single-PR mode skipped this call, so fetch `head_sha` and `pr_title` fresh
+instead, from one `gh pr view` call:
 ```bash
-head_sha=$(gh pr view "$n" --repo "$target_repo" --json headRefOid --jq .headRefOid)
+view_json=$(gh pr view "$n" --repo "$target_repo" --json headRefOid,title)
+head_sha=$(printf '%s' "$view_json" | jq -r .headRefOid)
+pr_title=$(printf '%s' "$view_json" | jq -r .title)
 ```
 
 ### 4. Triage before spending an agent
