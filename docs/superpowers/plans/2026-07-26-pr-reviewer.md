@@ -1212,6 +1212,13 @@ Note that a newer review from the same user supersedes the older one, so an `APP
 
 Then the four mechanical gates the orchestrator checks before dispatching `pr-merger` — CI green and `mergeStateStatus` `CLEAN`; no unresolved human review threads (both the GraphQL `reviewThreads` query and the latest-review-per-other-user check, exactly as in `pr-merger`); `size` ≤ `max_merge_lines`; `can_merge` true.
 
+Note which gates `pr-merger` actually re-verifies: the three where a wrong *pass* would
+cause a bad merge — CI green and cleanly mergeable, no unresolved human threads, within
+`max_merge_lines`. Merge permission is established once in preflight and NOT re-checked,
+because its dispatch payload carries no permission signal and a missing permission can
+only fail a merge, never wrongly complete one — which the merger already handles by
+aborting on a non-zero `gh pr merge`. Do not claim it re-verifies all four.
+
 Then: dispatch `pr-merger` with `{ pr, target_repo, merge_method, self_login, max_merge_lines, ignore_paths }` and route its return by `reason` — `merged` → outcome `merged`; `behind` or `not-green` → outcome `skipped` (transient, retries next pass); `conflict`, `blocked`, `threads-open`, or `too-large` → label `reviewer:parked` with that reason. Add the doctrine line: `pr-merger` re-verifies every gate live because two independent agreements gate an unattended merge; when the merger disagrees with the orchestrator, the merger wins and the PR parks.
 
 At most `max_merges_per_pass` merges per pass (default 1), **serialized, never concurrent** — a merge invalidates other PRs' mergeability and re-triggers their CI. Remaining approved PRs are left untouched and resurface next pass, unless `update_branch_after_merge` is true, in which case each gets `gh pr update-branch --repo "$target_repo" <n>`; an error there is non-fatal. It defaults to false because pushing a merge commit onto a contributor's branch is not this skill's business by default.
