@@ -1,0 +1,13 @@
+{
+  "ignore_authors": ["renovate[bot]"],
+  "require_label": null,
+  "max_reviews_per_pass": 3,
+  "max_merges_per_pass": 1,
+  "max_rounds": 3,
+  "merge_method": "squash",
+  "max_merge_lines": 800,
+  "max_review_lines": 3000,
+  "ignore_paths": ["*.lock", "package-lock.json", "**/generated/**"],
+  "update_branch_after_merge": false,
+  "clone_cache_dir": null
+}
