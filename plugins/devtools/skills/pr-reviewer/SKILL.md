@@ -341,12 +341,16 @@ dismissal call.
 | `request-changes` | — | none beyond the posted review | `changes-requested` |
 | `park` | — | add `reviewer:parked` | `parked` |
 
-Before trusting an `approve` verdict enough to dispatch `pr-merger`, check the same four
-gates `pr-merger` itself re-verifies live: CI green and `mergeStateStatus` `CLEAN`; no
-unresolved human review thread (both the GraphQL `reviewThreads` query and the
-latest-review-per-other-user check, exactly as `pr-merger.md` runs them — this orchestrator
-does not maintain a second copy of that query, it runs the identical one); `size` (already
-held from step 4) ≤ `max_merge_lines`; and `can_merge` (held from preflight) true. A gate
+Before trusting an `approve` verdict enough to dispatch `pr-merger`, check all four gates:
+CI green and `mergeStateStatus` `CLEAN`; no unresolved human review thread (both the
+GraphQL `reviewThreads` query and the latest-review-per-other-user check, exactly as
+`pr-merger.md` runs them — this orchestrator does not maintain a second copy of that
+query, it runs the identical one); `size` (already held from step 4) ≤ `max_merge_lines`;
+and `can_merge` (held from preflight) true. `pr-merger` independently re-verifies the
+first three of these live — CI green, threads, and size — because a wrong pass on any of
+them would cause a bad merge. It does not re-check `can_merge`: a missing permission can
+only fail the merge, never wrongly complete one, and `pr-merger` already handles that —
+a non-zero exit from `gh pr merge` returns `aborted` rather than reporting success. A gate
 failing here routes to the matching row above without dispatching the merger at all — the
 merger is reserved for candidates the orchestrator itself already believes are ready.
 
