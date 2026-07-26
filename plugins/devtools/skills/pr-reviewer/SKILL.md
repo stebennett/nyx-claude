@@ -99,9 +99,8 @@ gh api "repos/$target_repo/contents/.claude/pr-reviewer.json" --jq .content 2>/d
   | base64 -d
 ```
 
-State: read from the **target repo, never the working directory** — a config governing one
-repository must not silently govern another. A 404 means no config. An absent file or an
-absent key falls back to the default above; unknown keys are ignored.
+State: a 404 means no config. An absent file or an absent key falls back to the default
+above; unknown keys are ignored.
 
 ### 3. Select candidates
 
@@ -193,16 +192,28 @@ The other two lenses review as normal.
 
 ### 6. Prepare review context
 
-Per `references/target-resolution.md`: create `workdir`, write the canonical diff, and
-create the worktree (local target) or reuse the blobless clone (remote target) — those
-recipes live there and are not restated here. What is worth restating, because it is the
-rule most easily lost:
+Bind the two path variables this step and every later one build on:
 
+```bash
+workdir=$(mktemp -d)
+worktree="$workdir/tree"
+```
+
+`workdir` is a fresh per-PR scratch directory: it holds the diff, the worktree, and any
+other per-PR working files. `worktree` is `$workdir/tree` **in both modes** — what differs
+between a local and a remote target is only which repository the worktree is added from
+(the user's own checkout for a local target, the blobless cache clone for a remote one),
+never where it lands. Add the worktree at `$worktree`, and clone or fetch into whichever
+repository the target is local or remote to, per `references/target-resolution.md` — those
+recipes live there and are not restated here.
+
+Then write the canonical diff:
 ```bash
 gh pr diff --repo "$target_repo" "$n" > "$workdir/pr-$n.diff"
 ```
 `diff_path` is that file. **The diff comes from GitHub, never from a local `git diff`** —
 inline comments must anchor to lines GitHub recognises as part of the diff, and its own
 rendering is what guarantees that. The worktree exists only for surrounding-code context;
-it is never the source of a finding's `path:line`. Clean it up after the PR is processed,
-always, per `references/target-resolution.md`'s cleanup recipe.
+it is never the source of a finding's `path:line`. Remove `$workdir` (worktree included)
+after the PR is processed, always, including on failure, per
+`references/target-resolution.md`'s cleanup recipe.
