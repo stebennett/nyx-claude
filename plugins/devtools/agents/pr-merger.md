@@ -26,10 +26,10 @@ because you are the last gate before an **unattended** merge. Two independent ag
 
 ## Do
 
-1. Re-fetch the PR live:
+1. Re-fetch the PR live, capturing the JSON so later steps can query it:
    ```bash
-   gh pr view "$pr" --repo "$target_repo" \
-     --json number,author,title,isDraft,mergeStateStatus,statusCheckRollup,reviews
+   view_json=$(gh pr view "$pr" --repo "$target_repo" \
+     --json number,author,title,isDraft,mergeStateStatus,statusCheckRollup,reviews)
    ```
 
 2. Independently re-verify ALL of the following. If ANY fails, abort — do NOT merge:
@@ -37,7 +37,9 @@ because you are the last gate before an **unattended** merge. Two independent ag
    - **not-draft** — `isDraft` is `false`. Else abort `blocked`.
 
    - **green** — inspect `statusCheckRollup`. Each entry is either a CheckRun (has
-     `status` and `conclusion`) or a legacy StatusContext (has `state`). Any entry
+     `status` and `conclusion`) or a legacy StatusContext (has `state`); read
+     `conclusion` (or `status` while a run is still going) for CheckRuns and `state` for
+     StatusContexts. Any entry
      `FAILURE`/`ERROR`/`CANCELLED`/`TIMED_OUT`/`ACTION_REQUIRED`/`STARTUP_FAILURE`, or any
      still settling (`QUEUED`/`IN_PROGRESS`/`PENDING`/`WAITING`/`STALE`) → abort
      `not-green`. Otherwise green requires at least one `SUCCESS`; `SKIPPED` and
@@ -64,16 +66,50 @@ because you are the last gate before an **unattended** merge. Two independent ag
      Two checks, both must pass:
      - Any thread that is unresolved, not outdated, and whose first comment's author is
        not `self_login` → abort `threads-open`.
-     - Separately, any user other than `self_login` whose **latest** review state is
-       `CHANGES_REQUESTED` → abort `threads-open`.
+     - Separately, group the `reviews` field from `view_json` (captured in step 1) by
+       `author.login`, keep only each author's most recent review by `submittedAt`, and
+       check whether any surviving review from someone other than `self_login` is
+       `CHANGES_REQUESTED`:
+       ```bash
+       echo "$view_json" | jq -e --arg self "$self_login" '
+         [.reviews[] | select(.author.login != null)]
+         | group_by(.author.login)
+         | map(sort_by(.submittedAt) | last)
+         | any(.author.login != $self and .state == "CHANGES_REQUESTED")
+       '
+       ```
+       Output `true` → abort `threads-open`.
 
-   - **size** — recompute independently; do not trust the orchestrator's prior count:
+   - **size** — recompute independently; do not trust the orchestrator's prior count.
+     `ignore_paths` is a JSON array of glob patterns — match them concretely with `jq`;
+     never invent your own glob-matching logic, and never loop over the patterns in
+     shell (word-splitting a multi-line variable is not portable across the shells this
+     runs under):
      ```bash
-     gh api "repos/$target_repo/pulls/$pr/files" --paginate \
-       --jq '.[] | [.filename, .changes] | @tsv'
+     owner=${target_repo%%/*}
+     repo=${target_repo#*/}
+
+     gh api "repos/$target_repo/pulls/$pr/files" --paginate --jq '.[]' | jq -s \
+       --argjson pats "$ignore_paths" '
+       # Convert a glob to an anchored regex. "*" and "**" both match across "/",
+       # which is what the ignore_paths patterns intend.
+       def glob2re: gsub("\\."; "\\.") | gsub("\\*\\*"; "*") | gsub("\\*"; ".*");
+       # A path is ignored if a pattern matches the whole path, or (for a pattern
+       # naming no directory) matches the basename at any depth.
+       def ignored($pats): . as $p
+         | any($pats[]; (glob2re) as $re
+             | ($p | test("^" + $re + "$"))
+               or (($p | test("(^|/)" + $re + "$")) and (. | test("/") | not)));
+       map(select((.filename | ignored($pats)) | not) | .changes) | add // 0
+     '
      ```
-     Sum `.changes` over files whose path does not match any pattern in `ignore_paths`.
-     If the total exceeds `max_merge_lines` → abort `too-large`.
+     This prints the countable changed-line total. Keep `--paginate` — it is what stops
+     a PR with more than one page of files from silently under-counting. The `jq -s`
+     after the streamed `.jq '.[]'` is deliberate: `--paginate` emits one JSON array per
+     page, and this reassembles them into a single array (`gh`'s own `--jq` cannot take
+     `--argjson`, so the reassembly and glob matching happen in a second `jq` pass — do
+     not collapse it back into one `gh api --jq` call). If the total exceeds
+     `max_merge_lines` → abort `too-large`.
 
    - **mergeable** — `mergeStateStatus`:
      - `CLEAN` → proceed.
