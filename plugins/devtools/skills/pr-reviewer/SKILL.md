@@ -372,10 +372,11 @@ and route its return by `reason` — all seven values, exhaustively:
 | `threads-open` | label `reviewer:parked`, outcome `parked` |
 | `too-large` | label `reviewer:parked`, outcome `parked` |
 
-`pr-merger` re-verifies every gate live because two independent agreements — the
-orchestrator's and the merger's — must hold before an unattended merge happens; when the
-merger disagrees with the orchestrator, **the merger wins** and the PR parks. That is not a
-bug to reconcile; it is the entire reason the merger exists as a second, independent check.
+`pr-merger` re-verifies the three gates it owns live because two independent agreements —
+the orchestrator's and the merger's — must hold before an unattended merge happens; when
+the merger disagrees with the orchestrator, **the merger wins** and the PR parks. That is
+not a bug to reconcile; it is the entire reason the merger exists as a second, independent
+check.
 
 At most `max_merges_per_pass` merges per pass (default 1), dispatched **serialized, never
 concurrent** — a merge invalidates every other open PR's mergeability and re-triggers its
