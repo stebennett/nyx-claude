@@ -1,8 +1,8 @@
 # Target resolution
 
 How a command-line argument becomes `target_repo`, `target_pr`, `self_login`, the
-locality bindings (`owner`, `repo_name`, `cache`, `git_repo`), a `workdir`, and a `worktree`
-to grep for surrounding-code context.
+locality bindings (`owner`, `repo_name`, `session_scratch`, `cache`, `git_repo`), a
+`workdir`, and a `worktree` to grep for surrounding-code context.
 
 ## The resolution table
 
@@ -145,12 +145,33 @@ if [ "$(origin_repo)" = "$target_repo" ]; then
   git_repo="$PWD"
 else
   # remote target — git runs against a cache clone, never the user's checkout.
-  # cache is clone_cache_dir when that config key is set, else the session
-  # scratchpad directory given to you when the skill was invoked.
-  cache="$clone_cache_dir"
+  # session_scratch is the scratchpad directory given to you when the skill was
+  # invoked; substitute that literal path. The expansion below only supplies a
+  # last-resort value, so this line is never itself an unbound reference.
+  session_scratch="${session_scratch:-${TMPDIR:-/tmp}}"
+  # cache is clone_cache_dir when that key holds a real path, else the scratchpad.
+  cache="${clone_cache_dir:-$session_scratch}"
+  # `jq -r` prints a JSON null — an absent key *or* an explicit `null` — as the
+  # four-character string "null", which is not a path. Treat it as unset too.
+  if [ "$cache" = "null" ]; then cache="$session_scratch"; fi
   git_repo="$cache/$owner-$repo_name"
 fi
 ```
+
+All three real config states must land on a writable directory, and only the
+fallback above makes that true. `clone_cache_dir` is read with `jq -r`, so:
+
+| state | `clone_cache_dir` | `cache` |
+|---|---|---|
+| no `.claude/pr-reviewer.json` at all | empty (the read failed) | `$session_scratch` |
+| config present, key absent | `null` | `$session_scratch` |
+| key explicitly `null` (the documented default) | `null` | `$session_scratch` |
+| key set to a path | that path | that path |
+
+Without both halves — the `:-` default *and* the literal-`"null"` guard — the
+common no-config case builds `git_repo="/$owner-$repo_name"` under the unwritable
+filesystem root, and the two `null` cases build a stray relative
+`null/$owner-$repo_name` directory. Either one breaks remote targeting outright.
 
 `git_repo` is a **filesystem path**; `repo_name` is the **name component** of
 `target_repo`. They are deliberately different names because they are different things —
@@ -163,6 +184,17 @@ no filesystem work, and its bindings are correct as they stand.)
 The same two commands serve both localities — `git_repo` is what differs, and it is already
 bound above (the user's checkout for a local target, the cache clone for a remote one). The
 worktree always lands at `$workdir/tree`, never inside `git_repo`.
+
+**Ordering, for a remote target: the clone must exist before the worktree is added.** This
+section reads before the **Remote clone recipe** below, but it does not run before it. For a
+remote target, `$git_repo` is a path under `cache` that nothing has created yet, so run the
+clone recipe first — clone it, or `git fetch` it when it already exists from an earlier PR or
+an earlier `/loop` pass — and only then run the two commands here. Both commands are
+`git -C "$git_repo"`, and against a not-yet-cloned path both fail identically:
+`fatal: cannot change to '…': No such file or directory`, exit 128 for the fetch and 128
+again for the `worktree add`. For a local target the repository is the user's own checkout
+and already exists, so the clone recipe does not apply and these two commands are the whole
+of it.
 
 ```bash
 git -C "$git_repo" fetch origin "pull/$n/head:refs/pr-reviewer/$n" --force
@@ -183,8 +215,11 @@ git clone --filter=blob:none --no-checkout \
 
 `git_repo` is already `$cache/$owner-$repo_name` for a remote target, bound at the locality
 decision above — that is the clone's one and only path, and the same value every later
-`git -C` uses. `cache` is `clone_cache_dir` when that config key is set, otherwise the
-session scratchpad.
+`git -C` uses. `cache` is `clone_cache_dir` when that key holds a real path, and
+`$session_scratch` when it is absent, empty, or the literal `null` (see the table there).
+
+**This recipe runs before the worktree recipe above** for a remote target — that section
+reads first but adds a worktree to the repository this one creates.
 
 The clone is **blobless** — `--filter=blob:none` fetches every commit and tree but no file
 contents up front, so blobs arrive on demand as the worktree is populated. This keeps a
@@ -195,10 +230,20 @@ and is a git repository before cloning, and if so, reuse is a `git fetch`, never
 ## Cleanup, mandatory after each PR
 
 ```bash
-git -C "$git_repo" worktree remove --force "$workdir/tree"
-git -C "$git_repo" update-ref -d "refs/pr-reviewer/$n"
-rm -rf "$workdir"
+if [ -n "${workdir:-}" ]; then
+  git -C "$git_repo" worktree remove --force "$workdir/tree"
+  git -C "$git_repo" update-ref -d "refs/pr-reviewer/$n"
+  rm -rf "$workdir"
+fi
 ```
+
+**The `workdir` guard is what makes this safe to run on every path out of a PR.** A PR that
+ends at triage — an unchanged-SHA skip, a `max_rounds` park, a CI-pending defer, the
+`max_review_lines` park — never reaches `SKILL.md` step 5, so `workdir` was never bound, no
+worktree was added, and no `refs/pr-reviewer/` ref was written. Unguarded, the first command
+then runs `worktree remove --force "/tree"` and emits `fatal: '/tree' is not a working tree`,
+exit 128, on every early park: harmless but a spurious error in an unattended pass. With
+nothing bound there is nothing to clean, so the whole block is a no-op.
 
 **Run these three in exactly this order.** `git worktree remove --force` must deregister
 `$workdir/tree` from `$git_repo` *before* the directory disappears: delete `$workdir` first

@@ -137,7 +137,7 @@ mode they drop the PR silently, in single-PR mode they are a hard stop that name
 exclusion. Never review a draft, and never touch a Renovate PR, however the PR was named.
 
 What survives all five drops is `survivors` — a JSON array of the same objects `pr_list`
-held, minus the dropped ones. Step 4 orders and slices it.
+held, minus the dropped ones. Step 4 triages it, then orders and slices what survives triage.
 
 Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, its `title`
 becomes `pr_title`, and its `author.login` becomes `pr_author`, for every remaining step of
@@ -188,15 +188,26 @@ no lock at all, and the `max_rounds` park's label edit is a single atomic write 
 processing for that PR immediately, so it needs none either. An idle queue therefore posts
 nothing.
 
-Now narrow to what this pass will actually process: at most `max_reviews_per_pass`
-survivors, **oldest PR first**, because an older PR has waited longest. `gh pr list` returns
-**newest first**, so sort ascending by `number` before taking that slice — PR numbers are
-monotonic, so ascending number *is* oldest first:
+Collect what the three skips above did **not** remove into `reviewable` — a JSON array of
+the same objects `survivors` held, minus every candidate that was skipped or parked here.
+
+Now narrow to what this pass will actually process: at most `max_reviews_per_pass` of
+`reviewable`, **oldest PR first**, because an older PR has waited longest. `gh pr list`
+returns **newest first**, so sort ascending by `number` before taking that slice — PR numbers
+are monotonic, so ascending number *is* oldest first:
 ```bash
-printf '%s' "$survivors" | jq -c --argjson k "$max_reviews_per_pass" \
+printf '%s' "$reviewable" | jq -c --argjson k "$max_reviews_per_pass" \
   'sort_by(.number) | .[:$k] | .[]'
 ```
-Single-PR mode has exactly one candidate and no ordering to decide.
+**Slice `reviewable`, never `survivors`** — the skips come first, the slice second. Slicing
+`survivors` would let three unchanged-SHA PRs consume the whole `max_reviews_per_pass` budget
+while newer reviewable PRs are never looked at, so a `/loop` pass would do nothing, pass after
+pass, until one of those three changed. The skips are cheap and already evaluated for every
+survivor above — one reviews call each, no agent, no post — so applying them first costs the
+pass nothing.
+
+Single-PR mode has exactly one candidate, runs none of the three skips, and has no ordering
+to decide; it needs neither `reviewable` nor this slice.
 
 **Then take the lock, before anything else touches this PR:** add `reviewer:working` and
 remove `reviewer:parked`. Everything below — the size ceiling's review post, the panel, the
@@ -281,9 +292,18 @@ worktree="$workdir/tree"
 other per-PR working files. `worktree` is `$workdir/tree` **in both modes** — what differs
 between a local and a remote target is only which repository the worktree is added from
 (the user's own checkout for a local target, the blobless cache clone for a remote one),
-never where it lands. Add the worktree at `$worktree`, and clone or fetch into whichever
-repository the target is local or remote to, per `references/target-resolution.md` — those
-recipes live there and are not restated here.
+never where it lands. Add the worktree at `$worktree` from whichever repository the target
+is local or remote to, per `references/target-resolution.md` — those recipes live there and
+are not restated here.
+
+**Order matters for a remote target: the cache clone must exist before the worktree is
+added.** Clone `$git_repo` — or `git fetch` it when an earlier PR or `/loop` pass already
+created it — *first*, and add the worktree only after. Both worktree commands are
+`git -C "$git_repo"`, so against a path not yet cloned both fail with
+`fatal: cannot change to '…': No such file or directory`, exit 128. A local target's
+repository already exists, so for it the worktree add is the whole of this step. Note that
+`references/target-resolution.md` presents its worktree recipe *before* its remote clone
+recipe — that is reading order, not execution order.
 
 Then write the canonical diff:
 ```bash
