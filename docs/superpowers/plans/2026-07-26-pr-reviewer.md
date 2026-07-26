@@ -912,12 +912,25 @@ Body must contain:
        }' -F owner="$owner" -F repo="$repo" -F pr="$pr"
      ```
      Any thread that is unresolved, not outdated, and whose first comment's author is not `self_login` → abort `threads-open`. Separately, any user other than `self_login` whose **latest** review state is `CHANGES_REQUESTED` → abort `threads-open`.
-   - **size** — recompute:
+   - **size** — recompute. Give the *concrete* filter, not a description of one: this
+     agent is haiku-tier and must not be left to invent glob matching for a gate that
+     guards an irreversible merge. Note also that the matching lives in `jq`, not a
+     shell loop, because unquoted expansion does not word-split under zsh.
      ```bash
-     gh api "repos/$target_repo/pulls/$pr/files" --paginate \
-       --jq '.[] | [.filename, .changes] | @tsv'
+     gh api "repos/$target_repo/pulls/$pr/files" --paginate --jq '.[]' | jq -s \
+       --argjson pats "$ignore_paths" '
+       def glob2re: gsub("\\."; "\\.") | gsub("\\*\\*"; "*") | gsub("\\*"; ".*");
+       def ignored($pats): . as $p
+         | any($pats[]; (glob2re) as $re
+             | ($p | test("^" + $re + "$"))
+               or (($p | test("(^|/)" + $re + "$")) and (. | test("/") | not)));
+       map(select((.filename | ignored($pats)) | not) | .changes) | add // 0
+     '
      ```
-     Sum `.changes` over files not matching `ignore_paths`. Over `max_merge_lines` → abort `too-large`.
+     `--paginate` is what stops a PR with more than one page of files under-counting;
+     the `jq -s` reassembles the one-array-per-page output. Over `max_merge_lines` →
+     abort `too-large`. The "latest review state per author" thread check needs the
+     same treatment — a concrete `jq` expression over `reviews`, not prose.
    - **mergeable** — `mergeStateStatus` `CLEAN` → proceed. `BEHIND` → abort `behind`. `DIRTY` → abort `conflict`. `BLOCKED` → abort `blocked`. Anything else (`UNKNOWN`, `UNSTABLE`, …) → abort `not-green`.
    - Merge: `gh pr merge "$pr" --repo "$target_repo" --"$merge_method" --delete-branch`
 4. **Judgment rules** — a non-zero exit from `gh pr merge` is a failure: return `aborted` with the closest reason (`conflict` if it reports a conflict, else `not-green`). **NEVER report `merged` for a merge that did not complete.** Never re-run a red or pending check hoping it turns green. Never comment, never label, never rebase — the orchestrator owns all annotation. When anything is ambiguous, abort: parking is safe, a wrong unattended merge is not.
