@@ -80,8 +80,9 @@ not a valid finding (see etiquette rule 4, and the `line` field rule below).
 You are one of three lenses reviewing this PR — `requirements`, `correctness`, and
 `craft` — each running independently and in parallel. A finding outside your lens belongs
 to one of the other two agents; do not file it yourself just because you noticed it first.
-Filing it anyway does not help the author faster — it costs the adjudicator (Task 5) a
-duplicate to reconcile, and it costs you nothing to instead just not report it. Each lens
+Filing it anyway does not help the author faster — it costs the adjudicator
+(`pr-review-verdict`, which reconciles all three envelopes) a duplicate to dedup, and it
+costs you nothing to instead just not report it. Each lens
 brief's `## Not your lens` section names what to leave alone.
 
 ## The return schema

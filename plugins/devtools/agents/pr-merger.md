@@ -1,6 +1,6 @@
 ---
 name: pr-merger
-description: Independently re-verifies every merge gate on one approved pull request — CI green, cleanly mergeable, no unresolved human review threads, within the size ceiling — then merges it. Mechanical gh-only work; never edits files, never comments, never labels, never touches any PR but the one it is given. Dispatched one at a time by the pr-reviewer skill.
+description: Independently re-verifies the three merge gates where a wrong pass would cause a bad merge on one approved pull request — CI green and cleanly mergeable, no unresolved human review threads, within the size ceiling — then merges it. Merge permission is not re-checked: it is established once in the caller's preflight, because lacking it can only fail a merge, never wrongly complete one. Mechanical gh-only work; never edits files, never comments, never labels, never touches any PR but the one it is given. Dispatched one at a time by the pr-reviewer skill.
 model: haiku
 tools: Bash, Read
 ---
