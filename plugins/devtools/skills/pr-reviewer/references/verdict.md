@@ -19,6 +19,33 @@ something, it does not exist for you either, and that is correct — a missed de
 lens-calibration problem to fix in that lens's brief, not something to patch over here by
 inventing a finding you have no diff to ground it in.
 
+## Coverage: a lens's `status`
+
+Every lens envelope carries a `status` of `complete` or `needs-input` (per
+`_shared.md`). `needs-input` means that lens could not review at all — an unreadable
+worktree, an empty diff — not that it reviewed carefully and found nothing. Check every
+lens's `status` before you touch dedup or downgrade.
+
+Treat a `needs-input` lens's territory as **unexamined**, never as clean. Its empty (or
+partial) `findings` array is not a clean bill of health for whatever that lens covers —
+requirements traceability, correctness's edge cases, or craft's simplicity and
+duplication check, depending on which lens failed to run — and must never be read as one.
+Do not infer from a `needs-input` lens's silence that the PR is fine along that
+dimension; you simply do not know.
+
+This does not, by itself, change your verdict mechanics: the decision rule below still
+governs on whatever findings the other lenses did surface, and the mechanical
+consequences of degraded coverage — noting a `needs-input` lens and continuing, or
+skipping a PR outright when all three lenses come back `needs-input` — belong to the
+orchestrator that dispatched you, not to you. You never decide to retry, redispatch, or
+skip a PR yourself.
+
+Your job is disclosure. When any lens's `status` is `needs-input`, the review body's
+summary paragraph must say so plainly — name the lens (`requirements`, `correctness`, or
+`craft`) and state that its territory went unreviewed this round. This applies on every
+verdict, including `approve` and `park`: an approve reached with a lens's territory
+unexamined is not a clean approve unless the human reading it knows that.
+
 ## Procedure, in order
 
 Work through every surviving finding from every lens exactly once, in this order. Do not
@@ -49,9 +76,22 @@ correctly. If a `craft` finding blocks because it names one of that lens's three
 blocking shapes (needless complexity a reader must hold in their head, duplication of an
 existing utility, a convention break that would mislead imitation), or a `correctness`
 finding blocks because it carries a concrete `failure_scenario` with real inputs, or a
-`requirements` finding blocks because a requirement traces to no code — leave it blocking.
-Downgrading a finding that correctly meets its own lens's bar is a doctrine violation, not
-adjudication.
+`requirements` finding blocks because it names one of that lens's three blocking shapes —
+a requirement with no implementing code anywhere in the diff, a behaviour that
+contradicts stated intent, or a behavioural change the diff makes that no requirement
+asked for and the PR body does not disclose — leave it blocking. Downgrading a finding
+that correctly meets its own lens's bar is a doctrine violation, not adjudication.
+
+One `requirements` shape needs its own line because it is the likeliest of all of these
+to look downgradeable: the special-case blocking finding `requirements.md` requires when
+`requirements` is `null` or too vague to check the diff against. That finding exists
+because the PR's intent is unrecorded, not because anything in the diff is provably
+wrong — read next to the "speculation without a concrete scenario" shape below, it can
+look exactly like the vague, scenario-free claim that shape exists to catch. It is not
+one: its `claim` and `consequence` are concrete (the intent is unrecorded; conformance to
+it cannot be verified), and downgrading it defeats the one lens whose entire job, in that
+situation, is to say a PR with no recorded intent does not merge unattended. Never
+downgrade this finding; its presence is itself the signal, not a gap to explain away.
 
 Downgrade when a finding is:
 
@@ -188,7 +228,9 @@ Section rules:
 - Never include a section with no items under it — an empty heading is worse than no
   heading, because it teaches the author to skim past headings on future reviews.
 - The one-paragraph summary always exists, on every verdict, and on `park` it names the
-  category from the section above.
+  category from the section above. It also names any lens whose `status` came back
+  `needs-input` (see "Coverage" above) — every verdict discloses degraded coverage, not
+  just `park`.
 - The line under `**pr-reviewer** —` states the verdict in words: "changes requested" for
   `request-changes`, "approved" for `approve`, "needs a human decision" for `park`.
 
