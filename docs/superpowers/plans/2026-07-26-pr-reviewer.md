@@ -968,8 +968,8 @@ The intake half: preflight, config, selection, triage, requirements, and review 
 
 **Interfaces:**
 - Consumes: `references/target-resolution.md` (Task 2) and the config keys it defines.
-- Produces, for Task 8 to consume: the per-PR variables `target_repo`, `target_pr`, `self_login`, `can_merge`, `n` (PR number), `pr_title`, `head_sha`, `round`, `prior_recommendations`, `requirements`, `pr_body`, `size`, `workdir`, `worktree`, `diff_path`.
-- **Every one of these must be bound by an explicit assignment, in BOTH queue mode and single-PR mode** — single-PR mode skips the `gh pr list` call that queue mode harvests several of them from, so anything sourced there needs a supplementary `gh pr view --json` fetch. Three separate review rounds caught a variable consumed in steps 7–11 but never bound here (`workdir`, `worktree`, `pr_title`); treat this list as a checklist to verify against the file, not as a description to skim.
+- Produces, for Task 8 to consume: the per-PR variables `target_repo`, `target_pr`, `self_login`, `can_merge`, `n` (PR number), `pr_title`, `pr_author`, `head_sha`, `round`, `prior_recommendations`, `requirements`, `pr_body`, `size`, `workdir`, `worktree`, `diff_path`.
+- **Every one of these must be bound by an explicit assignment, in BOTH queue mode and single-PR mode** — single-PR mode skips the `gh pr list` call that queue mode harvests several of them from, so anything sourced there needs a supplementary `gh pr view --json` fetch. Four separate review rounds caught a variable consumed in steps 7–11 but never bound here (`workdir`, `worktree`, `pr_title`, `pr_author`); treat this list as a checklist to verify against the file, not as a description to skim. Audit by reading steps 7–11 line by line and enumerating every identifier and field access they depend on — including ones that appear only inside prose or a `jq` expression, which is where `author.login` hid — not by working from this list, which has been incomplete every time.
 
 - [ ] **Step 1: Write the failing test**
 
