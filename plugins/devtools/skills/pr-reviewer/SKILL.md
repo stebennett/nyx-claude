@@ -116,14 +116,15 @@ Drop, in order, recording the reason for each: drafts; authors in `renovate_auth
 `reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working`
 (another run owns it — outcome `locked`).
 
-Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, and its `title`
-becomes `pr_title`, for the rest of that PR's processing (steps 4–6 here, and every step
-Task 8 adds). Single-PR mode skipped this call, so fetch `head_sha` and `pr_title` fresh
-instead, from one `gh pr view` call:
+Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, its `title`
+becomes `pr_title`, and its `author.login` becomes `pr_author`, for the rest of that PR's
+processing (steps 4–6 here, and every step Task 8 adds). Single-PR mode skipped this call,
+so fetch `head_sha`, `pr_title`, and `pr_author` fresh instead, from one `gh pr view` call:
 ```bash
-view_json=$(gh pr view "$n" --repo "$target_repo" --json headRefOid,title)
+view_json=$(gh pr view "$n" --repo "$target_repo" --json headRefOid,title,author)
 head_sha=$(printf '%s' "$view_json" | jq -r .headRefOid)
 pr_title=$(printf '%s' "$view_json" | jq -r .title)
+pr_author=$(printf '%s' "$view_json" | jq -r .author.login)
 ```
 
 ### 4. Triage before spending an agent
@@ -291,9 +292,9 @@ gh api -X POST "repos/$target_repo/pulls/$n/reviews" --input "$workdir/review.js
 unchanged-SHA triage will compare against on the next pass.
 
 **The self-review downgrade.** GitHub returns 422 for `APPROVE` or `REQUEST_CHANGES` when
-the reviewer is the PR's own author. Detect this **up front**, by comparing the PR's
-`author.login` to `self_login` (resolved once, in preflight) — never by dispatching the
-review and catching the error:
+the reviewer is the PR's own author. Detect this **up front**, by comparing `pr_author`
+(bound in step 3, in both modes) to `self_login` (resolved once, in preflight) — never by
+dispatching the review and catching the error:
 
 | verdict | `event` (normal) | `event` (self-authored) |
 |---|---|---|
