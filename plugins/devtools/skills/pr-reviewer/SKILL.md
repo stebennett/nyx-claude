@@ -33,7 +33,11 @@ table is the summary, not the authority:
 | `git@github.com:o/r.git` | `o/r` | — | queue pass |
 | `o/r` | `o/r` | — | queue pass |
 
-> **Single-PR mode** — an argument naming one PR bypasses the selection filters of step 3 (draft status, `renovate_authors`, `require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it. The `max_review_lines` ceiling and every merge gate still apply in full; when one of them prevents a merge, say which in the report.
+> **Single-PR mode** — an argument naming one PR bypasses the throughput and preference filters of step 3 (`exclude_authors`, `require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it.
+>
+> Two step-3 exclusions are **absolute — neither mode bypasses them**: a draft, and an author in `renovate_authors`. Naming such a PR is a hard stop: report which exclusion it hit and why — a draft has not been offered for review yet; a Renovate PR belongs to `renovator`, and the two skills never touch the same PR — then post nothing, label nothing, and do nothing else. Bypassing either would break a real guarantee, so "the human asked for it" is not a reason to.
+>
+> The `max_review_lines` ceiling and every merge gate also still apply in full; when one of them prevents a merge, say which in the report.
 
 ## The pass
 
@@ -44,12 +48,13 @@ table is the summary, not the authority:
   directory — given to you when the skill is invoked — with that relative path to get the
   absolute path). Follow its resolution table and disambiguation rules exactly; this step
   does not restate them. It sets `target_repo` (`owner/repo`) and, when the invocation names
-  one, `target_pr`. Resolve `self_login` the same way it describes, once per pass, and reuse
-  it for every PR:
+  one, `target_pr`; it also reaches the local-vs-remote verdict and binds `owner` and
+  `repo_name` here (`git_repo` waits for step 2 — it needs `clone_cache_dir`). Resolve
+  `self_login` the same way it describes, once per pass, and reuse it for every PR:
   ```bash
   self_login=$(gh api user --jq .login)
   ```
-- Merge permission — check once here, and hold the result for step 10 (Task 8):
+- Merge permission — check once here, and hold the result for step 10's merge gates:
   ```bash
   gh api "repos/$target_repo" --jq '.permissions'
   ```
@@ -102,13 +107,23 @@ gh api "repos/$target_repo/contents/.claude/pr-reviewer.json" --jq .content 2>/d
 State: a 404 means no config. An absent file or an absent key falls back to the default
 above; unknown keys are ignored.
 
+With `clone_cache_dir` now known, bind `git_repo` — the single filesystem path every later
+`git -C` runs against — per `references/target-resolution.md`'s locality bindings. It is
+bound here, not in preflight, precisely because the remote branch of it needs that key; step
+5 is the first step that runs `git`, so this is comfortably early enough.
+
 ### 3. Select candidates
 
-Queue mode only — single-PR mode goes straight to step 4, with `n` set to `target_pr`.
+The `gh pr list` call below and the filters that follow it are **queue mode only** — but
+this step as a whole is not. Single-PR mode sets `n` to `target_pr`, runs neither the call
+nor the filters, binds its three per-PR variables from the `gh pr view` recipe at the end
+of this step, and then continues to step 4. Do **not** read this as "skip step 3": step 3
+is the only place single-PR mode binds `head_sha`, `pr_title`, and `pr_author`, and steps
+4, 9, and 10 each consume them.
 
 ```bash
-gh pr list --repo "$target_repo" --state open --limit 100 \
-  --json number,title,author,headRefName,headRefOid,isDraft,mergeStateStatus,labels
+pr_list=$(gh pr list --repo "$target_repo" --state open --limit 100 \
+  --json number,title,author,headRefName,headRefOid,isDraft,mergeStateStatus,labels)
 ```
 
 Drop, in order, recording the reason for each: drafts; authors in `renovate_authors` or
@@ -116,28 +131,50 @@ Drop, in order, recording the reason for each: drafts; authors in `renovate_auth
 `reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working`
 (another run owns it — outcome `locked`).
 
+The first two of those — draft, and an author in `renovate_authors` — are the two
+exclusions single-PR mode does not bypass either (see **Single-PR mode** above): in queue
+mode they drop the PR silently, in single-PR mode they are a hard stop that names the
+exclusion. Never review a draft, and never touch a Renovate PR, however the PR was named.
+
+What survives all five drops is `survivors` — a JSON array of the same objects `pr_list`
+held, minus the dropped ones. Step 4 orders and slices it.
+
 Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, its `title`
-becomes `pr_title`, and its `author.login` becomes `pr_author`, for the rest of that PR's
-processing (steps 4–6 here, and every step Task 8 adds). Single-PR mode skipped this call,
-so fetch `head_sha`, `pr_title`, and `pr_author` fresh instead, from one `gh pr view` call:
+becomes `pr_title`, and its `author.login` becomes `pr_author`, for every remaining step of
+that PR's processing (4 through 11). Single-PR mode ran neither the call nor the filters,
+so it binds the same three variables here, fresh, from one `gh pr view` call. **This block
+is not optional in single-PR mode — it is that mode's only binding site for all three:**
 ```bash
-view_json=$(gh pr view "$n" --repo "$target_repo" --json headRefOid,title,author)
+view_json=$(gh pr view "$n" --repo "$target_repo" --json headRefOid,title,author,isDraft)
 head_sha=$(printf '%s' "$view_json" | jq -r .headRefOid)
 pr_title=$(printf '%s' "$view_json" | jq -r .title)
 pr_author=$(printf '%s' "$view_json" | jq -r .author.login)
 ```
+`isDraft` comes back in the same call so single-PR mode can apply the two absolute
+exclusions — draft here, `renovate_authors` against `pr_author` — without a second
+round-trip.
 
 ### 4. Triage before spending an agent
 
 For each surviving candidate `n`, one call yields the round state:
 ```bash
-gh api "repos/$target_repo/pulls/$n/reviews" --paginate \
-  --jq "[.[] | select(.user.login == \"$self_login\")]"
+prior_reviews=$(gh api "repos/$target_repo/pulls/$n/reviews" --paginate --jq '.[]' \
+  | jq -s --arg self "$self_login" '[.[] | select(.user.login == $self)]')
 ```
+The two-stage shape is required, not stylistic. `gh api --paginate` with a `--jq` filter
+that *builds* an array emits **one array per page**, not one combined array — verified
+against a four-review PR forced to four pages, where the single-stage form printed four
+arrays of length 1. Streaming `.[]` and reassembling with `jq -s` is what makes the result
+one whole array. This is the same idiom the size call below and `pr-merger.md` use, for the
+same reason. Without it `round` counts only the last page, the `max_rounds` park never
+fires, and a PR under `/loop` reviews forever.
+
 From that one array: `round` is its length; the last-reviewed SHA is the last entry's
-`commit_id`; `prior_recommendations` is the last entry's `body`. Read the prior verdict
-from the hidden marker on the body's first line (`<!-- pr-reviewer: verdict=… -->`),
-falling back to the review `state` when the marker is absent.
+`commit_id`; `prior_recommendations` is the last entry's `body`. The last entry is the most
+recent review — the API returns reviews oldest-first and the last page is the newest — which
+is why the array has to be whole before it is indexed. Read the prior verdict from the
+hidden marker on the body's first line (`<!-- pr-reviewer: verdict=… -->`), falling back to
+the review `state` when the marker is absent.
 
 Skip without dispatching anything — **queue mode only; single-PR mode runs none of these
 three, since naming a PR is an instruction to review it**:
@@ -145,6 +182,31 @@ three, since naming a PR is an instruction to review it**:
 - `round` ≥ `max_rounds` and the last verdict was `request-changes` → label
   `reviewer:parked`, reason "review rounds exhausted";
 - CI still settling → outcome `skipped`, reason "CI in progress".
+
+Nothing above this line dispatches an agent or posts a review. The two read-only skips need
+no lock at all, and the `max_rounds` park's label edit is a single atomic write that ends
+processing for that PR immediately, so it needs none either. An idle queue therefore posts
+nothing.
+
+Now narrow to what this pass will actually process: at most `max_reviews_per_pass`
+survivors, **oldest PR first**, because an older PR has waited longest. `gh pr list` returns
+**newest first**, so sort ascending by `number` before taking that slice — PR numbers are
+monotonic, so ascending number *is* oldest first:
+```bash
+printf '%s' "$survivors" | jq -c --argjson k "$max_reviews_per_pass" \
+  'sort_by(.number) | .[:$k] | .[]'
+```
+Single-PR mode has exactly one candidate and no ordering to decide.
+
+**Then take the lock, before anything else touches this PR:** add `reviewer:working` and
+remove `reviewer:parked`. Everything below — the size ceiling's review post, the panel, the
+review, the merge — happens under the lock, so no write this skill makes to a PR can happen
+unlocked. Release it when the PR is done, **always, including on failure**.
+
+```bash
+gh pr edit "$n" --repo "$target_repo" \
+  --add-label reviewer:working --remove-label reviewer:parked
+```
 
 Then size, in **both** modes. Fetch the changed files and sum `.changes` over files not
 matching `ignore_paths`, reusing the exact `jq` filter `pr-merger` uses to recompute size at
@@ -169,32 +231,44 @@ This is the same filter, over the same endpoint, `pr-merger.md` re-runs independ
 before it merges. `ignore_paths` is matched entirely inside `jq` — never loop over the
 patterns in shell; unquoted multi-line word-splitting is not portable across the shells
 this runs under. `--paginate` is what stops a PR with more than one page of files from
-silently under-counting. Assign the total to `size` and keep it: step 10 (Task 8) needs it
-for the merge ceiling.
+silently under-counting. Assign the total to `size` and keep it: step 10's merge ceiling
+needs it.
 
 Over `max_review_lines`: post a COMMENT review saying the PR is too large to review
-meaningfully and should be split, label `reviewer:parked`, outcome `too-large`, move on. An
-honest refusal beats a shallow rubber-stamp. This ceiling applies in **both** modes — a PR
-too large to review is too large to review however it was named.
+meaningfully and should be split, then label `reviewer:parked` (which releases the lock),
+outcome `too-large`, and move on. An honest refusal beats a shallow rubber-stamp. This
+ceiling applies in **both** modes — a PR too large to review is too large to review however
+it was named. `$workdir` does not exist yet — step 5 creates it — so this park builds its
+payload on a pipe rather than in a file, and it runs under the lock taken above:
 
-Process at most `max_reviews_per_pass` survivors, oldest PR first. Before dispatching
-anything for a PR, take the lock: add `reviewer:working` and remove `reviewer:parked`.
-Release it when the PR is done, **always, including on failure**.
-
-### 5. Resolve requirements
-
-First, capture the PR body — needed here and by every lens dispatch in Task 8:
 ```bash
-pr_body=$(gh pr view "$n" --repo "$target_repo" --json body --jq .body)
-```
-Resolve `requirements` in order, stopping at the first substantive result: `pr_body`
-itself; then linked issues (`Closes #n` / `Fixes #n` / `Resolves #n` in the body, plus
-GitHub's linked-issue field — fetch each issue's title and body); then spec or design
-documents the body or branch name references, read from the worktree. Nothing substantive
-→ `requirements` is `null`, and the requirements lens turns that into a blocking finding.
-The other two lenses review as normal.
+short_sha=$(printf '%.7s' "$head_sha")
+jq -n --arg c "$head_sha" --arg b "<!-- pr-reviewer: verdict=park round=$round sha=$short_sha -->
 
-### 6. Prepare review context
+This PR changes $size countable lines, above the \`max_review_lines\` ceiling of
+$max_review_lines. A diff this large cannot be held in mind well enough to review honestly,
+so it is parked unreviewed rather than rubber-stamped. Split it into smaller,
+independently reviewable PRs and each will be reviewed in full." \
+  '{commit_id:$c, body:$b, event:"COMMENT"}' \
+  | gh api -X POST "repos/$target_repo/pulls/$n/reviews" --input -
+
+gh pr edit "$n" --repo "$target_repo" \
+  --add-label reviewer:parked --remove-label reviewer:working
+```
+
+`event` is `COMMENT` unconditionally: a park neither approves nor requests changes, so the
+self-review downgrade of step 9 cannot apply to it. The hidden marker is still the first
+line of the body, in the same format as every other review this skill posts, so step 4's
+next pass reads `verdict=park` back off it.
+
+### 5. Prepare review context
+
+This comes before requirements resolution deliberately: step 6's third resolution tier
+reads spec or design documents out of the worktree, so the worktree has to exist first.
+Resolving requirements against a worktree that does not exist yet would silently fail that
+tier, drop `requirements` to `null`, and make the requirements lens file a blocking finding
+against a PR whose intent is fully written down — the exact false block this ordering
+prevents.
 
 Bind the two path variables this step and every later one build on:
 
@@ -221,6 +295,20 @@ rendering is what guarantees that. The worktree exists only for surrounding-code
 it is never the source of a finding's `path:line`. Remove `$workdir` (worktree included)
 after the PR is processed, always, including on failure, per
 `references/target-resolution.md`'s cleanup recipe.
+
+### 6. Resolve requirements
+
+First, capture the PR body — needed here and by every lens dispatch in step 7:
+```bash
+pr_body=$(gh pr view "$n" --repo "$target_repo" --json body --jq .body)
+```
+Resolve `requirements` in order, stopping at the first substantive result: `pr_body`
+itself; then linked issues (`Closes #n` / `Fixes #n` / `Resolves #n` in the body, plus
+GitHub's linked-issue field — fetch each issue's title and body); then spec or design
+documents the body or branch name references, read from `$worktree` (bound in step 5, which
+is why that step runs first). Nothing substantive → `requirements` is `null`, and the
+requirements lens turns that into a blocking finding. The other two lenses review as
+normal.
 
 ### 7. Review — the three-lens panel
 
@@ -323,7 +411,13 @@ findings_list=$(printf '%s' "$comments" | jq -r '.[] | "- `\(.path):\(.line)` �
 Append `findings_list` to `body` before the retry POST (still one `commit_id`, still one
 `event`, `comments` simply omitted this time). A 422 for any other reason — or a second 422
 on the retry — is a failure, not something to retry again: release the `reviewer:working`
-lock, report the failure for this PR, and move on to the next candidate.
+lock, record outcome `review-failed`, and move on to the next candidate.
+
+`review-failed` is the outcome for **any** non-2xx from this POST that the single retry
+above did not clear — a 422 the retry could not fix, a 403, a 404, a network error. Carry
+the status and the response's `message` in prose beside the row. A PR whose review never
+posted must never be reported as reviewed, and step 10 is not reached for it: there is no
+merge without a delivered review.
 
 A newer review from the same user supersedes the older one in GitHub's own UI, so posting
 an `APPROVE` after a prior `REQUEST_CHANGES` clears our own block without an explicit
@@ -334,25 +428,49 @@ dismissal call.
 | verdict | condition | action | outcome |
 |---|---|---|---|
 | `approve` | all four merge gates pass, budget available | dispatch `pr-merger` | `merged` (or reroute per its `reason`, below) |
-| `approve` | CI not green / still settling | none — leave for next pass | `approved-pending-ci` |
+| `approve` | CI not green / still settling, or not cleanly mergeable | none — leave for next pass | `approved-pending-ci` |
 | `approve` | an unresolved human review thread | none — leave for next pass | `approved-blocked-by-human` |
 | `approve` | `size` > `max_merge_lines` | none — reviewed in full, never merged unattended | `approved-too-large` |
 | `approve` | `can_merge` is false | none — review-only pass | `no-permission` |
 | `request-changes` | — | none beyond the posted review | `changes-requested` |
 | `park` | — | add `reviewer:parked` | `parked` |
 
-Before trusting an `approve` verdict enough to dispatch `pr-merger`, check all four gates:
-CI green and `mergeStateStatus` `CLEAN`; no unresolved human review thread (both the
-GraphQL `reviewThreads` query and the latest-review-per-other-user check, exactly as
-`pr-merger.md` runs them — this orchestrator does not maintain a second copy of that
-query, it runs the identical one); `size` (already held from step 4) ≤ `max_merge_lines`;
-and `can_merge` (held from preflight) true. `pr-merger` independently re-verifies the
-first three of these live — CI green, threads, and size — because a wrong pass on any of
-them would cause a bad merge. It does not re-check `can_merge`: a missing permission can
-only fail the merge, never wrongly complete one, and `pr-merger` already handles that —
-a non-zero exit from `gh pr merge` returns `aborted` rather than reporting success. A gate
-failing here routes to the matching row above without dispatching the merger at all — the
-merger is reserved for candidates the orchestrator itself already believes are ready.
+Before trusting an `approve` verdict enough to dispatch `pr-merger`, check all four gates.
+The mergeability state has to be **fetched fresh here** — nothing earlier in the pass holds
+a usable copy: queue mode's `mergeStateStatus` came from step 3's `gh pr list`, many API
+calls and one review POST ago (a review POST can itself flip `BLOCKED`↔`CLEAN`), single-PR
+mode never fetched it at all, and neither mode has ever fetched `statusCheckRollup`:
+
+```bash
+gate_json=$(gh pr view "$n" --repo "$target_repo" \
+  --json mergeStateStatus,statusCheckRollup)
+```
+
+The four gates:
+
+- **CI green and cleanly mergeable** — apply `pr-merger.md`'s **green** and **mergeable**
+  rules to `gate_json`, exactly as written there, over the identically-named fields. This
+  orchestrator keeps no second copy of that rule and must not restate it: if the two ever
+  disagreed, the orchestrator would pass a PR the merger then aborts `not-green`, routing to
+  outcome `skipped` "transient — retries next pass", every pass, forever. One rule, one
+  place. The gate passes only when that rule yields green *and* `mergeStateStatus` is
+  `CLEAN`.
+- **No unresolved human review thread** — both the GraphQL `reviewThreads` query and the
+  latest-review-per-other-user check, exactly as `pr-merger.md` runs them; again, one copy
+  of that query, not two.
+- **Size** — `size`, already held from step 4, ≤ `max_merge_lines`.
+- **Merge permission** — `can_merge`, held from preflight, true.
+
+`pr-merger` independently re-verifies the first three of these live — CI green and
+mergeable, threads, and size — because a wrong pass on any of them would cause a bad merge.
+It does not re-check `can_merge`: a missing permission can only fail the merge, never
+wrongly complete one, and `pr-merger` already handles that — a non-zero exit from
+`gh pr merge` returns `aborted` rather than reporting success.
+
+A gate failing here routes to the matching row above without dispatching the merger at
+all — green/mergeable to `approved-pending-ci`, threads to `approved-blocked-by-human`,
+size to `approved-too-large`, permission to `no-permission`. The merger is reserved for
+candidates the orchestrator itself already believes are ready.
 
 When every gate passes, dispatch `pr-merger` with:
 
@@ -401,10 +519,13 @@ One table, one row per candidate:
 
 with `outcome` ∈ `merged` / `approved-pending-ci` / `approved-blocked-by-human` /
 `approved-too-large` / `changes-requested` / `parked` / `skipped` / `locked` / `too-large` /
-`no-permission`. Carry the specific reason (a conflict, exhausted rounds, an oversized
-diff, a stale merge) in prose beside a `parked` or `skipped` row, rather than inventing a
-new outcome value per reason. When `can_merge` is false, say so once in the report's
-header, not once per row — every `no-permission` row already implies it.
+`no-permission` / `review-failed`. Carry the specific reason (a conflict, exhausted rounds,
+an oversized diff, a stale merge, the HTTP status a review POST failed with) in prose beside
+a `parked`, `skipped`, or `review-failed` row, rather than inventing a new outcome value per
+reason. `lines` is `size`, where step 4 got as far as computing it, and `—` for a row that
+never reached the size call: a triage skip, a `locked` row, or a candidate beyond the
+per-pass review cap. When `can_merge` is false, say so once in the report's header, not once
+per row — every `no-permission` row already implies it.
 
 ## State model
 
@@ -416,9 +537,10 @@ review body's first line — the prior verdict. There is no sticky comment to up
 Two labels persist only what GitHub's own API cannot tell us:
 
 - `reviewer:working` — a momentary lock held while one PR is processed, so an overlapping
-  run or a `/loop` re-entry cannot double-process it. Added before the panel is dispatched
-  (step 4); removed when the PR is done, **always, including on failure** — a PR must never
-  be left locked because some later step in the pipeline errored.
+  run or a `/loop` re-entry cannot double-process it. Added in step 4, before this skill
+  makes any write to the PR — including the `max_review_lines` park's review post, not just
+  the panel dispatch; removed when the PR is done, **always, including on failure** — a PR
+  must never be left locked because some later step in the pipeline errored.
 - `reviewer:parked` — terminal. Excluded from selection (step 3) until a human removes it.
 
 They are mutually exclusive; adding one removes the other:
@@ -447,7 +569,10 @@ review post, no label change.
 - Never merge a PR above `max_merge_lines`, or review one above `max_review_lines`.
 - Never request changes without at least one blocking finding carrying a stated
   consequence.
-- Never touch a PR authored by `renovate_authors`, or a draft.
+- Never touch a PR authored by `renovate_authors`, or a draft — **in either mode**. Naming
+  such a PR explicitly does not unlock it; single-PR mode hard-stops on it (step 3). The
+  `renovate_authors` half is a coordination guarantee, not a preference: `renovator` owns
+  those PRs, and the two skills never touch the same one.
 - Never modify the user's working tree, branches, or index; worktrees are detached and
   removed.
 - Never post more than one review per PR per round.
