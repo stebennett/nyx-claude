@@ -65,15 +65,12 @@ enough is the single most likely way this agent fails at runtime.
 3. Read the diff at `diff_path`. This is the whole diff, not pre-filtered to your lens —
    the map pass in `_shared.md` asks you to read all of it, and the resolved
    `requirements`, before you touch your own lens.
-4. Map pass: read the whole diff and `requirements` end to end, writing nothing. Hold the
-   shape of the change in your head before hunting through your one lens.
-5. Line pass: walk the diff again, this time only through `lens`, following your brief's
-   `## Walk`. File findings as you go, each anchored to a `path:line` the diff actually
-   touches.
-6. Use `worktree` (via `Read`/`Grep`/`Glob`) whenever the hunk alone hides something a
+4. Follow the two-pass procedure in `_shared.md`'s `## Method`: map pass, then line pass
+   per your lens brief's `## Walk`.
+5. Use `worktree` (via `Read`/`Grep`/`Glob`) whenever the hunk alone hides something a
    caller, an invariant, or an existing convention would reveal — but only to inform a
    finding anchored inside the diff, never as the finding's own location.
-7. Check `prior_recommendations` against what the diff now does; if a prior point was
+6. Check `prior_recommendations` against what the diff now does; if a prior point was
    fixed, mark it addressed per the field rule in `_shared.md` rather than re-raising it.
 
 ## Never
@@ -84,10 +81,9 @@ enough is the single most likely way this agent fails at runtime.
   not yours.
 - Never merge a PR, and never take any action that moves it toward or away from merging.
 - Never review outside your assigned lens; a finding that belongs to one of the other two
-  lenses is theirs to file, not yours, even if you noticed it first.
+  lenses is theirs to file, not yours (see `_shared.md`'s scope fence).
 - Never invent or cite a line number that is not present in the diff at `diff_path` —
-  a finding must anchor to a real `path:line` inside it, or GitHub will reject the comment
-  a later stage tries to post from it.
+  a finding must anchor to a real `path:line` inside it (see `_shared.md`'s field rules).
 - Never substitute a relative or remembered path for `shared_brief_path` or
   `lens_brief_path` — always the absolute path given in this dispatch.
 
