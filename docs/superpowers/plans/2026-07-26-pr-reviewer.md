@@ -24,7 +24,7 @@ Every task's requirements implicitly include this section.
 - **Label names, exactly:** `reviewer:working` (color `FBCA04`), `reviewer:parked` (color `D93F0B`).
 - **Hidden verdict marker, exactly this shape, as the first line of every review body:**
   `<!-- pr-reviewer: verdict=<approve|request-changes|park> round=<n> sha=<short_sha> -->`
-- **Config defaults, verbatim:** `renovate_authors` `["renovate[bot]"]`, `exclude_authors` `[]`, `require_label` `null`, `max_reviews_per_pass` `3`, `max_merges_per_pass` `1`, `max_rounds` `3`, `merge_method` `"squash"`, `max_merge_lines` `800`, `max_review_lines` `3000`, `ignore_paths` `["*.lock", "package-lock.json", "**/generated/**"]`, `update_branch_after_merge` `false`, `clone_cache_dir` `null`.
+- **Config defaults, verbatim:** `ignore_authors` `["renovate[bot]"]`, `require_label` `null`, `max_reviews_per_pass` `3`, `max_merges_per_pass` `1`, `max_rounds` `3`, `merge_method` `"squash"`, `max_merge_lines` `800`, `max_review_lines` `3000`, `ignore_paths` `["*.lock", "package-lock.json", "**/generated/**"]`, `update_branch_after_merge` `false`, `clone_cache_dir` `null`.
 - **Lens names, exactly:** `requirements`, `correctness`, `craft`.
 - **Verdict values, exactly:** `approve`, `request-changes`, `park`.
 - **Severity values, exactly:** `blocking`, `advisory`.
@@ -42,7 +42,7 @@ Every task's requirements implicitly include this section.
 |---|---|
 | `scripts/check-plugin.sh` | **New.** Structural validation of any plugin directory: manifest keys, JSON parse, agent/skill frontmatter, reference-path existence, agent-reference existence. The gate every later task runs. |
 | `CLAUDE.md` | **Modify.** Replace the "no build/test tooling" note with the checker's usage. |
-| `plugins/devtools/templates/pr-reviewer.json` | Config scaffold carrying all twelve defaults. |
+| `plugins/devtools/templates/pr-reviewer.json` | Config scaffold carrying all eleven defaults. |
 | `plugins/devtools/skills/pr-reviewer/references/target-resolution.md` | Argument → `target_repo`/`target_pr`; local-vs-remote worktree and clone recipes; cleanup. |
 | `plugins/devtools/skills/pr-reviewer/references/lenses/_shared.md` | Etiquette and method binding all three lenses; the finding JSON schema. |
 | `plugins/devtools/skills/pr-reviewer/references/lenses/requirements.md` | Requirements-conformity lens brief. |
@@ -292,7 +292,7 @@ The input-side contract: what the skill can be configured with, and how it turns
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: the twelve config keys named in Global Constraints, read by `SKILL.md` (Task 7). `target-resolution.md` produces the variable names `target_repo` (`owner/repo`), `target_pr` (integer or empty), `self_login`, `workdir`, and `worktree` — Tasks 7 and 8 use exactly these names.
+- Produces: the eleven config keys named in Global Constraints, read by `SKILL.md` (Task 7). `target-resolution.md` produces the variable names `target_repo` (`owner/repo`), `target_pr` (integer or empty), `self_login`, `workdir`, and `worktree` — Tasks 7 and 8 use exactly these names.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -312,8 +312,7 @@ check() {  # check <jq-filter> <expected>
   got=$(jq -c "$1" "$T" 2>/dev/null)
   [ "$got" = "$2" ] || { echo "FAIL: $1 = $got, expected $2"; fail=1; }
 }
-check '.renovate_authors'         '["renovate[bot]"]'
-check '.exclude_authors'          '[]'
+check '.ignore_authors'           '["renovate[bot]"]'
 check '.require_label'            'null'
 check '.max_reviews_per_pass'     '3'
 check '.max_merges_per_pass'      '1'
@@ -325,7 +324,7 @@ check '.ignore_paths'             '["*.lock","package-lock.json","**/generated/*
 check '.update_branch_after_merge' 'false'
 check '.clone_cache_dir'          'null'
 n=$(jq -r 'keys | length' "$T" 2>/dev/null)
-[ "$n" = "12" ] || { echo "FAIL: expected 12 config keys, got $n"; fail=1; }
+[ "$n" = "11" ] || { echo "FAIL: expected 11 config keys, got $n"; fail=1; }
 
 for s in 'all digits' 'is a repo reference' 'blobless' 'refs/pr-reviewer/' \
          'worktree remove' 'update-ref -d' 'gh pr diff'; do
@@ -345,8 +344,7 @@ Create `plugins/devtools/templates/pr-reviewer.json`:
 
 ```json
 {
-  "renovate_authors": ["renovate[bot]"],
-  "exclude_authors": [],
+  "ignore_authors": ["renovate[bot]"],
   "require_label": null,
   "max_reviews_per_pass": 3,
   "max_merges_per_pass": 1,
@@ -1029,7 +1027,7 @@ This skill is a sibling to `renovator`, not a replacement: `renovator` owns depe
 
 Then the invocation table (seven rows from the spec's Invocation section) and this paragraph:
 
-> **Single-PR mode** — an argument naming one PR bypasses the selection filters of step 3 (draft status, `renovate_authors`, `require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it. The `max_review_lines` ceiling and every merge gate still apply in full; when one of them prevents a merge, say which in the report.
+> **Single-PR mode** — an argument naming one PR bypasses the selection filters of step 3 (`require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it. The `max_review_lines` ceiling and every merge gate still apply in full; when one of them prevents a merge, say which in the report.
 
 - [ ] **Step 4: Write pass steps 1–6**
 
@@ -1047,7 +1045,7 @@ Append these six sections. Each must carry the runnable commands, not a descript
     --description "pr-reviewer parked this PR for a human" --force
   ```
 
-**`### 2. Configuration`** — the twelve-row knob table from the spec, verbatim, plus both read recipes:
+**`### 2. Configuration`** — the eleven-row knob table from the spec, verbatim, plus both read recipes:
 ```bash
 # local target
 jq -r '.max_rounds // 3' .claude/pr-reviewer.json 2>/dev/null
@@ -1063,7 +1061,7 @@ State: read from the **target repo, never the working directory** — a config g
 gh pr list --repo "$target_repo" --state open --limit 100 \
   --json number,title,author,headRefName,headRefOid,isDraft,mergeStateStatus,labels
 ```
-Drop in order, recording the reason: drafts; authors in `renovate_authors` or `exclude_authors`; PRs lacking `require_label` when it is set; PRs labelled `reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working` (another run owns it — outcome `locked`).
+Drop in order, recording the reason: drafts; authors in `ignore_authors`; PRs lacking `require_label` when it is set; PRs labelled `reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working` (another run owns it — outcome `locked`).
 
 **`### 4. Triage before spending an agent`**
 ```bash
@@ -1256,7 +1254,7 @@ Idempotent by construction: every pass sets labels to the target state and posts
 - Never merge over an unresolved human objection.
 - Never merge a PR above `max_merge_lines`, or review one above `max_review_lines`.
 - Never request changes without at least one blocking finding carrying a stated consequence.
-- Never touch a PR authored by `renovate_authors`, or a draft.
+- Never touch a PR authored by someone in `ignore_authors`, or a draft — in either mode.
 - Never modify the user's working tree, branches, or index; worktrees are detached and removed.
 - Never post more than one review per PR per round.
 
@@ -1385,7 +1383,7 @@ Append a `## pr-reviewer` section to `plugins/devtools/README.md`, matching the 
 5. **Merge gates** — CI green and cleanly mergeable; no unresolved human review threads; within `max_merge_lines`; merge permission held. Plus: `pr-merger` re-verifies all of them live, so two independent agreements gate every unattended merge.
 6. **Self-review caveat**, stated plainly: GitHub rejects `APPROVE` and `REQUEST_CHANGES` on your own PR, so on a PR you authored the review posts as a `COMMENT` and the verdict travels in a hidden marker. Installing this repo's `github-app-identity` plugin gives `gh` a distinct App identity, which restores real approve and request-changes records.
 7. **Requirements** — `gh` authenticated, `jq`, `git`.
-8. **Configuration** — the twelve-row knob table, and the `.claude/pr-reviewer.json` path with a note that it is read from the *target* repo.
+8. **Configuration** — the eleven-row knob table, and the `.claude/pr-reviewer.json` path with a note that it is read from the *target* repo.
 9. **PR annotations** — `reviewer:working` (momentary lock) and `reviewer:parked` (terminal; clear it by hand to re-enable review).
 
 - [ ] **Step 6: Run the tests to verify they pass**

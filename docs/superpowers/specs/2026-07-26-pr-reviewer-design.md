@@ -38,8 +38,8 @@ It is a sibling to `renovator`, not a replacement: `renovator` owns dependency P
   fix-loops, and deliberately so — someone owns this PR.
 - Rebasing or otherwise mutating another person's branch, except the optional
   `update_branch_after_merge` knob.
-- Renovate PRs. Authors in `renovate_authors` are excluded so the two skills' queues
-  cannot collide.
+- PRs by any author in `ignore_authors` (default `["renovate[bot]"]`). The default keeps
+  `renovator`'s queue and this one from colliding; the operator can add any author.
 - Draft PRs.
 
 ## Invocation
@@ -63,8 +63,9 @@ with a clear message.
 Once resolved, `target_repo` is threaded through every `gh` call as `--repo <target_repo>`.
 The pass logic does not branch on local-versus-remote anywhere else.
 
-**Single-PR mode** bypasses the selection filters — draft status, `renovate_authors`,
-`require_label`, the `reviewer:parked` exclusion, and the unchanged-SHA skip. Naming a PR is
+**Single-PR mode** bypasses the selection filters — `require_label`, the
+`reviewer:parked` exclusion, and the unchanged-SHA skip. Draft status and `ignore_authors`
+are **absolute and never bypassed in either mode**; naming such a PR is a hard stop. Naming a PR is
 an instruction to review it, so it also skips the `max_rounds` park and the CI-pending defer
 (a review does not depend on CI; the *merge* gate still does). It honours every merge gate
 and both size ceilings; when one of those prevents a merge, the report says which.
@@ -113,8 +114,7 @@ Absent file or absent key falls back to the default. Unknown keys are ignored.
 
 | knob | default | meaning |
 |---|---|---|
-| `renovate_authors` | `["renovate[bot]"]` | authors excluded so `renovator` keeps its own queue |
-| `exclude_authors` | `[]` | additional author logins to skip |
+| `ignore_authors` | `["renovate[bot]"]` | author logins never reviewed or touched, in either mode; exact login match, case-insensitive |
 | `require_label` | `null` | when set, only PRs carrying this label are eligible |
 | `max_reviews_per_pass` | `3` | PRs reviewed per pass |
 | `max_merges_per_pass` | `1` | merges per pass |
@@ -132,7 +132,7 @@ Queue mode only; single-PR mode skips straight to step 4.
 
 `gh pr list --repo <target_repo> --state open --limit 100 --json number,title,author,headRefName,headRefOid,isDraft,mergeStateStatus,labels`
 
-Drop, in order: drafts; authors in `renovate_authors` or `exclude_authors`; PRs lacking
+Drop, in order: drafts; authors in `ignore_authors`; PRs lacking
 `require_label` when it is set; PRs labelled `reviewer:parked` (terminal until a human clears
 it); PRs labelled `reviewer:working` (another run owns it — record outcome `locked`).
 
@@ -425,7 +425,7 @@ plus one reviews call per candidate and dispatches nothing.
 - Never merge over an unresolved human objection.
 - Never merge a PR above `max_merge_lines`, or review one above `max_review_lines`.
 - Never request changes without at least one blocking finding carrying a stated consequence.
-- Never touch a PR authored by `renovate_authors`, or a draft.
+- Never touch a PR authored by someone in `ignore_authors`, or a draft — in either mode.
 - Never modify the user's working tree, branches, or index; worktrees are detached and
   removed.
 - Never post more than one review per PR per round.

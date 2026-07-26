@@ -33,9 +33,11 @@ table is the summary, not the authority:
 | `git@github.com:o/r.git` | `o/r` | — | queue pass |
 | `o/r` | `o/r` | — | queue pass |
 
-> **Single-PR mode** — an argument naming one PR bypasses the throughput and preference filters of step 3 (`exclude_authors`, `require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it.
+> **Single-PR mode** — an argument naming one PR bypasses the throughput and preference filters of step 3 (`require_label`, the `reviewer:parked` exclusion) and all three triage skips of step 4 (unchanged SHA, `max_rounds`, CI pending). Naming a PR is an instruction to review it.
 >
-> Two step-3 exclusions are **absolute — neither mode bypasses them**: a draft, and an author in `renovate_authors`. Naming such a PR is a hard stop: report which exclusion it hit and why — a draft has not been offered for review yet; a Renovate PR belongs to `renovator`, and the two skills never touch the same PR — then post nothing, label nothing, and do nothing else. Bypassing either would break a real guarantee, so "the human asked for it" is not a reason to.
+> Two step-3 exclusions are **absolute — neither mode bypasses them**: a draft, and an author in `ignore_authors`. Naming such a PR is a hard stop: report which exclusion it hit and why — a draft has not been offered for review yet; an author in `ignore_authors` has been declared out of scope for this skill — then post nothing, label nothing, and do nothing else. Bypassing either would break a real guarantee, so "the human asked for it" is not a reason to.
+>
+> `ignore_authors` is absolute precisely because its purpose is to hand a set of PRs to something else. Its default entry, `renovate[bot]`, exists because `renovator` owns dependency PRs and the two skills must never touch the same PR; every entry the operator adds extends that same guarantee to another author. A soft "skip unless asked" is not what this knob is for — use `require_label` for that.
 >
 > The `max_review_lines` ceiling and every merge gate also still apply in full; when one of them prevents a merge, say which in the report.
 
@@ -79,8 +81,7 @@ directory** — a config governing one repository must not silently govern anoth
 
 | knob | default | meaning |
 |---|---|---|
-| `renovate_authors` | `["renovate[bot]"]` | authors excluded so `renovator` keeps its own queue |
-| `exclude_authors` | `[]` | additional author logins to skip |
+| `ignore_authors` | `["renovate[bot]"]` | author logins this skill never reviews or touches, in either mode. The default hands dependency PRs to `renovator`; add any author you want out of scope. |
 | `require_label` | `null` | when set, only PRs carrying this label are eligible |
 | `max_reviews_per_pass` | `3` | PRs reviewed per pass |
 | `max_merges_per_pass` | `1` | merges per pass |
@@ -126,17 +127,25 @@ pr_list=$(gh pr list --repo "$target_repo" --state open --limit 100 \
   --json number,title,author,headRefName,headRefOid,isDraft,mergeStateStatus,labels)
 ```
 
-Drop, in order, recording the reason for each: drafts; authors in `renovate_authors` or
-`exclude_authors`; PRs lacking `require_label` when it is set; PRs labelled
-`reviewer:parked` (terminal until a human clears it); PRs labelled `reviewer:working`
-(another run owns it — outcome `locked`).
+Drop, in order, recording the reason for each: drafts; authors in `ignore_authors`; PRs
+lacking `require_label` when it is set; PRs labelled `reviewer:parked` (terminal until a
+human clears it); PRs labelled `reviewer:working` (another run owns it — outcome `locked`).
 
-The first two of those — draft, and an author in `renovate_authors` — are the two
+Match `ignore_authors` against `author.login` exactly — a login, case-insensitively, never a
+substring. `renovate[bot]` must not be matched by a pattern that would also catch
+`renovate-bot-helper`, and a login is not a glob:
+```bash
+ignored_author=$(printf '%s' "$pr_json" | jq --argjson ig "$ignore_authors" \
+  '[$ig[] | ascii_downcase] as $l | (.author.login | ascii_downcase) as $a
+   | any($l[]; . == $a)')
+```
+
+The first two of those — draft, and an author in `ignore_authors` — are the two
 exclusions single-PR mode does not bypass either (see **Single-PR mode** above): in queue
 mode they drop the PR silently, in single-PR mode they are a hard stop that names the
-exclusion. Never review a draft, and never touch a Renovate PR, however the PR was named.
+exclusion. Never review a draft, and never touch an `ignore_authors` PR, however it was named.
 
-What survives all five drops is `survivors` — a JSON array of the same objects `pr_list`
+What survives all four drops is `survivors` — a JSON array of the same objects `pr_list`
 held, minus the dropped ones. Step 4 triages it, then orders and slices what survives triage.
 
 Each survivor's `number` becomes `n`, its `headRefOid` becomes `head_sha`, its `title`
@@ -151,8 +160,8 @@ pr_title=$(printf '%s' "$view_json" | jq -r .title)
 pr_author=$(printf '%s' "$view_json" | jq -r .author.login)
 ```
 `isDraft` comes back in the same call so single-PR mode can apply the two absolute
-exclusions — draft here, `renovate_authors` against `pr_author` — without a second
-round-trip.
+exclusions — draft here, `ignore_authors` against `pr_author` (same exact-login match as
+above) — without a second round-trip.
 
 ### 4. Triage before spending an agent
 
@@ -589,10 +598,11 @@ review post, no label change.
 - Never merge a PR above `max_merge_lines`, or review one above `max_review_lines`.
 - Never request changes without at least one blocking finding carrying a stated
   consequence.
-- Never touch a PR authored by `renovate_authors`, or a draft — **in either mode**. Naming
-  such a PR explicitly does not unlock it; single-PR mode hard-stops on it (step 3). The
-  `renovate_authors` half is a coordination guarantee, not a preference: `renovator` owns
-  those PRs, and the two skills never touch the same one.
+- Never touch a PR authored by someone in `ignore_authors`, or a draft — **in either mode**.
+  Naming such a PR explicitly does not unlock it; single-PR mode hard-stops on it (step 3).
+  The `ignore_authors` half is a scoping guarantee, not a preference: the operator has handed
+  those PRs to something else, and the default entry hands dependency PRs to `renovator`,
+  which must never contend with this skill over the same PR.
 - Never modify the user's working tree, branches, or index; worktrees are detached and
   removed.
 - Never post more than one review per PR per round.

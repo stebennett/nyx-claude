@@ -67,7 +67,7 @@ Create `.claude/renovator.json` in the repo root to override defaults:
 Reviews a repository's open pull requests and merges the ones that are ready. Each invocation is one full pass over the queue and is safe to run repeatedly (e.g. under `/loop`). A three-lens agent panel (`requirements`, `correctness`, `craft`) reviews each candidate PR's diff independently, an adjudicator reconciles their findings into a single verdict, and the pass posts one GitHub review with inline comments before either requesting changes with concrete recommendations or approving and merging. `pr-reviewer` is a sibling to `renovator`, not a replacement: `renovator` owns dependency PRs, `pr-reviewer` owns everything else, and the two never touch the same PR.
 
 ### Usage
-Invoke the `pr-reviewer` skill from within the target repository, or pass an argument naming a different target. Bare invocation (no argument) runs a queue pass over the current repo's open PRs; naming one PR reviews it directly, bypassing `require_label`, the `reviewer:parked` exclusion, `exclude_authors`, and all three triage skips (an unchanged head SHA, the `max_rounds` park, and a CI-pending defer). Two exclusions are **never** bypassed, in either mode: a draft, and an author in `renovate_authors` — naming such a PR is a hard stop, because a draft has not been offered for review yet, and a Renovate PR belongs to `renovator` — the two skills never touch the same PR. The `max_review_lines` ceiling and every merge gate also still apply in full.
+Invoke the `pr-reviewer` skill from within the target repository, or pass an argument naming a different target. Bare invocation (no argument) runs a queue pass over the current repo's open PRs; naming one PR reviews it directly, bypassing `require_label`, the `reviewer:parked` exclusion, and all three triage skips (an unchanged head SHA, the `max_rounds` park, and a CI-pending defer). Two exclusions are **never** bypassed, in either mode: a draft, and an author in `ignore_authors` — naming such a PR is a hard stop, because a draft has not been offered for review yet, and an `ignore_authors` PR has been handed to something else (by default `renovator`, which owns dependency PRs and must never contend with this skill over the same one). The `max_review_lines` ceiling and every merge gate also still apply in full.
 
 | argument | `target_repo` | `target_pr` | mode |
 |---|---|---|---|
@@ -112,8 +112,7 @@ GitHub rejects an `APPROVE` or `REQUEST_CHANGES` review event from a PR's own au
 Create `.claude/pr-reviewer.json` in the **target repository's** root to override defaults — it is always read from the repo being reviewed, never from the working directory a remote-target pass happens to run in:
 
     {
-      "renovate_authors": ["renovate[bot]"],
-      "exclude_authors": [],
+      "ignore_authors": ["renovate[bot]"],
       "require_label": null,
       "max_reviews_per_pass": 3,
       "max_merges_per_pass": 1,
@@ -128,8 +127,7 @@ Create `.claude/pr-reviewer.json` in the **target repository's** root to overrid
 
 | knob | default | meaning |
 |---|---|---|
-| `renovate_authors` | `["renovate[bot]"]` | authors excluded so `renovator` keeps its own queue |
-| `exclude_authors` | `[]` | additional author logins to skip |
+| `ignore_authors` | `["renovate[bot]"]` | author logins this skill never reviews or touches, in either mode — naming such a PR is a hard stop. The default hands dependency PRs to `renovator`; add any author you want out of scope (other bots, a colleague whose PRs you review by hand). Matched as an exact login, case-insensitively — not a substring or glob. For a soft "skip unless I ask", use `require_label` instead. |
 | `require_label` | `null` | when set, only PRs carrying this label are eligible |
 | `max_reviews_per_pass` | `3` | PRs reviewed per pass |
 | `max_merges_per_pass` | `1` | merges per pass |

@@ -1,6 +1,5 @@
 {
-  "renovate_authors": ["renovate[bot]"],
-  "exclude_authors": [],
+  "ignore_authors": ["renovate[bot]"],
   "require_label": null,
   "max_reviews_per_pass": 3,
   "max_merges_per_pass": 1,
