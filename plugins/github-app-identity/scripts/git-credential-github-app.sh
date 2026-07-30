@@ -15,7 +15,8 @@ profile=""
 op=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --profile)   profile="${2:-}"; shift 2 ;;
+    --profile)   [ $# -ge 2 ] || gh_app_die "--profile requires a value in the git config helper line — re-run: setup-github-app-git.sh <profile>"
+                 profile="$2"; shift 2 ;;
     --profile=*) profile="${1#--profile=}"; shift ;;
     *) op="$1"; shift ;;
   esac

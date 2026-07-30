@@ -41,6 +41,14 @@ echo "$out" | grep -qx 'password=tok_builder' \
 if out="$(req | GITHUB_APP_TOKEN_CMD="$stub" bash "$helper" get 2>/dev/null)"; then
   echo "FAIL: answered without a profile" >&2; exit 1
 fi
+
+# --- --profile with no value: must say so, not die silently on `shift 2` ---
+err="$(req | GITHUB_APP_TOKEN_CMD="$stub" bash "$helper" --profile 2>&1 >/dev/null || true)"
+if req | GITHUB_APP_TOKEN_CMD="$stub" bash "$helper" --profile >/dev/null 2>&1; then
+  echo "FAIL: accepted a valueless --profile" >&2; exit 1
+fi
+echo "$err" | grep -q 'requires a value' \
+  || { echo "FAIL: valueless --profile gave no diagnostic, got: '$err'" >&2; exit 1; }
 if echo "${out:-}" | grep -q 'password='; then
   echo "FAIL: leaked a password line without a profile" >&2; exit 1
 fi
