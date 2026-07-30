@@ -32,3 +32,36 @@ jobs:
             echo "::error::one or more plugins failed structural validation"
             exit 1
           fi
+
+  script-tests:
+    name: script tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run every plugin's script tests
+        run: |
+          # Both platforms matter: this repo targets bash 3.2 (macOS default)
+          # and forbids GNU-only constructs, so a Linux-only run would hide
+          # exactly the breakage that rule exists to prevent.
+          fail=0
+          found=0
+          for t in plugins/*/scripts/tests/*.sh; do
+            [ -f "$t" ] || continue
+            found=1
+            echo "::group::$t"
+            bash "$t" || fail=1
+            echo "::endgroup::"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "::error::no script tests were found — the glob is wrong"
+            exit 1
+          fi
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::one or more script tests failed"
+            exit 1
+          fi

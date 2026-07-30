@@ -6,9 +6,11 @@ src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bin="${GH_APP_BIN:-$HOME/.local/bin}"
 mkdir -p "$bin"
 
-for f in gh github-app-token.sh git-credential-github-app.sh setup-github-app-git.sh; do
+for f in gh github-app-token.sh git-credential-github-app.sh setup-github-app-git.sh gh-app-status.sh; do
   install -m 0755 "$src/$f" "$bin/$f"
 done
+# Sourced by the scripts above, never executed — no executable bit.
+install -m 0644 "$src/gh-app-common.sh" "$bin/gh-app-common.sh"
 echo "Installed gh-app scripts to $bin"
 
 # Warn (non-fatal) if $bin is absent from PATH or doesn't precede the real gh.
