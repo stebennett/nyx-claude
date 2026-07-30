@@ -24,32 +24,44 @@ if [[ "${1:-}" == "--parse" ]]; then
 fi
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-env_file="${GITHUB_APP_ENV:-$HOME/.config/gh-app/github-app.env}"
-if [[ -f "$env_file" ]]; then
-  set -a; # shellcheck disable=SC1090
-  source "$env_file"; set +a
-fi
+# shellcheck source=gh-app-common.sh
+. "$dir/gh-app-common.sh"
 
-: "${GITHUB_APP_SLUG:?GITHUB_APP_SLUG not set (see the github-app-identity setup runbook)}"
-: "${GITHUB_APP_BOT_USER_ID:?GITHUB_APP_BOT_USER_ID not set}"
+[ $# -eq 1 ] || gh_app_die "usage: setup-github-app-git.sh <profile>"
+profile="$1"
+gh_app_load_profile "$profile"
+
+: "${GITHUB_APP_SLUG:?GITHUB_APP_SLUG not set in $GH_APP_PROFILE_FILE}"
+: "${GITHUB_APP_BOT_USER_ID:?GITHUB_APP_BOT_USER_ID not set in $GH_APP_PROFILE_FILE}"
 
 repo_root="$(git rev-parse --show-toplevel)"
 origin_url="$(git -C "$repo_root" remote get-url origin)"
 owner_repo="$(parse_owner_repo "$origin_url")" \
-  || { echo "cannot derive owner/repo from origin: $origin_url" >&2; exit 1; }
+  || gh_app_die "cannot derive owner/repo from origin: $origin_url"
 
 bot_name="${GITHUB_APP_SLUG}[bot]"
 bot_email="${GITHUB_APP_BOT_USER_ID}+${GITHUB_APP_SLUG}[bot]@users.noreply.github.com"
 helper="$dir/git-credential-github-app.sh"
 
-git -C "$repo_root" config user.name  "$bot_name"
-git -C "$repo_root" config user.email "$bot_email"
+git -C "$repo_root" config --local user.name  "$bot_name"
+git -C "$repo_root" config --local user.email "$bot_email"
 git -C "$repo_root" remote set-url origin "https://github.com/${owner_repo}.git"
-git -C "$repo_root" config credential.https://github.com.helper "$helper"
-git -C "$repo_root" config credential.https://github.com.useHttpPath false
-git -C "$repo_root" config gh-app.enabled true
 
-echo "Enabled GitHub App identity for ${owner_repo}:"
+# git collects credential helpers system -> global -> local and uses the FIRST
+# that answers. `gh auth login` writes a github.com helper into ~/.gitconfig and
+# macOS ships osxkeychain in the system config, so simply appending ours would
+# leave it unreachable and push as the personal account. An empty value resets
+# the accumulated list, making ours the only helper for this host.
+git -C "$repo_root" config --local --unset-all credential.https://github.com.helper 2>/dev/null || true
+git -C "$repo_root" config --local --add credential.https://github.com.helper ""
+git -C "$repo_root" config --local --add credential.https://github.com.helper "$helper --profile $profile"
+git -C "$repo_root" config --local credential.https://github.com.useHttpPath false
+
+git -C "$repo_root" config --local gh-app.profile "$profile"
+git -C "$repo_root" config --local --unset-all gh-app.enabled 2>/dev/null || true
+
+echo "Enabled GitHub App identity '$profile' for ${owner_repo}:"
 echo "  commit identity: $bot_name <$bot_email>"
-echo "  origin over HTTPS + credential helper: $helper"
-echo "  gh-app.enabled = true (the gh shim will act as the App here)"
+echo "  origin over HTTPS, credential helper reset to: $helper --profile $profile"
+echo "  gh-app.profile = $profile (gh and git push act as this App here)"
+echo "  verify with: gh-app-status.sh"
