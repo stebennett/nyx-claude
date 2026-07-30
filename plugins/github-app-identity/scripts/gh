@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Directory-aware `gh` shim. Inside a repo that opted into GitHub App identity
-# (`git config gh-app.enabled` == true), run gh authenticated as the App, aborting
+# Directory-aware `gh` shim. Inside a repo that opted into a GitHub App identity
+# (`git config gh-app.profile <name>`), run gh authenticated as that profile's App, aborting
 # rather than falling back to personal auth on token failure. Everywhere else, pass
-# through to the real gh unchanged. See the github-app-identity setup runbook.
+# through to the real gh unchanged. A repo carrying only the legacy `gh-app.enabled`
+# marker (no `gh-app.profile`) is treated as broken config and aborts — see
+# gh_app_resolve_profile in gh-app-common.sh. See the github-app-identity setup runbook.
 set -euo pipefail
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

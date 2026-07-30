@@ -423,9 +423,10 @@ A downgraded review loses the verdict from GitHub's review *state* — this is e
 the hidden marker, `<!-- pr-reviewer: verdict=<approve|request-changes|park> round=<n>
 sha=<short_sha> -->`, is the first line of the body and the authoritative record step 4
 reads back, never the GitHub review `state` field. Installing this repo's
-**github-app-identity** plugin gives `gh` a distinct App identity, so real `APPROVE` and
-`REQUEST_CHANGES` records post even on your own PRs — worth doing wherever this skill might
-review its own author's work.
+**github-app-identity** plugin and giving the reviewer clone its own profile (a different App
+from the one the build agent commits under) makes `pr-reviewer` post as a distinct account, so
+real `APPROVE` and `REQUEST_CHANGES` records post even on your own PRs — worth doing wherever
+this skill might review its own author's work.
 
 **Inline-comment robustness.** A single comment anchored outside the diff 422s the *entire*
 review POST — an unattended pass must not lose a whole review to one bad line number. On a

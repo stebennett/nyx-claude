@@ -1,28 +1,47 @@
 # github-app-identity
 
-Give local automation (Claude Code, agents, your own scripts) a dedicated **GitHub App**
-identity instead of your personal credentials — inside repos you opt in, with no silent
-fallback to personal auth.
+Give local automation (Claude Code, agents, your own scripts) dedicated **GitHub App**
+identities instead of your personal credentials — several of them, one per clone, with no
+silent fallback to personal auth.
+
+Typical use: a build clone commits and pushes as one bot, a review clone reviews and merges as
+another. Because GitHub rejects an `APPROVE` from a pull request's own author, two identities
+are what make a real review verdict possible.
 
 ## How it works
 
-- A global **`gh` shim** on `PATH` is directory-aware: inside a repo with
-  `git config gh-app.enabled true`, it mints a short-lived App installation token and runs
-  the real `gh` as the App; everywhere else it passes straight through. If the token can't be
+- Each identity is a **profile**: one env file under `~/.config/gh-app/profiles/<name>.env`
+  naming a GitHub App, its installation, and its key. Each identity needs its own App.
+- A clone opts in with `git config --local gh-app.profile <name>`. A global `gh` **shim** on
+  `PATH` reads that marker, mints a short-lived installation token for that profile, and runs
+  the real `gh` as the App. Everywhere else it passes straight through. If the token cannot be
   minted it **aborts** rather than fall back to your personal identity.
-- A **git credential helper** does the same for `git push`/`fetch` over HTTPS.
-- Bot-authored commits come from per-repo git config (`user.name`/`user.email`).
+- A **git credential helper** does the same for `git push`/`fetch` over HTTPS. Enabling a repo
+  resets the credential helper list first, so helpers inherited from your global config
+  (`gh auth login`) or the system config (osxkeychain) cannot answer before it.
+- Bot-authored commits come from per-repo `user.name`/`user.email`.
+- Tokens are cached **per profile**, so two clones can never reuse each other's identity.
 
-All App-specific values live in one shared file, `~/.config/gh-app/github-app.env`
-(overridable via `$GITHUB_APP_ENV`), written once and shared by every repo.
+Identity is per clone, not per worktree: `git config --local` in a linked worktree resolves to
+the clone's shared config, so every worktree inherits the clone's identity. Two identities in
+one repository means two clones.
 
 ## Setup
 
-Run the `github-app-identity` skill and follow it:
+1. **Per identity:** `/github-app-identity:setup <profile>` — create the App (see
+   `templates/setup-runbook.md`), write `~/.config/gh-app/profiles/<profile>.env`, and put the
+   scripts on `PATH` with `scripts/install.sh`.
+2. **Per clone:** `/github-app-identity:enable <profile>` — bot identity, HTTPS origin,
+   credential helper reset, and the `gh-app.profile` marker.
 
-1. **Once per machine:** create the App (`templates/setup-runbook.md`), fill
-   `~/.config/gh-app/github-app.env`, then `scripts/install.sh` puts the scripts on `PATH`.
-2. **Per repo:** run `setup-github-app-git.sh` — sets the bot identity, switches `origin` to
-   HTTPS, registers the credential helper, and sets the `gh-app.enabled` marker.
+## Checking
 
-Commits are bot-authored (not cryptographically "Verified"). GitHub Actions CI is out of scope.
+```bash
+gh-app-status.sh    # which bot am I here, and can it actually see this repo?
+```
+
+An auth failure means setup is incomplete. Fix the setup — never work around it with personal
+credentials or `gh auth login`.
+
+Commits are bot-authored (not cryptographically "Verified"). GitHub Actions CI is out of scope:
+use `actions/create-github-app-token` there.

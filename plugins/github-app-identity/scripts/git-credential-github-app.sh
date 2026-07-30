@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # git credential helper: supplies a GitHub App installation token for HTTPS git ops.
 # Configured by setup-github-app-git.sh as:
-#   credential.https://github.com.helper = <abs path> --profile <name>
-# git appends the operation (get/store/erase) as the LAST argument, so the
-# profile has to be scanned for rather than read from $1.
+#   credential.https://github.com.helper = !"<abs path>/git-credential-github-app.sh" --profile <name>
+# The leading "!" forces git to run the value through a shell, which is the only form
+# that survives a space anywhere in the plugin's install path. git appends the
+# operation (get/store/erase) as the LAST argument, so the profile has to be scanned
+# for rather than read from $1.
 set -euo pipefail
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=gh-app-common.sh
