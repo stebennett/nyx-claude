@@ -100,13 +100,35 @@ esac
 # everything up to and including the LAST empty entry, then require the
 # FIRST survivor — the one git will actually try first — to be ours.
 #
+# Git honours TWO key names for this: the URL-scoped
+# credential.https://github.com.helper AND the generic credential.helper.
+# Stock macOS ships `[credential] helper = osxkeychain` in
+# /Library/Developer/CommandLineTools/usr/share/git-core/gitconfig — a
+# system file most users never touch, and never see in this repo's config.
+# Both key names feed ONE ordered list: git does not finish one key before
+# starting the other, it applies whichever entry it encounters first while
+# reading system -> global -> local, in file order. Reading only the
+# URL-scoped key (as this used to) is blind to a generic helper that answers
+# before ours ever gets a turn — verified against git 2.50.1 with `git
+# credential fill`: a generic helper ahead of a reset-less URL-scoped one
+# wins the fill, exactly the state this must catch.
+#
+# `git config --list` walks config files in that same resolution order and
+# preserves line order within each file across every key name, so filtering
+# its output to just these two keys — without re-sorting — reproduces git's
+# real merged order. (A naive "read one key via --get-all, then the other,
+# concatenate" would not: it would group all URL-scoped entries together
+# regardless of where the generic entries actually fall in file order.)
+#
 # The value setup-github-app-git.sh writes carries a leading "!" and
 # double-quotes the path (e.g. !"/path/git-credential-github-app.sh"
 # --profile <name>): the "!" forces git to run it through a shell, which is
 # what makes it survive a space in the plugin path. Require that exact
 # shape, not just a substring match, so a helper that would silently fail to
 # run is still flagged here.
-helpers="$(git -C "$repo_root" config --get-all credential.https://github.com.helper 2>/dev/null || true)"
+helpers="$(git -C "$repo_root" config --list 2>/dev/null | sed -nE \
+  -e 's/^credential\.helper=(.*)$/\1/p' \
+  -e 's#^credential\.https://github\.com\.helper=(.*)$#\1#p')"
 if [ -z "$helpers" ]; then
   first_survivor=""
 else

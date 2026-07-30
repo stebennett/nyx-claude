@@ -168,6 +168,37 @@ fi
 echo "$out" | grep -qi 'credential helper' \
   || { echo "FAIL: missing-reset credential helper problem not named: $out" >&2; exit 1; }
 
+# --- a generic credential.helper (the key stock macOS ships as
+# `[credential] helper = osxkeychain` in
+# /Library/Developer/CommandLineTools/usr/share/git-core/gitconfig) that
+# answers ahead of ours must be caught even when the URL-scoped key alone
+# looks perfectly healthy. Git merges BOTH key names — the generic
+# credential.helper and the URL-scoped credential.https://github.com.helper
+# — into one ordered list and tries whichever it finds first while reading
+# system -> global -> local; here the generic one lives in an isolated
+# system config, so it is tried before our URL-scoped entry ever gets a
+# turn. Checking only the URL-scoped key (as this used to) sees a single,
+# correctly-shaped entry with nothing to reset and reports OK, even though
+# `git credential fill` would answer with the generic helper's identity
+# instead — a clone that authenticates as whoever the generic helper serves,
+# reported healthy. This is the same failure the "no reset" case above
+# covers for the URL-scoped key alone, but for the generic key it takes no
+# hand-deleted reset to trigger: the generic key was simply never checked.
+genericsys="$work/genericsys-repo"; mkdir -p "$genericsys"
+( cd "$genericsys" && git init -q . \
+  && git remote add origin https://github.com/acme/widget.git \
+  && git config --local gh-app.profile pr-reviewer \
+  && git config --local user.name  "my-reviewer[bot]" \
+  && git config --local user.email "4242+my-reviewer[bot]@users.noreply.github.com" \
+  && git config --local --add credential.https://github.com.helper "$helper_value" )
+genericsys_system="$work/genericsys-system.gitconfig"
+printf '[credential]\n\thelper = personal-generic-helper\n' > "$genericsys_system"
+if out="$(run "$genericsys" GH_APP_CURL="$ok" GIT_CONFIG_SYSTEM="$genericsys_system" GIT_CONFIG_GLOBAL="$empty_global" 2>&1)"; then
+  echo "FAIL: a generic credential.helper ahead of ours reported healthy: $out" >&2; exit 1
+fi
+echo "$out" | grep -qi 'credential helper' \
+  || { echo "FAIL: generic credential.helper problem not named: $out" >&2; exit 1; }
+
 # --- legacy config aborts ---
 legacy="$work/legacy"; mkdir -p "$legacy"
 ( cd "$legacy" && git init -q . && git config --local gh-app.enabled true )
