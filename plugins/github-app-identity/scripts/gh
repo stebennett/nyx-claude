@@ -6,6 +6,8 @@
 set -euo pipefail
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=gh-app-common.sh
+. "$dir/gh-app-common.sh"
 
 # Resolve the real gh: the first gh on PATH that is not this shim (overridable for tests).
 resolve_real_gh() {
@@ -24,23 +26,16 @@ resolve_real_gh() {
 
 real_gh="$(resolve_real_gh)"
 
-# Opted in? Only inside a git repo with the marker set true (or forced for tests).
-enabled=false
-if [[ "${GH_APP_ENABLED_OVERRIDE:-}" == "true" ]]; then
-  enabled=true
-elif git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-     && [[ "$(git config --local --get gh-app.enabled 2>/dev/null || true)" == "true" ]]; then
-  enabled=true
-fi
-
-if [[ "$enabled" != "true" ]]; then
+# Which identity governs this directory? Empty means pass through untouched.
+profile="$(gh_app_resolve_profile)" || exit 1
+if [ -z "$profile" ]; then
   exec "$real_gh" "$@"
 fi
 
-token="$("${GITHUB_APP_TOKEN_CMD:-$dir/github-app-token.sh}")"
-if [[ -z "$token" ]]; then
-  echo "gh-app shim: refusing to run — empty GitHub App token (would fall back to personal auth)." >&2
-  exit 1
-fi
-[[ -n "${GH_APP_DEBUG:-}" ]] && echo "gh-app shim: running gh as the App" >&2
+token="$("${GITHUB_APP_TOKEN_CMD:-$dir/github-app-token.sh}" --profile "$profile")" \
+  || gh_app_die "could not mint a token for profile '$profile'. $GH_APP_DOCTRINE"
+[ -n "$token" ] \
+  || gh_app_die "empty token for profile '$profile' — refusing to run, because gh would fall back to personal auth. $GH_APP_DOCTRINE"
+
+[ -n "${GH_APP_DEBUG:-}" ] && echo "gh-app shim: running gh as profile '$profile'" >&2
 GH_TOKEN="$token" exec "$real_gh" "$@"
