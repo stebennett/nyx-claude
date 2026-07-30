@@ -12,7 +12,8 @@ dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 profile=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --profile)   profile="${2:-}"; shift 2 ;;
+    --profile)   [ $# -ge 2 ] || gh_app_die "--profile requires a value (usage: github-app-token.sh --profile <name>)"
+                 profile="$2"; shift 2 ;;
     --profile=*) profile="${1#--profile=}"; shift ;;
     *) gh_app_die "unknown argument '$1' (usage: github-app-token.sh --profile <name>)" ;;
   esac

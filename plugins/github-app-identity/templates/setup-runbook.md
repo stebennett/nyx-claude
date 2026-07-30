@@ -93,9 +93,11 @@ in one repository means two clones.
 # a) inside an enabled clone, everything agrees and the App can see the repo
 gh-app-status.sh
 
-# b) git will actually use the App, not an inherited helper
+# b) inside an enabled clone, git will actually use the App, not an inherited helper
 printf 'protocol=https\nhost=github.com\n\n' | git credential fill | grep username
 #    expected: username=x-access-token
+#    (run outside an enabled clone and this prints your PERSONAL credentials —
+#    that is expected there, not a pass; only meaningful inside a clone from (a))
 
 # c) outside any enabled clone, gh is unchanged
 cd /tmp && gh auth status   # your personal identity, untouched
@@ -104,19 +106,24 @@ cd /tmp && gh auth status   # your personal identity, untouched
 ## Troubleshooting
 
 **`setup-github-app-git.sh` refuses with "this repo's HTTPS URL is rewritten ... by a
-url.\*.insteadOf rule".** A `url.<base>.insteadOf` rule in your git config (often from a
-personal dotfile) rewrites URLs before git uses them — for example
-`url.git@github.com:.insteadOf https://github.com/` turns the HTTPS origin this plugin just set
-back into an SSH URL. Pushes would then go out over SSH under your personal key, and the App
-credential helper would never be consulted at all — the repo would look configured for the App
-identity while every push was actually personal. `setup-github-app-git.sh` checks for this with
-`git ls-remote --get-url` *before* writing any config, and refuses rather than leave the repo
-half set up. `gh-app-status.sh` reports the same condition if a rule like this is added after
-the fact. The remedy is to narrow or remove the rule, e.g.:
+url.\*.insteadOf rule" (or "...insteadOf/pushInsteadOf rule(s)...").** A `url.<base>.insteadOf`
+or `url.<base>.pushInsteadOf` rule in your git config (often from a personal dotfile) rewrites
+URLs before git uses them — for example `url.git@github.com:.insteadOf https://github.com/`
+turns the HTTPS origin this plugin just set back into an SSH URL. `pushInsteadOf` does the same
+but only for pushes — a common dotfile idiom is "fetch over HTTPS, push over SSH" — and is
+easy to miss because plain `git remote get-url` and `git ls-remote --get-url` don't show it;
+only `git remote get-url --push` (what a real push actually uses) does. Either way, pushes go
+out under your personal key and the App credential helper is never consulted — the repo looks
+configured for the App identity while every push is actually personal. `setup-github-app-git.sh`
+checks for both with `git ls-remote --get-url` *and* a direct scan of `url.*.insteadof` /
+`url.*.pushinsteadof` config entries, before writing any config, and refuses rather than leave
+the repo half set up. `gh-app-status.sh` reports the same condition (for either rewrite kind) if
+a rule like this is added after the fact. The remedy is to narrow or remove the rule, e.g.:
 
 ```bash
 git config --global --unset-all url.<base>.insteadof
-# or scope it to the hosts that actually need it instead of removing it outright
+git config --global --unset-all url.<base>.pushinsteadof
+# or scope either to the hosts that actually need it instead of removing it outright
 ```
 
 Then re-run `setup-github-app-git.sh <profile>`.

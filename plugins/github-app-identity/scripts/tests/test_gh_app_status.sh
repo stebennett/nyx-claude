@@ -125,6 +125,49 @@ echo "$out" | grep -qi 'insteadof' \
 echo "$out" | grep -q 'git@github.com:acme/widget.git' \
   || { echo "FAIL: rewritten effective URL not reported: $out" >&2; exit 1; }
 
+# --- a pushInsteadOf rewrite of a configured HTTPS origin is caught too,
+# even though it is invisible to `ls-remote --get-url` / plain `remote
+# get-url` (verified against git 2.50.1: both still report the clean HTTPS
+# URL under this rule; only `remote get-url --push`, which status now also
+# probes, shows the rewrite). This is the commoner "fetch over HTTPS, push
+# over SSH" dotfile idiom.
+pushinstead="$work/pushinsteadof-repo"; mkdir -p "$pushinstead"
+( cd "$pushinstead" && git init -q . \
+  && git remote add origin https://github.com/acme/widget.git \
+  && git config --local gh-app.profile pr-reviewer \
+  && git config --local user.name  "my-reviewer[bot]" \
+  && git config --local user.email "4242+my-reviewer[bot]@users.noreply.github.com" \
+  && git config --local --add credential.https://github.com.helper "" \
+  && git config --local --add credential.https://github.com.helper "$helper_value" )
+pushinsteadof_global="$work/pushinsteadof-global.gitconfig"
+printf '[url "git@github.com:"]\n\tpushInsteadOf = https://github.com/\n' > "$pushinsteadof_global"
+if out="$(run "$pushinstead" GH_APP_CURL="$ok" GIT_CONFIG_GLOBAL="$pushinsteadof_global" GIT_CONFIG_SYSTEM="$empty_system" 2>&1)"; then
+  echo "FAIL: pushInsteadOf rewrite of the origin reported healthy: $out" >&2; exit 1
+fi
+echo "$out" | grep -qi 'pushinsteadof\|push.*rewrit\|pushInsteadOf' \
+  || { echo "FAIL: pushInsteadOf rewrite not named as the problem: $out" >&2; exit 1; }
+echo "$out" | grep -q 'git@github.com:acme/widget.git' \
+  || { echo "FAIL: rewritten push URL not reported: $out" >&2; exit 1; }
+
+# --- a personal credential helper configured ahead of ours, with no reset
+# in front of it, must be reported: git tries helpers in order and uses the
+# first one that answers, so checking only the LAST configured helper line
+# (as this used to) misses a clone where the empty-reset entry was deleted
+# or a migration only partially applied — exactly the state this guards.
+noreset="$work/noreset-repo"; mkdir -p "$noreset"
+( cd "$noreset" && git init -q . \
+  && git remote add origin https://github.com/acme/widget.git \
+  && git config --local gh-app.profile pr-reviewer \
+  && git config --local user.name  "my-reviewer[bot]" \
+  && git config --local user.email "4242+my-reviewer[bot]@users.noreply.github.com" \
+  && git config --local --add credential.https://github.com.helper "personal-helper --some-flag" \
+  && git config --local --add credential.https://github.com.helper "$helper_value" )
+if out="$(run "$noreset" GH_APP_CURL="$ok" 2>&1)"; then
+  echo "FAIL: a personal helper ahead of ours with no reset reported healthy: $out" >&2; exit 1
+fi
+echo "$out" | grep -qi 'credential helper' \
+  || { echo "FAIL: missing-reset credential helper problem not named: $out" >&2; exit 1; }
+
 # --- legacy config aborts ---
 legacy="$work/legacy"; mkdir -p "$legacy"
 ( cd "$legacy" && git init -q . && git config --local gh-app.enabled true )

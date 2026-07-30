@@ -23,14 +23,15 @@ if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -d "$CLAUDE_PLUGIN_ROOT" ]; then
 elif [ -d "plugins/github-app-identity" ]; then
   PLUGIN_ROOT="plugins/github-app-identity"
 else
-  echo "github-app-identity plugin not found. Where is it installed?"
-  read -r PLUGIN_ROOT
-  if [ ! -d "$PLUGIN_ROOT" ]; then
-    echo "Not a directory: $PLUGIN_ROOT"
-    exit 1
-  fi
+  echo "github-app-identity plugin not found in either location."
 fi
 ```
+
+These steps run via the Bash tool, which has no stdin — a shell `read` here would always
+resolve empty and never actually ask anyone. If `PLUGIN_ROOT` is still unset after the check
+above, **ask the user directly** (a normal conversational question, not a shell prompt) where
+the plugin is installed. Once they answer, verify it's a directory before continuing; if it
+isn't, report that and stop.
 
 Every step below uses `$PLUGIN_ROOT` to find the plugin's templates and scripts.
 

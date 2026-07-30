@@ -60,6 +60,14 @@ fi
 # back into SSH, the credential helper is never consulted and pushes go out
 # under the personal identity, even though everything else here looks fine.
 # `git ls-remote --get-url` applies insteadOf resolution and needs no network.
+# `ls-remote --get-url` only resolves `insteadOf`, which applies to every
+# operation. `pushInsteadOf` rewrites pushes only and is invisible to it:
+# verified against git 2.50.1, a global `pushInsteadOf` rule leaves
+# `ls-remote --get-url` (and plain `remote get-url`) reporting the clean
+# HTTPS origin while `remote get-url --push` (what a real push actually
+# uses) is rewritten to SSH. Probe that directly, as a distinct condition
+# nested under the insteadOf check so the two rewrite kinds aren't double
+# counted when both happen to apply.
 configured_origin="$(git -C "$repo_root" config --get remote.origin.url 2>/dev/null || true)"
 effective_origin="$(git -C "$repo_root" ls-remote --get-url origin 2>/dev/null || true)"
 case "$configured_origin" in
@@ -67,26 +75,56 @@ case "$configured_origin" in
     if [ "$effective_origin" != "$configured_origin" ]; then
       bad "origin" "configured as '$configured_origin' but a url.*.insteadOf rule rewrites it to '$effective_origin' — pushes would bypass the App credential helper and go out as your personal identity"
     else
-      note "origin" "$configured_origin"
+      push_origin="$(git -C "$repo_root" remote get-url --push origin 2>/dev/null || true)"
+      if [ "$push_origin" != "$configured_origin" ]; then
+        bad "origin" "configured as '$configured_origin' but a url.*.pushInsteadOf rule rewrites pushes to '$push_origin' — pushes would bypass the App credential helper and go out as your personal identity"
+      else
+        note "origin" "$configured_origin"
+      fi
     fi
     ;;
   "") bad "origin" "no origin remote" ;;
   *)  bad "origin" "'$configured_origin' is not HTTPS — pushes bypass the App credential helper" ;;
 esac
 
-# --- the effective helper list, as git will actually apply it. The value
-# setup-github-app-git.sh writes carries a leading "!" and double-quotes the
-# path (e.g. !"/path/git-credential-github-app.sh" --profile <name>): the "!"
-# forces git to run it through a shell, which is what makes it survive a
-# space in the plugin path. Require that exact shape, not just a substring
-# match, so a helper that would silently fail to run is still flagged here.
+# --- the effective helper list, as git will actually apply it. Git tries
+# helpers in configured order (system -> global -> local) and uses the FIRST
+# one that answers — an empty value resets the accumulated list, which is
+# what setup-github-app-git.sh relies on to make ours win over an inherited
+# personal helper. Checking only the LAST configured line (as this used to)
+# proves a helper was appended, but not that the reset in front of it is
+# still there: a clone where someone deleted the empty-reset line, or a
+# partially-applied migration, would still show our helper last while a
+# personal helper (earlier in the list, never reset) answers first — and
+# this check would report OK. Reproduce git's own reduction instead: drop
+# everything up to and including the LAST empty entry, then require the
+# FIRST survivor — the one git will actually try first — to be ours.
+#
+# The value setup-github-app-git.sh writes carries a leading "!" and
+# double-quotes the path (e.g. !"/path/git-credential-github-app.sh"
+# --profile <name>): the "!" forces git to run it through a shell, which is
+# what makes it survive a space in the plugin path. Require that exact
+# shape, not just a substring match, so a helper that would silently fail to
+# run is still flagged here.
 helpers="$(git -C "$repo_root" config --get-all credential.https://github.com.helper 2>/dev/null || true)"
-last_helper="$(printf '%s\n' "$helpers" | sed -n '$p')"
-case "$last_helper" in
+if [ -z "$helpers" ]; then
+  first_survivor=""
+else
+  last_empty_line=0
+  line_no=0
+  while IFS= read -r helper_line; do
+    line_no=$((line_no + 1))
+    [ -z "$helper_line" ] && last_empty_line=$line_no
+  done <<EOF
+$helpers
+EOF
+  first_survivor="$(printf '%s\n' "$helpers" | sed -n "$((last_empty_line + 1))p")"
+fi
+case "$first_survivor" in
   '!"'*'git-credential-github-app.sh" --profile '"$profile")
-    note "credential helper" "$last_helper" ;;
+    note "credential helper" "$first_survivor" ;;
   *)
-    bad "credential helper" "last helper is '$last_helper', not this profile's App credential helper (expected the '!\"...\"' quoted form) — re-run setup-github-app-git.sh $profile" ;;
+    bad "credential helper" "the first helper git will try is '$first_survivor', not this profile's App credential helper (expected the '!\"...\"' quoted form) — a personal helper may run first, or the reset that should precede ours is missing. re-run setup-github-app-git.sh $profile" ;;
 esac
 
 # --- live check: can this App actually see this repository? ---
@@ -109,7 +147,7 @@ else
       "https://api.github.com/repos/${owner_repo}" 2>/dev/null || echo 000 )"
   case "$code" in
     200) note "repo access" "$owner_repo (App installation confirmed)" ;;
-    404) bad "repo access" "$owner_repo is not visible to this App — install '${GITHUB_APP_SLUG}' on it" ;;
+    404) bad "repo access" "$owner_repo is not visible to this App — install '${GITHUB_APP_SLUG:-<unset>}' on it" ;;
     401) bad "repo access" "token rejected (401) — check the App id and private key in $GH_APP_PROFILE_FILE" ;;
     *)   bad "repo access" "unexpected HTTP $code checking $owner_repo" ;;
   esac
@@ -120,4 +158,4 @@ if [ "$problems" -ne 0 ]; then
   echo "gh-app: $GH_APP_DOCTRINE"
   exit 1
 fi
-echo "gh-app: OK — this clone acts as ${GITHUB_APP_SLUG}[bot] via profile '$profile'."
+echo "gh-app: OK — this clone acts as ${GITHUB_APP_SLUG:-<unset>}[bot] via profile '$profile'."

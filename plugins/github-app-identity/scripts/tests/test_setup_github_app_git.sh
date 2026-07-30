@@ -168,4 +168,30 @@ fi
 [[ "$(git -C "$repo2" remote get-url origin)" == "git@github.com:acme/widget.git" ]] \
   || { echo "FAIL: pre-flight refusal should leave origin untouched" >&2; exit 1; }
 
-echo "PASS: per-repo setup writes the profile, is idempotent, beats inherited helpers, and refuses an insteadOf rewrite"
+# --- PRE-FLIGHT: an inherited pushInsteadOf rewrite is refused too ---
+# pushInsteadOf rewrites pushes only, so it is invisible to `ls-remote
+# --get-url` (verified against git 2.50.1: that command still reports the
+# clean HTTPS URL under this rule; only `remote get-url --push` shows the
+# rewrite). This is the commoner "fetch over HTTPS, push over SSH" dotfile
+# idiom, and setup must refuse it via the direct config scan, not just the
+# ls-remote comparison.
+repo3="$work/repo-pushinsteadof"; mkdir -p "$repo3"
+( cd "$repo3" && git init -q . && git remote add origin git@github.com:acme/widget.git )
+
+pushinsteadof_global="$work/pushinsteadof-global.gitconfig"
+printf '[url "git@github.com:"]\n\tpushInsteadOf = https://github.com/\n' > "$pushinsteadof_global"
+
+if ( cd "$repo3" && GH_APP_PROFILE_DIR="$profiles" GIT_CONFIG_GLOBAL="$pushinsteadof_global" bash "$setup" pr-reviewer ) \
+    >/dev/null 2>&1; then
+  echo "FAIL: setup should refuse when a pushInsteadOf rule rewrites the HTTPS origin" >&2; exit 1
+fi
+if git -C "$repo3" config --local --get gh-app.profile >/dev/null 2>&1; then
+  echo "FAIL: pushInsteadOf pre-flight refusal still left gh-app.profile set — repo not left unmutated" >&2; exit 1
+fi
+if git -C "$repo3" config --local --get user.name >/dev/null 2>&1; then
+  echo "FAIL: pushInsteadOf pre-flight refusal still left user.name set — repo not left unmutated" >&2; exit 1
+fi
+[[ "$(git -C "$repo3" remote get-url origin)" == "git@github.com:acme/widget.git" ]] \
+  || { echo "FAIL: pushInsteadOf pre-flight refusal should leave origin untouched" >&2; exit 1; }
+
+echo "PASS: per-repo setup writes the profile, is idempotent, beats inherited helpers, and refuses insteadOf/pushInsteadOf rewrites"

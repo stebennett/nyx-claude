@@ -56,6 +56,35 @@ Pushes would go out over SSH as your personal identity and never reach the App c
 Remove or narrow that rule (e.g. git config --global --unset-all url.<base>.insteadof), then re-run."
 fi
 
+# `ls-remote --get-url` (above) only resolves `insteadOf`, which applies to
+# every operation. `pushInsteadOf` rewrites pushes only and is invisible to
+# it: verified against git 2.50.1, a global `pushInsteadOf` rule leaves
+# `ls-remote --get-url` reporting the clean HTTPS URL while `git remote
+# get-url --push` (what a real push actually uses) is rewritten to SSH. Scan
+# the config directly for both rewrite keys and check whether any rule's
+# value is a prefix of our target HTTPS URL — belt and braces alongside the
+# ls-remote check above, not a replacement for it.
+rewrite_rules="$(git config --get-regexp '^url\..*\.(push)?insteadof$' 2>/dev/null || true)"
+if [ -n "$rewrite_rules" ]; then
+  offending=""
+  while IFS= read -r rule_line; do
+    [ -n "$rule_line" ] || continue
+    rule_key="${rule_line%% *}"
+    rule_value="${rule_line#* }"
+    case "$https_url" in
+      "$rule_value"*) offending="${offending}${rule_key} = ${rule_value}
+" ;;
+    esac
+  done <<EOF
+$rewrite_rules
+EOF
+  if [ -n "$offending" ]; then
+    gh_app_die "this repo's HTTPS URL would be rewritten by url.*.insteadOf/pushInsteadOf rule(s) in your git config:
+${offending}Pushes (pushInsteadOf) or all operations (insteadOf) would go out under the rewritten base and never reach the App credential helper.
+Remove or narrow the rule(s) (e.g. git config --global --unset-all url.<base>.insteadof, or ...pushinsteadof), then re-run."
+  fi
+fi
+
 bot_name="${GITHUB_APP_SLUG}[bot]"
 bot_email="${GITHUB_APP_BOT_USER_ID}+${GITHUB_APP_SLUG}[bot]@users.noreply.github.com"
 helper="$dir/git-credential-github-app.sh"
