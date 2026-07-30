@@ -17,7 +17,7 @@
     {
       "name": "github-app-identity",
       "source": "./plugins/github-app-identity",
-      "description": "Give local automation a dedicated GitHub App identity: a directory-aware gh shim, token minter, and git credential helper make commits/pushes/gh act as the App inside opted-in repos, never falling back to personal credentials."
+      "description": "Give local automation dedicated GitHub App identities — one profile per bot, selected per clone: a directory-aware gh shim, token minter, and git credential helper make commits/pushes/gh act as the App, never falling back to personal credentials."
     },
     {
       "name": "productivity",

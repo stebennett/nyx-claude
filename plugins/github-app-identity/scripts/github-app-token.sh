@@ -1,18 +1,30 @@
 #!/usr/bin/env bash
 # Mint (and cache) a GitHub App installation access token, printed to stdout.
-# Config is read from $GITHUB_APP_ENV (default ~/.config/gh-app/github-app.env)
-# or the process environment. See the github-app-identity setup runbook.
+#   github-app-token.sh --profile <name>
+# Profile config comes from $GH_APP_PROFILE_DIR/<name>.env; tokens are cached
+# per profile so two identities can never reuse each other's token.
 set -euo pipefail
 
-env_file="${GITHUB_APP_ENV:-$HOME/.config/gh-app/github-app.env}"
-if [[ -f "$env_file" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$env_file"
-  set +a
-fi
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=gh-app-common.sh
+. "$dir/gh-app-common.sh"
 
-cache_file="${GITHUB_APP_TOKEN_CACHE:-$HOME/.cache/gh-app/github-app-token.json}"
+profile=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --profile)   [ $# -ge 2 ] || gh_app_die "--profile requires a value (usage: github-app-token.sh --profile <name>)"
+                 profile="$2"; shift 2 ;;
+    --profile=*) profile="${1#--profile=}"; shift ;;
+    *) gh_app_die "unknown argument '$1' (usage: github-app-token.sh --profile <name>)" ;;
+  esac
+done
+[ -n "$profile" ] || gh_app_die "--profile <name> is required (usage: github-app-token.sh --profile <name>)"
+
+# Load before touching the cache: a deleted or mistyped profile must error
+# rather than quietly serve a token minted under some other identity.
+gh_app_load_profile "$profile"
+
+cache_file="$(gh_app_cache_dir)/token-$profile.json"
 
 # --- Reuse a cached token while > 5 min of life remains (no config/network needed). ---
 if [[ -f "$cache_file" ]]; then
@@ -33,9 +45,9 @@ PY
 fi
 
 # --- Mint a fresh token. ---
-: "${GITHUB_APP_ID:?GITHUB_APP_ID not set (see the github-app-identity setup runbook)}"
-: "${GITHUB_APP_INSTALLATION_ID:?GITHUB_APP_INSTALLATION_ID not set}"
-: "${GITHUB_APP_PRIVATE_KEY_PATH:?GITHUB_APP_PRIVATE_KEY_PATH not set}"
+: "${GITHUB_APP_ID:?GITHUB_APP_ID not set in $GH_APP_PROFILE_FILE}"
+: "${GITHUB_APP_INSTALLATION_ID:?GITHUB_APP_INSTALLATION_ID not set in $GH_APP_PROFILE_FILE}"
+: "${GITHUB_APP_PRIVATE_KEY_PATH:?GITHUB_APP_PRIVATE_KEY_PATH not set in $GH_APP_PROFILE_FILE}"
 
 b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 
@@ -61,7 +73,9 @@ if "token" not in d:
 exp = calendar.timegm(time.strptime(d["expires_at"], "%Y-%m-%dT%H:%M:%SZ"))
 print(d["token"], exp)
 '
-) || { echo "Failed to mint installation token. Response: $response" >&2; exit 1; }
+) || { echo "gh-app: failed to mint an installation token for profile '$profile'. Response: $response" >&2
+       echo "gh-app: $GH_APP_DOCTRINE" >&2
+       exit 1; }
 
 umask 077
 mkdir -p "$(dirname "$cache_file")"

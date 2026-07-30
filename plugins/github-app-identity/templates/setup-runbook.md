@@ -1,8 +1,9 @@
 # GitHub App identity — setup runbook
 
-One-time, human-run setup so local automation (Claude Code, agents, your scripts) acts as a
-dedicated **GitHub App** inside repos you opt in. Scope is local tooling only (not GitHub
-Actions — see the end).
+One-time, human-run setup so local automation (Claude Code, agents, your scripts) acts as
+dedicated **GitHub Apps** inside clones you opt in. Each bot identity is a **profile** backed
+by its own App — run sections 1–5 once per identity, then section 7 once per clone. Scope is
+local tooling only (not GitHub Actions — see the end).
 
 ## 1. Create the App
 
@@ -11,8 +12,9 @@ GitHub → Settings → Developer settings → **GitHub Apps** → **New GitHub 
 - **Name:** anything (note the resulting **slug** in the App URL, e.g. `my-bot`).
 - **Homepage URL:** any URL you own.
 - **Webhook:** **uncheck Active** (not needed for local use).
-- **Repository permissions:** **Contents → Read & write**, **Pull requests → Read & write**,
-  **Metadata → Read-only**. No account permissions.
+- **Repository permissions:** grant what this identity's role actually needs. `Metadata:
+  Read-only` is always required. Beyond that it depends on what the agent does, so decide per
+  App rather than copying a recipe.
 - **Where can this app be installed:** Only on this account.
 
 Create it, then note the **App ID** on the settings page.
@@ -24,9 +26,11 @@ outside any repo:
 
 ```bash
 mkdir -p ~/.config/gh-app
-mv ~/Downloads/<app-slug>.*.private-key.pem ~/.config/gh-app/app.pem
-chmod 600 ~/.config/gh-app/app.pem
+mv ~/Downloads/<app-slug>.*.private-key.pem ~/.config/gh-app/<profile>.pem
+chmod 600 ~/.config/gh-app/<profile>.pem
 ```
+
+Naming the key after the profile keeps two Apps from colliding on one filename.
 
 ## 3. Install the App on your account
 
@@ -46,12 +50,16 @@ gh api /users/<app-slug>[bot] --jq .id
 
 This numeric id builds the commit email `<id>+<app-slug>[bot]@users.noreply.github.com`.
 
-## 5. Write the shared config
+## 5. Write the profile
 
 ```bash
-cp templates/github-app.env.example ~/.config/gh-app/github-app.env
-$EDITOR ~/.config/gh-app/github-app.env   # fill in all five values
+mkdir -p ~/.config/gh-app/profiles
+cp templates/profile.env.example ~/.config/gh-app/profiles/<profile>.env
+$EDITOR ~/.config/gh-app/profiles/<profile>.env   # fill in all five values
 ```
+
+Profile names must match `^[A-Za-z0-9][A-Za-z0-9._-]*$` — `builder`, `pr-reviewer`. Repeat
+sections 1–5 for each identity you want.
 
 ## 6. Install the scripts on PATH (once per machine)
 
@@ -62,26 +70,79 @@ scripts/install.sh    # installs into ~/.local/bin (override with GH_APP_BIN=...
 Ensure the install dir precedes your real `gh` on `PATH` (`type -a gh` — the shim should be
 first). install.sh warns if not.
 
-## 7. Enable a repo
+## 7. Enable a clone
 
-Inside each repo you want to opt in:
+Inside each clone you want to opt in:
 
 ```bash
-setup-github-app-git.sh   # bot identity, HTTPS origin, credential helper, gh-app.enabled
+setup-github-app-git.sh <profile>   # bot identity, HTTPS origin, credential reset, marker
 ```
+
+This registers the credential helper as
+`!"<abs path>/git-credential-github-app.sh" --profile <profile>` — the leading `!` forces git
+to run the value through a shell, which is the only form that survives a space anywhere in the
+plugin's install path (verified against git 2.50.1: the unquoted and plain double-quoted forms
+both silently fail to produce credentials). It is the same shape `gh auth login` writes.
+
+Identity is per clone, not per worktree — every worktree of a clone inherits it. Two identities
+in one repository means two clones.
 
 ## 8. Verify
 
 ```bash
-# a) inside an enabled repo, gh authenticates as the App
-gh api /installation/repositories --jq '.repositories[].full_name'
+# a) inside an enabled clone, everything agrees and the App can see the repo
+gh-app-status.sh
 
-# b) commits are bot-authored
-git config user.name; git config user.email
+# b) inside an enabled clone, git will actually use the App, not an inherited helper
+printf 'protocol=https\nhost=github.com\n\n' | git credential fill | grep username
+#    expected: username=x-access-token
+#    (run outside an enabled clone and this prints your PERSONAL credentials —
+#    that is expected there, not a pass; only meaningful inside a clone from (a))
 
-# c) outside any enabled repo, gh is unchanged
+# c) outside any enabled clone, gh is unchanged
 cd /tmp && gh auth status   # your personal identity, untouched
 ```
+
+## Troubleshooting
+
+**`setup-github-app-git.sh` refuses with "this repo's HTTPS URL is rewritten ... by a
+url.\*.insteadOf rule" (or "...insteadOf/pushInsteadOf rule(s)...").** A `url.<base>.insteadOf`
+or `url.<base>.pushInsteadOf` rule in your git config (often from a personal dotfile) rewrites
+URLs before git uses them — for example `url.git@github.com:.insteadOf https://github.com/`
+turns the HTTPS origin this plugin just set back into an SSH URL. `pushInsteadOf` does the same
+but only for pushes — a common dotfile idiom is "fetch over HTTPS, push over SSH" — and is
+easy to miss because plain `git remote get-url` and `git ls-remote --get-url` don't show it;
+only `git remote get-url --push` (what a real push actually uses) does. Either way, pushes go
+out under your personal key and the App credential helper is never consulted — the repo looks
+configured for the App identity while every push is actually personal. `setup-github-app-git.sh`
+checks for both with `git ls-remote --get-url` *and* a direct scan of `url.*.insteadof` /
+`url.*.pushinsteadof` config entries, before writing any config, and refuses rather than leave
+the repo half set up. `gh-app-status.sh` reports the same condition (for either rewrite kind) if
+a rule like this is added after the fact. The remedy is to narrow or remove the rule, e.g.:
+
+```bash
+git config --global --unset-all url.<base>.insteadof
+git config --global --unset-all url.<base>.pushinsteadof
+# or scope either to the hosts that actually need it instead of removing it outright
+```
+
+Then re-run `setup-github-app-git.sh <profile>`.
+
+## Migrating from the single-App layout
+
+Earlier versions kept one App in `~/.config/gh-app/github-app.env` and marked repos with
+`gh-app.enabled`. To move:
+
+```bash
+mkdir -p ~/.config/gh-app/profiles
+mv ~/.config/gh-app/github-app.env ~/.config/gh-app/profiles/<profile>.env
+bash scripts/install.sh
+```
+
+Then, in every clone that was enabled: `setup-github-app-git.sh <profile>`.
+
+A clone you miss aborts on its next `gh` call — `gh-app.enabled` without `gh-app.profile` is
+treated as broken config, not as a reason to pass through to your personal identity.
 
 ## Future: GitHub Actions CI
 
