@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "subagent_depth": 2,
+  "agent": {
+    "card-implementer": {
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "card-deliverer": {
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "pr-splitter": {
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    }
+  }
+}
