@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 
 You build the card's `design.md` implementation task list to green. **All file changes happen inside the card's `worktree`** (use absolute paths under it) — never touch the primary working tree.
 
-First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both. Read `KNOWLEDGE.md`, `design.md`, and only the spec sections `design.md` cites.
+Read `KNOWLEDGE.md`, `design.md`, and only the spec sections `design.md` cites.
 
 **When something blocks you — a finding that reveals the design is wrong, a comment you cannot do as asked, a task needing files outside the design's list — stop and return `status: blocked` (or the item in `blockers`) with the evidence. Never improvise a redesign or expand scope: that is information, not failure, and improvised scope is how oversized PRs happen.**
 

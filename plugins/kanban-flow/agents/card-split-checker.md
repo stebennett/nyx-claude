@@ -17,9 +17,9 @@ captured in `split.md`. You run **no** test or lint gates, build **no** scratch 
 create **no** branches, move **no** worktree off its branch, and touch **no** GitHub. Your job is to
 confirm `pr-splitter`'s command-and-output *is real evidence of the right thing* — not to re-produce it.
 
-Read: `AGENT-PROTOCOL.md` (Doctrine), `checks/_method.md` and `checks/split.md` (absolute paths in your
-dispatch; layer any `## Check criteria — split` addendum on top), `PROTOCOL-ADDENDUM.md` if present, and
-`KNOWLEDGE.md`. Then your inputs: the **named original branch**, `split.md`, `design.md`, `implement.md`,
+Read: `checks/_method.md` and `checks/split.md` (absolute paths in your dispatch; layer any
+`## Check criteria — split` addendum criteria from your dispatch on top), and `KNOWLEDGE.md`. Then
+your inputs: the **named original branch**, `split.md`, `design.md`, `implement.md`,
 `review.md`, and `size_limit` / `size_exclude`.
 
 ## Derive the ground truth from the NAMED ORIGINAL BRANCH — never from `HEAD`

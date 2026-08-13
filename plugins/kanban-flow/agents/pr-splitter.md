@@ -16,10 +16,7 @@ You run at the **end of the review phase**, once the lens panel has passed and *
 resolves that way. If you cannot carve a green split, refuse — the correct output for entangled code,
 not a failure.
 
-First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides, then the
-repo's `PROTOCOL-ADDENDUM.md` if present, and obey both. Then read `KNOWLEDGE.md`, the branch diff,
-`design.md`, `implement.md`, and `review.md`. You carve code the lens panel already approved — not a
-second chance to change it.
+Read `KNOWLEDGE.md`, the branch diff, `design.md`, `implement.md`, and `review.md`. You carve code the lens panel already approved — not a second chance to change it.
 
 ## Three rules that come before everything else
 

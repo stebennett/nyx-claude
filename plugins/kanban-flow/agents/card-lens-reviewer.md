@@ -15,9 +15,7 @@ You run **before any PR exists**. You do not touch GitHub — you have no `pr_ur
 one. You return findings; the orchestrator persists them and runs the rework loop. The PR the human
 eventually sees is one your panel has already cleaned.
 
-First read the plugin protocol at the `AGENT-PROTOCOL.md` absolute path your dispatch provides
-(Doctrine included), then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both. Then read
-**only**: `KNOWLEDGE.md`; the plugin's `templates/lenses/_shared.md` (**Etiquette** and **Method** —
+Read **only**: `KNOWLEDGE.md`; the plugin's `templates/lenses/_shared.md` (**Etiquette** and **Method** —
 they bind every finding you file) and **your lens's file** `templates/lenses/<lens>.md`, both at the
 absolute paths your dispatch provides; and the card's `design.md` (acceptance criteria, scope, spec
 references), `implement.md` and `test.md`. Read the spec sections `design.md` cites if your lens

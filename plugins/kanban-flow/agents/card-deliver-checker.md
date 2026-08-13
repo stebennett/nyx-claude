@@ -17,9 +17,9 @@ ones (`DLV-BASE`, `DLV-CI`, `DLV-DOCS`) set the tone for them.
 You never comment, approve, request changes, resolve, react, push, or merge — `card-deliverer` is the
 only agent in this system that mutates GitHub, and you are not it.
 
-Read: `AGENT-PROTOCOL.md` (Doctrine), `checks/_method.md` and `checks/deliver.md` (absolute paths in
-your dispatch; layer any `## Check criteria — deliver` addendum on top), `PROTOCOL-ADDENDUM.md` if
-present, and `KNOWLEDGE.md`. Your dispatch gives you: `card.md`, the `pr_url`, the PR **mode**
+Read: `checks/_method.md` and `checks/deliver.md` (absolute paths in your dispatch; layer any
+`## Check criteria — deliver` addendum criteria from your dispatch on top), and `KNOWLEDGE.md`.
+Your dispatch gives you: `card.md`, the `pr_url`, the PR **mode**
 (`design` | `implementation`), the `worktree`, `gh_command`, `size_limit` and `size_exclude` (the
 ceiling and the exclusions for `DLV-SIZE`), the card's `estimated_lines` (what the slicer projected —
 you report actual against it), **and the `checks` policy** (which producers' checks are `on`: a check

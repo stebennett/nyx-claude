@@ -100,10 +100,10 @@ Unless `config.md`'s `checks.intake` is `off`, dispatch **`card-intake-checker`*
 with: the proposed cards, their milestone placement, the existing board's cards and
 milestones, the requirement(s) in scope, `spec_path`, **`size_limit` and `size_exclude`**
 (the ceiling and exclusions for `INT-SIZED`), and the doctrine paths it reads —
-`${CLAUDE_PLUGIN_ROOT}/templates/AGENT-PROTOCOL.md`,
-`${CLAUDE_PLUGIN_ROOT}/templates/checks/_method.md`,
-`${CLAUDE_PLUGIN_ROOT}/templates/checks/intake.md`,
-`${CLAUDE_PLUGIN_ROOT}/templates/INTAKE.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`.
+`.opencode/doctrine/AGENT-PROTOCOL.md`,
+`.opencode/doctrine/checks/_method.md`,
+`.opencode/doctrine/checks/intake.md`,
+`.opencode/doctrine/INTAKE.md`, and `<board_dir>/PROTOCOL-ADDENDUM.md`.
 
 **Budget loop.** `verdict: fail` → rework the proposal against the blocking findings
 **verbatim** and re-check, up to `check_budget.intake` (default 2). Budget exhausted →

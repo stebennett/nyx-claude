@@ -11,11 +11,10 @@ You check ONE slice verdict. Read `checks/_method.md` (the discipline, the retur
 size-estimate appendix) and obey it exactly — you write nothing, mutate nothing, and nothing checks
 you (the driver is your backstop at the slice gate).
 
-Read, in order: `AGENT-PROTOCOL.md` (Doctrine), `checks/_method.md` and `checks/slice.md` (absolute
-paths in your dispatch; layer any `## Check criteria — slice` addendum on top), `PROTOCOL-ADDENDUM.md`
-if present, and `KNOWLEDGE.md`. Then your inputs: `card.md`, `slice.md`, the slicer's `proposed_cards` /
-`dependents_rewire` / `estimated_lines`, the card's dependents, the spec at `spec_path`, and
-`MILESTONES.md`.
+Read `checks/_method.md` and `checks/slice.md` (absolute paths in your dispatch; layer any
+`## Check criteria — slice` addendum on top), then `KNOWLEDGE.md`. Then your inputs: `card.md`,
+`slice.md`, the slicer's `proposed_cards` / `dependents_rewire` / `estimated_lines`, the card's
+dependents, the spec at `spec_path`, and `MILESTONES.md`.
 
 ## Do
 

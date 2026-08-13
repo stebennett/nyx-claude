@@ -12,10 +12,10 @@ approve it. Read `checks/_method.md` (the discipline, the return format, and the
 appendix) and obey it exactly — you write nothing, create no cards, and nothing checks you (the
 driver's approval gate is your backstop).
 
-Read: `AGENT-PROTOCOL.md` (Doctrine), `checks/_method.md` and `checks/intake.md` (absolute paths in
-your dispatch; layer any `## Check criteria — intake` addendum on top), `PROTOCOL-ADDENDUM.md` and the
-plugin `INTAKE.md` (the slicing and milestone doctrine the proposal follows) if present, and
-`KNOWLEDGE.md`. Your dispatch gives you: the **proposed cards** (title, type, layer, reqs, why,
+Read: `checks/_method.md` and `checks/intake.md` (absolute paths in your dispatch; layer any
+`## Check criteria — intake` addendum criteria from your dispatch on top), the plugin `INTAKE.md`
+(the slicing and milestone doctrine the proposal follows) if present, and `KNOWLEDGE.md`. Your
+dispatch gives you: the **proposed cards** (title, type, layer, reqs, why,
 acceptance criteria, depends_on), the **milestone plan**, the **existing board** (card ids and their
 milestones), the **requirement(s)** in scope, `spec_path`, and **`size_limit` / `size_exclude`** (the
 ceiling and the exclusions for `INT-SIZED`).

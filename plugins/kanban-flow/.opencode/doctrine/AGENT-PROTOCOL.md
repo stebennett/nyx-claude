@@ -1,7 +1,10 @@
 # Phase Agent Protocol
 
-Every `card-*` phase agent MUST follow this protocol. It is the shared contract between the
-`/kanban` orchestrator and the phase agents.
+This document is read by the `/kanban` orchestrator, which distributes relevant fragments inline
+to each dispatched agent. Agents do not read this file directly — they receive their protocol
+instructions in the dispatch prompt. This file remains the canonical, auditable source.
+
+It is the shared contract between the `/kanban` orchestrator and the phase agents.
 
 ## On dispatch you receive
 - `card_id`, `card_dir` (e.g. docs/cards/CARD-001-slug), `worktree` (absolute path to this card's git
@@ -15,25 +18,11 @@ Every `card-*` phase agent MUST follow this protocol. It is the shared contract 
   `<lens>.md`. Read the protocol here, then layer the addendum — never a `docs/cards/` copy.
 - Exception: the **slice** phase runs before any worktree exists, so `card-slicer` gets no `worktree`
   but instead the card's current **dependents** (ids that `depends_on` it).
-- A **rework** dispatch (implement phase only) adds the blocking findings from the tester, the
-  reviewer, or a failing CI run (job + log excerpt); fix exactly those, and push when the dispatch
-  notes the PR is already open.
-- A **PR-comment** dispatch (implementation- or design-PR comments) carries the review-complete comment
-  set (id, path, line, body; review-body items flagged summary) — address exactly those, never touch
-  the threads; the orchestrator replies with a commit link, the human resolves.
-- A **review** dispatch (`card-lens-reviewer`, one per lens, in parallel, at review) carries a `lens`
-  and reviews the `worktree` branch diff — before any PR exists.
-- A **check** dispatch (a `card-*-checker`) carries the producer's inputs and its output artifact, and
-  the plugin's `templates/checks/_method.md` + `templates/checks/<target>.md` paths. The checker
-  contract lives in `checks/_method.md`.
-- A **deliver** dispatch names its mode: `design` (push the docs+ADRs branch, open the design PR)
-  or `implementation` (rebase, confirm green, push, open the implementation PR).
+- Dispatch details for each phase (**rework**, **PR-comment**, **review**, **check**, **deliver**)
+  are defined in the respective agent or checker definitions.
 
 ## Always, before doing anything
 1. Read `docs/cards/KNOWLEDGE.md` in full, then `card.md` and the phase docs you were given.
-2. Read the spec **selectively**: slice and design read whatever they need to judge/design; every
-   later phase reads only the sections `design.md` cites under `## Spec references` — never re-read the
-   whole spec when the design names its sources.
 
 ## Boundaries (sole-writer invariant)
 - You MUST NOT write or edit `BOARD.md`, `KNOWLEDGE.md`, or any `card.md`. The orchestrator owns them.
@@ -101,8 +90,6 @@ proposed_adrs:              # may be empty — significant architecture/technolo
     decision: "What we decided"
     consequences: "What becomes easier/harder"
     supersedes: []          # optional ADR ids this decision replaces, e.g. [ADR-0003]
-proposed_cards: []          # SLICE PHASE ONLY (gate: slice) — the child cards to create; full field shape in card-slicer.md
-dependents_rewire: []       # SLICE PHASE ONLY — how each card that depends_on the parent is rewired; full shape in card-slicer.md
 phase_doc: |
   <full markdown body of this phase's doc — the orchestrator writes it to card_dir/<phase>.md>
 ```

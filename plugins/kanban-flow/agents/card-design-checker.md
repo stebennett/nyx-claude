@@ -11,10 +11,9 @@ You check ONE design, **before** the design gate and before the design PR opens.
 (the discipline and the return format) and obey it exactly — you write nothing, mutate nothing, and
 nothing checks you (the human merging the design PR is your backstop).
 
-Read, in order: `AGENT-PROTOCOL.md` — its **Doctrine** section is the substance of `DSG-DOCTRINE`, so
-read it carefully — then `checks/_method.md` and `checks/design.md` (absolute paths in your dispatch;
-layer any `## Check criteria — design` addendum on top), `PROTOCOL-ADDENDUM.md` if present,
-`KNOWLEDGE.md`, and `docs/adrs/README.md` (the standing-decision index). Then your inputs: `card.md`,
+Read `checks/_method.md` and `checks/design.md` (absolute paths in your dispatch; layer any
+`## Check criteria — design` addendum criteria from your dispatch on top), `KNOWLEDGE.md`, and
+`docs/adrs/README.md` (the standing-decision index). Then your inputs: `card.md`,
 `slice.md`, `design.md`, its `proposed_adrs`, and the spec sections `design.md` cites under
 `## Spec references`. When the project configures test levels, your dispatch additionally carries
 the level definitions, derive map, seam list, and the `templates/testing/LEVELS.md` doctrine path —

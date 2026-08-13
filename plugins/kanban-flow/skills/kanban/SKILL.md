@@ -19,7 +19,7 @@ machine on a pump that would do nothing.
 Most pumps under `/loop` have nothing to do. Loading the board to discover that is the recurring cost
 this gate removes. **Your very first action is the gate** (after one cheap read of `config.md`'s
 `pump_gate` flag — `off`, default `on`, bypasses it: skip straight to "proceed to the pump body" below):
-**dispatch the `pump-gate` agent (haiku)**, passing `board_dir` (default `docs/cards`), and do nothing
+**dispatch the `pump-gate` agent**, passing `board_dir` (default `docs/cards`), and do nothing
 else until it returns. It runs the cheap probes — merges landed, open-PR CI/reviews, WIP slots,
 dispatchable/driver cards, amendments — in its own cheap context and returns `decision: run | idle` with
 a `summary`.
@@ -29,7 +29,7 @@ a `summary`.
   no id-sets.
 - **`decision: run`** → **proceed to the pump body**: read
   `${CLAUDE_PLUGIN_ROOT}/skills/kanban/references/pump.md` and execute it (§0 Reconcile → §7 Report,
-  plus its dispatch/model table and Rules). You may thread `summary.merged_urls`/`ci_failing_urls` into
+  plus its dispatch table and Rules). You may thread `summary.merged_urls`/`ci_failing_urls` into
   the body's §0/§6 to skip re-probing PRs the gate already resolved; §0 re-derives authoritative git
   state regardless, so trusting them is an optimization, not a dependency. The gate's `git fetch origin
   main` updated the shared working tree — §0's fetch reuses it.

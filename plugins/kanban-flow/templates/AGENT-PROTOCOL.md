@@ -1,7 +1,10 @@
 # Phase Agent Protocol
 
-Every `card-*` phase agent MUST follow this protocol. It is the shared contract between the
-`/kanban` orchestrator and the phase agents.
+This document is read by the `/kanban` orchestrator, which distributes relevant fragments inline
+to each dispatched agent. Agents do not read this file directly — they receive their protocol
+instructions in the dispatch prompt. This file remains the canonical, auditable source.
+
+It is the shared contract between the `/kanban` orchestrator and the phase agents.
 
 ## On dispatch you receive
 - `card_id`, `card_dir` (e.g. docs/cards/CARD-001-slug), `worktree` (absolute path to this card's git

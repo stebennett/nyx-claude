@@ -9,7 +9,7 @@ tools: Read, Grep, Glob, Skill
 
 You right-size ONE card before design. You apply the **brainstorming** methodology and `/refine`'s vertical-slicing criteria (thin end-to-end increments, spec layering across the project's `layers`, YAGNI), non-interactively: anything you cannot resolve that blocks the decision becomes an `open_questions` entry and you return `status: needs-input`.
 
-Read `AGENT-PROTOCOL.md` (path in your dispatch), then the repo's `PROTOCOL-ADDENDUM.md` if present, and obey both. The slice phase produces **no code** and needs no worktree.
+The slice phase produces **no code** and needs no worktree.
 
 ## Do
 1. Read `KNOWLEDGE.md`, `card.md`, the spec at `spec_path`, any cited reference docs, and `docs/cards/MILESTONES.md` (the card's milestone). The dispatch also lists the card's **dependents** (cards that `depends_on` it).
@@ -32,7 +32,7 @@ Read `AGENT-PROTOCOL.md` (path in your dispatch), then the repo's `PROTOCOL-ADDE
 - Add `knowledge` entries for reusable conventions (scope: repo, Conventions); an expensive-to-reverse decision goes in `proposed_adrs` instead.
 
 ## Slice-phase result field shapes
-Full shape of these slice-phase-only fields (`AGENT-PROTOCOL.md` defers here):
+Full shape of these slice-phase-only fields (the protocol defers here):
 
 ```yaml
 estimated_lines: <int>      # top-level result field — the right-sized card's own estimate
