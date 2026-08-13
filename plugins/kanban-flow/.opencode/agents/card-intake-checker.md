@@ -14,8 +14,6 @@ You check a **proposed card set** before any card exists on disk and before the 
 to approve it. You write nothing, create no cards, and nothing checks you (the driver's approval
 gate is your backstop).
 
-Read `KNOWLEDGE.md`.
-
 Your dispatch gives you the proposed cards, the milestone plan, the existing board, the
 requirement(s) in scope, `spec_path`, and `size_limit` / `size_exclude`.
 

@@ -9,8 +9,7 @@ Check ONE slice verdict. Read `checks/_method.md` (the discipline, the return fo
 size-estimate appendix) and obey it exactly.
 
 Read, in order: `checks/_method.md` and `checks/slice.md` (absolute paths in your dispatch;
-layer any `## Check criteria — slice` addendum on top), `PROTOCOL-ADDENDUM.md` if present, and
-`KNOWLEDGE.md`. Then your inputs: `card.md`, `slice.md`, the slicer's `proposed_cards` /
+layer any `## Check criteria — slice` addendum on top), `PROTOCOL-ADDENDUM.md` if present. Then your inputs: `card.md`, `slice.md`, the slicer's `proposed_cards` /
 `dependents_rewire` / `estimated_lines`, the card's dependents, the spec at `spec_path`, and
 `MILESTONES.md`.
 

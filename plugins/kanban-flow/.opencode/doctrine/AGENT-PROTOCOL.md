@@ -22,7 +22,9 @@ It is the shared contract between the `/kanban` orchestrator and the phase agent
   are defined in the respective agent or checker definitions.
 
 ## Always, before doing anything
-1. Read `docs/cards/KNOWLEDGE.md` in full, then `card.md` and the phase docs you were given.
+1. Read `card.md` and the phase docs you were given. When unsure about a convention, gotcha,
+   or glossary term, invoke the **board-knowledge** skill — it reads `KNOWLEDGE.md` and returns
+   only matching entries.
 
 ## Boundaries (sole-writer invariant)
 - You MUST NOT write or edit `BOARD.md`, `KNOWLEDGE.md`, or any `card.md`. The orchestrator owns them.

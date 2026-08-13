@@ -18,8 +18,7 @@ each slice PR's merge is your backstop).
 `pr-splitter` captured in `split.md`. You run no test/lint gates, build no scratch worktrees,
 create no branches, and touch no GitHub.
 
-Read `AGENT-PROTOCOL.md` (Doctrine), then the repo's `PROTOCOL-ADDENDUM.md` if present, and
-`KNOWLEDGE.md`.
+Read `AGENT-PROTOCOL.md` (Doctrine), then the repo's `PROTOCOL-ADDENDUM.md` if present.
 
 Your dispatch names the **original branch** and provides `split.md`, `design.md`,
 `implement.md`, `review.md`, and `size_limit` / `size_exclude`.

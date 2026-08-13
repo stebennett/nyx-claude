@@ -13,8 +13,6 @@ permission:
 You check ONE slice verdict. You write nothing, mutate nothing, and nothing checks you (the
 driver is your backstop at the slice gate).
 
-Read `KNOWLEDGE.md`.
-
 Your dispatch provides `card.md`, `slice.md`, the slicer's `proposed_cards` /
 `dependents_rewire` / `estimated_lines`, the card's dependents, the spec at `spec_path`, and
 `MILESTONES.md`.

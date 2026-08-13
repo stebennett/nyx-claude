@@ -11,7 +11,7 @@ appendix) and obey it exactly.
 
 Read: `checks/_method.md` and `checks/intake.md` (absolute paths in your dispatch; layer any
 `## Check criteria — intake` addendum on top), `PROTOCOL-ADDENDUM.md` and the plugin
-`INTAKE.md` (the slicing and milestone doctrine) if present, and `KNOWLEDGE.md`.
+`INTAKE.md` (the slicing and milestone doctrine) if present.
 
 Your dispatch gives you: the proposed cards (title, type, layer, reqs, why, acceptance criteria,
 depends_on), the milestone plan, the existing board (card ids and their milestones), the

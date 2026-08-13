@@ -16,8 +16,7 @@ merging the PR is your backstop). **You have `Bash`, and it is read-only** — y
 react, push, or merge — `card-deliverer` is the only agent in this system that mutates GitHub,
 and you are not it.
 
-Read `AGENT-PROTOCOL.md` (Doctrine), then the repo's `PROTOCOL-ADDENDUM.md` if present, and
-`KNOWLEDGE.md`.
+Read `AGENT-PROTOCOL.md` (Doctrine), then the repo's `PROTOCOL-ADDENDUM.md` if present.
 
 Your dispatch gives you the card, the PR URL, the mode, the worktree, the `gh_command`, size
 limits, estimated lines, and the checks policy.

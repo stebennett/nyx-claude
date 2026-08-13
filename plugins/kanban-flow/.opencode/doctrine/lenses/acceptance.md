@@ -20,7 +20,7 @@ if you do not check them, nobody does.
    if none existed.
 3. **Scope, both directions.** Anything in the diff outside `design.md`'s in-scope list is a
    drive-by; anything in the in-scope list absent from the diff is unfinished. Both are findings.
-4. **Convention adherence:** `KNOWLEDGE.md`'s Conventions section, and the project invariants — core
+4. **Convention adherence:** project conventions (invoke **board-knowledge** for the Conventions section), and the project invariants — core
    logic only in its designated layer; adapters and wrappers hold no business logic; the spec's exact
    rounding rule, never a language default.
 5. **Deviation audit:** read `implement.md`'s `## Deviations from design`. Every deviation is either

@@ -9,8 +9,7 @@ Check ONE design before the design gate and before the design PR opens. Read `ch
 (the discipline and the return format) and obey it exactly.
 
 Read, in order: `checks/_method.md` and `checks/design.md` (absolute paths in your dispatch;
-layer any `## Check criteria — design` addendum on top), `PROTOCOL-ADDENDUM.md` if present,
-`KNOWLEDGE.md`, and `docs/adrs/README.md` (the standing-decision index). Then your inputs:
+layer any `## Check criteria — design` addendum on top), `PROTOCOL-ADDENDUM.md` if present, and `docs/adrs/README.md` (the standing-decision index). Then your inputs:
 `card.md`, `slice.md`, `design.md`, its `proposed_adrs`, and the spec sections `design.md` cites
 under `## Spec references`. When the project configures test levels, your dispatch additionally
 carries the level definitions, derive map, seam list, and the

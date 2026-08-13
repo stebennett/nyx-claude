@@ -23,7 +23,7 @@ unreadable, or you cannot decide — **return `run`.**
 - `board_dir` — the board directory (default `docs/cards`).
 
 Everything else you read yourself. Read `<board_dir>/config.md` for `gh_command` (default `gh`) and
-`wip_limit` (default `3`). Do **not** read `KNOWLEDGE.md`, the doctrine, the spec, or any full `card.md`
+`wip_limit` (default `3`). Do **not** read the doctrine, the spec, or any full `card.md`
 body — frontmatter and file presence only.
 
 ## Probes (stop early — the first trigger that fires means `run`)

@@ -2,7 +2,7 @@
 
 Read `checks/_method.md` first (the discipline and the return format); this file is your criterion
 set. Checks `card-designer`. Your inputs: `card.md`, `slice.md`, `design.md`, the spec sections it
-cites, `KNOWLEDGE.md`, and the ADR index.
+cites, the **board-knowledge** skill, and the ADR index.
 
 | id | criterion | severity when failed |
 |---|---|---|
@@ -11,7 +11,7 @@ cites, `KNOWLEDGE.md`, and the ADR index.
 | `DSG-TASK-TDD` | the task list is file-level and TDD-ordered — a test precedes the code it drives | blocking |
 | `DSG-DOCTRINE` | where the card's domain touches them, the design honours standing doctrine (below) | blocking |
 | `DSG-ADR-NEEDED` | expensive-to-reverse decisions are proposed as ADRs, and none duplicates or silently contradicts a standing one | blocking |
-| `DSG-KNOWLEDGE` | the design does not re-tread a gotcha already recorded in `KNOWLEDGE.md` | advisory |
+| `DSG-KNOWLEDGE` | the design does not re-tread a gotcha already recorded (invoke **board-knowledge** to check) | advisory |
 | `DSG-SCOPE` | in/out of scope is explicit, and nothing in the design falls outside the card's acceptance criteria | blocking |
 | `DSG-NO-CODE` | the design branch is docs-only — the design proposes no code files as *written*, only as tasks | blocking |
 | `DSG-LEVELS` | *(conditional — see below)* every derived level appears in `### Levels` exactly once, selected (with what it covers) or declined with a written rationale; every selection names a configured level | blocking |

@@ -574,8 +574,8 @@ the same list — they must agree byte-for-byte:
 - **card-design-checker** → `card.md`, `slice.md`, `design.md` — **including its `## Proposed ADRs`
   section, which is where the ADR proposals come from** (`DSG-ADR-NEEDED` cannot be verdicted without
   them; read from the file, never a `proposed_adrs` list in memory) — the **spec sections `design.md`
-  cites**, **`KNOWLEDGE.md`** (`DSG-KNOWLEDGE`), and the **ADR index** (`docs/adrs/README.md` —
-  `DSG-ADR-NEEDED`). **When levels are configured, additionally:** the level definitions, derive map, seam list, and
+  cites**, and the **ADR index** (`docs/adrs/README.md` —
+  `DSG-ADR-NEEDED`; the checker invokes **board-knowledge** for `DSG-KNOWLEDGE`). **When levels are configured, additionally:** the level definitions, derive map, seam list, and
 `.opencode/doctrine/testing/LEVELS.md` — the inputs the conditional `DSG-LEVELS`/`DSG-SEAMS`/`DSG-DATA`
 criteria depend on.
 - **card-split-checker** → `card.md`, the `worktree` and **the original branch BY NAME** — it
