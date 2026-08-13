@@ -1,5 +1,5 @@
 ---
-description: Populate or re-slice a project's backlog from the spec. Runs req-ids backfill, proposes ordered cards + milestones per INTAKE.md doctrine, dispatches card-intake-checker, presents proposal for driver approval. Intake only — never implements.
+description: Populate or re-slice a project's backlog from the spec. Runs req-ids backfill, proposes ordered cards + milestones per INTAKE.md doctrine, dispatches analyst, presents proposal for driver approval. Intake only — never implements.
 model: anthropic/claude-sonnet-4-6
 ---
 
@@ -43,7 +43,7 @@ ownership of `MILESTONES.md`.
    present anything.
 
 5. **Check the proposal before showing it to anyone.** Run the intake check per `INTAKE.md`
-   `## Check` — it dispatches `card-intake-checker`, runs the budget loop, and yields each
+   `## Check` — it dispatches `analyst`, runs the budget loop, and yields each
    card's `estimated_lines`, which you persist in step 7.
 
 6. **Present the proposal** to the driver:

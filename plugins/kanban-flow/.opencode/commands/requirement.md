@@ -85,7 +85,7 @@ You respect that boundary absolutely. Classify every existing card by `status` a
      why.
 
    **Check before you propose.** Run the intake check per `INTAKE.md` `## Check` — it
-   dispatches `card-intake-checker`, runs the budget loop, and yields each card's
+   dispatches `analyst`, runs the budget loop, and yields each card's
    `estimated_lines`, which you persist in step 6.
 
    Ask for approval, edits, or removals. Iterate until approved. **Write nothing before

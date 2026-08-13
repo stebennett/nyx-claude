@@ -14,9 +14,9 @@ It is the shared contract between the `/kanban` orchestrator and the phase agent
   derive map, the seam list, journeys, environment commands, and `templates/testing/*` doctrine
   paths. Their absence means the project has not opted in — never assume or invent them.
 - **Doctrine paths:** the plugin's `AGENT-PROTOCOL.md` (this file) and the repo's
-  `PROTOCOL-ADDENDUM.md`; `card-lens-reviewer` also receives `templates/lenses/_shared.md` +
+  `PROTOCOL-ADDENDUM.md`; `pilot` also receives `templates/lenses/_shared.md` +
   `<lens>.md`. Read the protocol here, then layer the addendum — never a `docs/cards/` copy.
-- Exception: the **slice** phase runs before any worktree exists, so `card-slicer` gets no `worktree`
+- Exception: the **slice** phase runs before any worktree exists, so `analyst` gets no `worktree`
   but instead the card's current **dependents** (ids that `depends_on` it).
 - Dispatch details for each phase (**rework**, **PR-comment**, **review**, **check**, **deliver**)
   are defined in the respective agent or checker definitions.
@@ -27,7 +27,7 @@ It is the shared contract between the `/kanban` orchestrator and the phase agent
    only matching entries.
 
 ## Boundaries (sole-writer invariant)
-- You MUST NOT write or edit `BOARD.md`, `KNOWLEDGE.md`, or any `card.md`. The orchestrator owns them.
+- You MUST NOT write or edit `BOARD.md`, `KNOWLEDGE.md`, any `card.md`, `design-spec.md`, `solution-review.md`, `acceptance-review.md`, or ADRs. The orchestrator owns them.
 - You MUST NOT write your phase doc to disk. You RETURN its full markdown as `phase_doc` (below);
   the orchestrator persists it **on the card's current branch** — slice/design docs and ADRs ride the
   **design PR**, implement/test/review docs ride the **implementation PR**. The design PR merges before
@@ -36,7 +36,7 @@ It is the shared contract between the `/kanban` orchestrator and the phase agent
   slice and design phases produce no code; a design branch is docs-only.
 - **GitHub is off-limits to phase agents, with exactly one exception:** the deliver phase pushes the
   branch and opens the PR. The review panel runs **before** the PR opens, against the worktree diff,
-  and returns findings to the orchestrator. `card-deliver-checker` reads the PR (`gh pr view`,
+  and returns findings to the orchestrator. `pilot` reads the PR (`gh pr view`,
   `gh pr checks`) but mutates nothing. No agent ever comments, approves, requests changes, replies to,
   resolves, or reacts to a PR thread — that and the review-complete signal belong to the human; the
   orchestrator alone replies with commit links.
@@ -73,7 +73,7 @@ Emit exactly one fenced ```result block, valid YAML:
 
 ```result
 status: complete            # complete | blocked | needs-input
-phase: <slice|design|implement|test|review|deliver|check>
+phase: <spec|refine|design|implement|verify|accept|deliver|check>
 card: CARD-NNN
 gate: none                  # none | design | slice  (this phase's gate; never "deliver")
 summary:
@@ -116,7 +116,7 @@ invariants, cross-cutting patterns, expensive-to-reverse trade-offs) are recorde
 - Any phase agent MAY return `proposed_adrs` when it makes or surfaces such a decision. You only
   *propose*: the orchestrator persists each ADR (numbering, file, index, `adrs:` card link) via the
   `adr` skill. **Design-phase ADRs are written once the design *check* passes** —
-  `card-design-checker`'s `verdict: pass`, before the design gate and the design PR; the orchestrator
+  `architect`'s `verdict: pass`, before the design gate and the design PR; the orchestrator
   holds them unwritten until then (the `adr` skill reserves a number on write; see `RATIONALE.md`).
 - **A design-phase agent records each proposal in its `phase_doc` — a `## Proposed ADRs` section
   (title, context, decision, consequences, any `supersedes`) — as well as in `proposed_adrs`.** The

@@ -1,19 +1,19 @@
 # split — check criteria
 
 Read `checks/_method.md` first (the discipline and the return format); this file is your criterion
-set. Checks `pr-splitter`, dispatched at the end of the review phase once the lens panel has passed and
+set. Checks `pilot`, dispatched at the end of the review phase once the lens panel has passed and
 **before any PR exists**. Your inputs: the **named original branch** and its change set
 (`git diff --no-renames --name-status origin/main...<original-branch>`), `split.md` (the ordered slices
 — paths, why, estimated lines, the green evidence for each, and the `## Environment` proof that the
 scratch worktree builds), `design.md`, `implement.md`, `review.md`, and `size_limit` / `size_exclude`.
 
 **Derive the ground truth from the NAMED ORIGINAL BRANCH — never from `HEAD`.** `HEAD` in the card's
-worktree is **not trustworthy**: `pr-splitter` may have moved it onto a scratch branch, and a pump can
+worktree is **not trustworthy**: `pilot` may have moved it onto a scratch branch, and a pump can
 die and leave it there. A ground truth from a scratch `HEAD` is a strict subset of the card's work —
 the slice union matches it exactly, and `SPL-NO-LOSS` passes on a carve that dropped whole slices.
 
 **Rename detection is OFF — `--no-renames` on EVERY `--name-status`, yours and the splitter's.** The
-change-type vocabulary is `A` / `M` / `D` and nothing else: `pr-splitter`'s contract permits only those
+change-type vocabulary is `A` / `M` / `D` and nothing else: `pilot`'s contract permits only those
 three, and the orchestrator populates a slice branch with exactly `git checkout` (added/modified) and
 `git rm` (deleted) — **nothing here can consume an `R`**. With `--no-renames` a rename is **always `D
 old` + `A new`**, so set-equality against the splitter's union is mechanical. The unit of a slice is a
@@ -45,7 +45,7 @@ your evidence:
 
 Whole-file granularity makes this sound: a slice is *these paths at this change type*, so equality of
 the `(path, type)` sets **is** equality of content. Do **not** byte-diff a slice's version against the
-branch — at check time **no slice branch exists** (`pr-splitter` deleted its scratch worktree; slice
+branch — at check time **no slice branch exists** (`pilot` deleted its scratch worktree; slice
 branches are cut later, at deliver). (Why `SPL-NO-LOSS` is the criterion that matters most, and why the
 split is safe *after* the panel reviewed the whole diff, is in `RATIONALE.md`.)
 
@@ -60,7 +60,7 @@ which are deletions, which `D`/`A` pairs are really a rename. Only then read `sp
   full branch (proves nothing about slice `k` alone) or a build that skipped the deletions (models a
   `main` that will never exist). **Read `## Environment` as part of `SPL-GREEN`:** a fresh worktree has
   no `node_modules`/venv, so a splitter that never bootstrapped finds *every* carve red for reasons
-  unrelated to the carve. `pr-splitter` must prove the worktree builds **with the whole original change
+  unrelated to the carve. `pilot` must prove the worktree builds **with the whole original change
   applied** before judging any slice; a red slice or refusal offered without that proof is a blocking
   `SPL-GREEN` finding — the evidence cannot tell entangled code from a broken box. (A genuinely broken
   environment is `status: blocked`, never a refusal.)

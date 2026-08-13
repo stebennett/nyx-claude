@@ -10,7 +10,7 @@
 - [ ] <each criterion from card.md, checked>
 
 ### Testing
-<coverage + gate results from test.md>
+<coverage + gate results from verify.md>
 
 ### CI-verified levels
 <only when design.md's `### Levels` selects scope-pr levels: name them and the journeys this card
@@ -18,7 +18,7 @@ can plausibly affect, from design.md — e.g. "journey (J1, J3), experience". Gr
 what vouches for these; delete this section otherwise>
 
 ### Review
-<resolved findings from review.md>
+<resolved findings from accept.md>
 
 ### Knowledge
 <links to KNOWLEDGE.md entries added>

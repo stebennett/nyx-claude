@@ -1,8 +1,8 @@
 {
   "name": "kanban-flow",
-  "description": "Autonomous, card-driven kanban development: an orchestrator, specialist agents, and a checker for every one of them that verifies its work against stable, auditable criteria. Runs each backlog card through slice → design → implement → test → review, holds it under a hard changed-lines budget, and ships design and implementation as two reviewable PRs.",
-  "version": "0.10.0",
+  "description": "Autonomous, role-based kanban development: an 8-agent delivery team (analyst, designer, architect, builder, verifier, security-analyst, pilot, conductor) runs each card through product refinement → design → council → implementation → verification → acceptance → delivery. Two concurrent councils bookend the build cycle. Agents discover and invoke skills autonomously.",
+  "version": "0.11.0",
   "author": { "name": "Steve Bennett" },
   "license": "MIT",
-  "keywords": ["kanban", "orchestration", "agents", "tdd", "code-review", "workflow"]
+  "keywords": ["kanban", "orchestration", "agents", "delivery-team", "tdd", "council"]
 }

@@ -3,46 +3,14 @@ name: kanban-orchestrator
 description: "Use ONLY when executing a kanban-flow pump cycle triggered by /kanban. Contains the full §0–§7 state machine: §0 Reconcile (merged PRs, amendment queue, legacy normalization), §1 Load state (config, cards, criterion id sets, dispatch table), §2 Render board (sole writer of BOARD.md), §3 Resolve gates & blockers, §4 Schedule (WIP limits, ready cards ranked by layer), §5 Advance in-flight cards through slice→design→implement→test→review→deliver (dispatch contracts, check-doc discipline, review panel, persist results), §6 PR open (CI gate, review-complete addressing), §7 Report. Loads reference procedures for reconcile edge cases and split shipping. Do NOT use for general kanban questions or unrelated orchestration tasks."
 ---
 
-# kanban-orchestrator — the kanban pump (§0–§7)
+# kanban-orchestrator — DEPRECATED
 
-This is the full pump — reconcile → load → render → resolve gates/blockers → schedule & advance →
-re-render → report, plus the dispatch table and the Rules. The pre-flight gate (§0.0) lives in
-the /kanban command, not here. Every other section number (§0–§7) is as referenced across the
-`agents/` files.
+This skill has been replaced by the **conductor** agent (`agents/conductor.md`).
+Orchestration logic now lives in the conductor, which is a peer agent dispatched
+by the `/kanban` command. The conductor handles board loading, dispatch, council
+facilitation, gate logic, rework loops, and worktree lifecycle.
 
-You drive cards through the board. `/refine` and `/requirement` create and edit cards **while in
-`backlog`**; once a card leaves backlog you are its **sole writer** — as of `docs/cards/BOARD.md` and
-`docs/cards/KNOWLEDGE.md` throughout. `/requirement` reaches cards beyond backlog only by queueing an
-amendment for you to apply (§0). No phase agent writes these files; agents return `result` blocks and
-you persist everything they produce.
-
-**Every card ships a design PR, then its implementation — ONE PR, or, when oversized, SEVERAL.** The
-**design PR** (branch `<type>/NNN-slug-design`) carries `slice.md`, `design.md`, ADRs, gate feedback so
-decisions land on `main` early. The **implementation PR** (branch `<type>/NNN-slug`, cut from `main`
-*after* the design PR merges) carries the code plus `implement.md`/`test.md`/`review.md`. The human
-merging each PR is that half's review gate. At the end of `review`, once the lens panel passes, an
-oversized branch dispatches **`pr-splitter`**, which carves it into N slices; the card ships **N
-implementation PRs, one at a time**, so `pr_url` is **`pr_urls` — an ordered list** (§5; the
-split-shipping section below). `done` = every url merged AND the original branch has nothing left; an
-unsplit card has one `pr_urls` entry (the N=1 case).
-
-**Direct-to-`main` commits are limited to, exhaustively:** `card.md`/`BOARD.md`/`KNOWLEDGE.md` state,
-the milestone swap on splits, a split parent's terminal `slice.md`/`slice-check.md`, the deliver check
-docs and `deliver.md` (`-<k>` per slice — produced *after* their PR is open), post-PR `feedback.md`,
-the `RETRO-INBOX.md` append on a card reaching `done` (§0 step 3), the drained `AMENDMENTS.md`,
-**`QUARANTINE.md`**, and **defect-card creation from quarantine or
-nightly filings** (a new `docs/cards/CARD-NNN-slug/card.md` in `backlog` — the one card-creation
-authority you hold, granted for `type: defect` from these two sources only; ids continue from the
-current max, same mechanic as the split carve-out).
-Nothing else. Every other phase doc lives on the card's current branch. **The slice phase has no
-branch/worktree**, so `slice.md`/`slice-check.md` are written into `<board_dir>/CARD-NNN-slug/` **in the
-primary checkout, UNCOMMITTED**, until the design transition (§5) copies them onto the design branch —
-**never to `main`** (RATIONALE: the `DLV-DOCS` livelock), except a **split parent** (terminal record).
-
-Each invocation runs one **pump cycle**: pre-flight gate → reconcile → load → render → resolve
-gates/blockers → schedule & advance (in waves) → re-render → report. A card stops mid-lifecycle only at
-a manual gate, `needs-input`, an exhausted rework budget, an open PR awaiting merge, or `done` — safe
-under `/loop`.
+This file is kept for backward reference only. Do not invoke it.
 
 ## 0. Reconcile (self-healing state)
 

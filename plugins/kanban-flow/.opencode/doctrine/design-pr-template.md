@@ -15,7 +15,7 @@
 ### Open questions / decisions deferred
 <anything the designer flagged, or "none">
 
-Full design: `docs/cards/CARD-NNN-slug/design.md` (in this diff). Merging this PR approves the
+Full design: `docs/cards/CARD-NNN-slug/design.md` and `design-spec.md` (in this diff). Merging this PR approves the
 design and unblocks implementation — the implementation branch is cut from main after this merges,
 and the code arrives as a second PR.
 

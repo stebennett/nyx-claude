@@ -92,7 +92,7 @@ a migration branch, never the plugin.
 
    A card with **no** `reworks` key gets the all-zero map. **A card whose map is present but
    missing `split` gets `split: 0` added** — every other key untouched. `reworks.split` is
-   `pr-splitter`'s budget; `/kanban` reads a missing key as `0` *only because `/migrate` writes
+   `pilot`'s budget; `/kanban` reads a missing key as `0` *only because `/migrate` writes
    it on disk* — skip it and that guarantee is unbacked. Also backfill `estimated_lines: ""`,
    `actual_lines: ""` and `review_lenses_failed: []` on every card lacking them (missing
    `review_lenses_failed` is safe — the full lens panel runs).
@@ -100,7 +100,7 @@ a migration branch, never the plugin.
    **Same step, the `pr_urls`/`split_slices` rewrite.** A legacy scalar `pr_url: <url>` becomes
    **`pr_urls: [<url>]`**; an empty or absent `pr_url` becomes **`pr_urls: []`**. Either way,
    backfill **`split_slices: 0`** (not split; ships as one PR — the N=1 case) if missing. **Do not
-   touch `design_pr_url`** — the design PR is a separate, unaffected scalar; `pr-splitter` never
+   touch `design_pr_url`** — the design PR is a separate, unaffected scalar; `pilot` never
    runs against it.
 
    All of Step 6 is the one exception Rules allows to "never touch board state" — pure
@@ -115,7 +115,7 @@ a migration branch, never the plugin.
    **Per-version key deltas — tell the driver in the PR body what each added key changes:**
    - *Pre-0.4 → :* `checks`, `check_budget`, `size_limit`, `size_exclude` (every check `on`,
      **including `checks.split`**; budgets 2 except `split: 1` and `deliver: 1`; `size_limit: 500`).
-     **Say what `size_limit` means:** from the next `/kanban` pump, `card-slice-checker` *forces a
+     **Say what `size_limit` means:** from the next `/kanban` pump, `analyst` *forces a
      split* on any card it projects over 500 changed lines including tests — a real behaviour change
      on an existing backlog that must not surprise them.
    - *0.4 → 0.5:* `review_panel: full` — the review-panel size knob. `full` is byte-identical to
@@ -126,7 +126,7 @@ a migration branch, never the plugin.
      in-flight card so its checker re-runs and regenerates it in current form; done cards' merged
      docs stay, and `/retro` falls back to their body criteria tables.
    - *0.5 → 0.6:* `pump_gate: on` — the pre-flight gate switch (command §0.0). `on` is the new
-     default and changes no card outcome: each pump first runs the cheap `pump-gate` haiku agent to
+     default and changes no card outcome: each pump first runs the cheap `conductor` haiku agent to
      decide idle-vs-run, so a quiet board stops before loading the board instead of
      after. Say that `off` bypasses the gate and reconciles directly (a debugging escape hatch), and
      that the gate writes no state and errs toward running.

@@ -12,7 +12,7 @@
     {
       "name": "kanban-flow",
       "source": "./plugins/kanban-flow",
-      "description": "Autonomous, card-driven kanban development: an orchestrator and specialist agents that run each backlog card through slice → design → implement → test → review, shipping design and implementation as two reviewable PRs per card."
+      "description": "Autonomous, role-based kanban development: an 8-agent delivery team (analyst, designer, architect, builder, verifier, security-analyst, pilot, conductor) runs cards through product refinement → design → council → implementation → verification → acceptance → delivery, with concurrent councils bookending the build cycle."
     },
     {
       "name": "github-app-identity",

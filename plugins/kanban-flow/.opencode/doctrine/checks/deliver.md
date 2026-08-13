@@ -1,7 +1,7 @@
 # deliver — check criteria
 
 Read `checks/_method.md` first (the discipline and the return format); this file is your criterion set.
-Checks `card-deliverer`, after the PR is open. Your inputs: `card.md`, the PR url and its mode (design
+Checks `pilot`, after the PR is open. Your inputs: `card.md`, the PR url and its mode (design
 | implementation), the PR body, the branch, and the **`checks` policy** — a check that is `off` never
 wrote its check doc, and its absence is not a finding.
 

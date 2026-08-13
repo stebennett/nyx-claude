@@ -30,7 +30,7 @@ layer any `## Check criteria — slice` addendum on top), `PROTOCOL-ADDENDUM.md`
 ## Return
 
 - `checks: slice`, `phase: check`, `gate: none`. `verdict: pass` → the orchestrator applies the
-  slice gate; `verdict: fail` → it re-dispatches `card-slicer` with your findings verbatim, up
+  slice gate; `verdict: fail` → it re-dispatches `analyst` with your findings verbatim, up
   to the `slice` check budget, then parks the card.
 - `phase_doc` is `slice-check.md`: `## Verdict`, `## Criteria` (the full table — id, verdict,
   evidence), `## Size estimate` (your per-file working, your total, the slicer's total, and

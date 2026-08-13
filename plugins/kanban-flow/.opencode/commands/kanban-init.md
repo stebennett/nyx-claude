@@ -1,5 +1,5 @@
 ---
-description: Scaffold a repo for kanban-flow. Copies config.md, PROTOCOL-ADDENDUM.md, BOARD.md, KNOWLEDGE.md, and MILESTONES.md into the board dir (default docs/cards/). Creates docs/adrs/ with stub README. Idempotent — never clobbers a live board. Run once, before /refine.
+description: Scaffold a repo for the kanban-flow pipeline (spec → refine → design → implement → verify → accept → deliver). Copies config.md, PROTOCOL-ADDENDUM.md, BOARD.md, KNOWLEDGE.md, and MILESTONES.md into the board dir (default docs/cards/). Creates docs/adrs/ with stub README. Idempotent — never clobbers a live board. Run once, before /refine.
 ---
 
 # /kanban-init — scaffold a project for kanban-flow

@@ -1,7 +1,7 @@
 # slice — check criteria
 
 Read `checks/_method.md` first (the discipline, the return format, and the size-estimate appendix);
-this file is your criterion set. Checks `card-slicer`. Your inputs: `card.md`, the spec, `slice.md`,
+this file is your criterion set. Checks `analyst`. Your inputs: `card.md`, the spec, `slice.md`,
 the slicer's `proposed_cards` / `dependents_rewire` / `estimated_lines`, and the card's dependents.
 
 | id | criterion | severity when failed |

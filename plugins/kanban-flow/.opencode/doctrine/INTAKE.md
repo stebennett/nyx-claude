@@ -59,7 +59,7 @@ The card ids that must be `done` before this card starts — an `api` card depen
 imagine splitting. `true` makes `/kanban` skip the slice phase entirely, so use it only
 when you are sure. Otherwise leave it `""` and the slice phase decides.
 
-You are the **coarse** slicer. `/kanban`'s `card-slicer` re-checks every non-right-sized
+You are the **coarse** slicer. `/kanban`'s `analyst` re-checks every non-right-sized
 card at pickup and splits anything still too big — so do not agonise over perfect
 atomicity here.
 
@@ -96,10 +96,11 @@ and never writes it, except for the mechanical parent→children swap on an appl
 Both `/refine` and `/requirement` run this before showing the driver anything — one
 protocol, run per this section.
 
-Unless `config.md`'s `checks.intake` is `off`, dispatch **`card-intake-checker`** (opus)
+Unless `config.md`'s `checks.intake` is `off`, dispatch **`analyst`** (opus)
 with: the proposed cards, their milestone placement, the existing board's cards and
 milestones, the requirement(s) in scope, `spec_path`, **`size_limit` and `size_exclude`**
-(the ceiling and exclusions for `INT-SIZED`), and the doctrine paths it reads —
+(the ceiling and exclusions for `INT-SIZED`), **the instruction `Load and execute the
+``intake-check`` skill.`**, and the doctrine paths it reads —
 `.opencode/doctrine/AGENT-PROTOCOL.md`,
 `.opencode/doctrine/checks/_method.md`,
 `.opencode/doctrine/checks/intake.md`,

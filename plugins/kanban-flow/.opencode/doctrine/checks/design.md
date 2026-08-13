@@ -1,7 +1,7 @@
 # design — check criteria
 
 Read `checks/_method.md` first (the discipline and the return format); this file is your criterion
-set. Checks `card-designer`. Your inputs: `card.md`, `slice.md`, `design.md`, the spec sections it
+set. Checks `architect`. Your inputs: `card.md`, `slice.md`, `design.md`, the spec sections it
 cites, the **board-knowledge** skill, and the ADR index.
 
 | id | criterion | severity when failed |

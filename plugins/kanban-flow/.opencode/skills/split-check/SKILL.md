@@ -1,6 +1,6 @@
 ---
 name: split-check
-description: "Check pr-splitter's carve against SPL-* criteria. Re-derive change set from NAMED ORIGINAL BRANCH with --no-renames on every --name-status. Verify SPL-NO-LOSS (set-equality both directions), SPL-GREEN, SPL-SIZE, SPL-ORDER, SPL-FILES, SPL-COHERENT. Read-only Bash."
+description: "Check pilot's carve against SPL-* criteria. Re-derive change set from NAMED ORIGINAL BRANCH with --no-renames on every --name-status. Verify SPL-NO-LOSS (set-equality both directions), SPL-GREEN, SPL-SIZE, SPL-ORDER, SPL-FILES, SPL-COHERENT. Read-only Bash."
 ---
 
 # split-check
@@ -9,7 +9,7 @@ Check ONE carve. Read `checks/_method.md` (the discipline and the return format)
 exactly.
 
 You have `Bash`, and it is strictly read-only. You re-derive diffs and read the gate output
-`pr-splitter` captured in `split.md`. You run no test/lint gates, build no scratch worktrees,
+`pilot` captured in `split.md`. You run no test/lint gates, build no scratch worktrees,
 create no branches, and touch no GitHub.
 
 Read: `checks/_method.md` and `checks/split.md` (absolute paths in your dispatch; layer any
@@ -57,16 +57,16 @@ reading `split.md`, then build the `(path, change-type)` sets and diff):
 ## Return
 
 - `verdict: pass` (`status: complete`, `gate: none`, `phase: check`, `checks: split`) when no
-  finding is blocking. The orchestrator then hands the slices to `card-deliverer` in order and
+  finding is blocking. The orchestrator then hands the slices to `pilot` in order and
   re-runs the `[acceptance]` lens once per slice.
-- `verdict: fail` when any finding is blocking — the orchestrator re-dispatches `pr-splitter`
+- `verdict: fail` when any finding is blocking — the orchestrator re-dispatches `pilot`
   with your findings verbatim, up to the `split` check budget, then the card falls back to
-  `pr-splitter`'s refusal path and ships as one oversized PR.
+  `pilot`'s refusal path and ships as one oversized PR.
 - `phase_doc` is `split-check.md`: `## Verdict`, `## Criteria` (the full table — id, verdict,
   evidence), `## Coverage reconciliation` (your own re-derived `(path, change type)` sets and
   both set differences — the numbers, naming the `--no-renames` git command against the
   original branch), `## Blocking findings`, `## Advisory findings`.
 - `status: needs-input` only if you cannot check at all (`split.md` missing, the original
   branch unreadable or unnamed in your dispatch). A carve you disagree with is a `fail`.
-- Add `knowledge` entries for recurring carve traps worth teaching `pr-splitter` (scope: repo,
+- Add `knowledge` entries for recurring carve traps worth teaching `pilot` (scope: repo,
   section: Gotchas).

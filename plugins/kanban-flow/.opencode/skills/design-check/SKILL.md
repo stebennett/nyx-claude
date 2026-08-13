@@ -29,7 +29,7 @@ only where you can cite a `design.md` line.
 
 - `verdict: pass` (`status: complete`, `gate: none`, `phase: check`, `checks: design`) when no
   finding is blocking. The orchestrator then applies the design gate and opens the design PR.
-- `verdict: fail` when any finding is blocking — the orchestrator re-dispatches `card-designer`
+- `verdict: fail` when any finding is blocking — the orchestrator re-dispatches `architect`
   with your findings verbatim, up to the `design` check budget, then parks the card.
 - `phase_doc` is `design-check.md`: `## Verdict`, `## Criteria` (the full table — id, verdict,
   evidence), `## Acceptance criteria → tasks` (the two-way map), `## Doctrine` (rule by rule,
