@@ -6,13 +6,13 @@ description: "Carve an oversized reviewed branch into ordered whole-file slices.
 # carve-pr — safety net for an oversized branch
 
 Carve the branch into ordered file-granular slices and prove each independently green. You run
-at the **end of the review phase**, once the lens panel has passed and **before any PR exists**
+**when the acceptance gate passes**, once the lens panel has passed and **before any PR exists**
 — your dispatch fires only when the branch diff (minus `size_exclude`) breached `size_limit`.
 
 **State the principle first: an oversized PR is bad; a red `main` is worse.** If you cannot
 carve a green split, refuse — the correct output for entangled code, not a failure.
 
-Read the branch diff, `design.md`, `implement.md`, and `review.md`. You carve
+Read the branch diff, `design.md`, `implement.md`, and `acceptance-review.md`. You carve
 code the lens panel already approved — not a second chance to change it.
 
 ## Three inviolable rules
@@ -98,7 +98,7 @@ stays on the original branch, untouched.
 
 ## Return
 
-- `status: complete`, `gate: none`, `phase: review`.
+- `status: complete`, `gate: none`, `phase: accept`.
 - On a successful carve (N ≥ 2): top-level `split_slices: N`, plus the slice definitions (name,
   the path list with each path's change type — `added` / `modified` / `deleted`, estimated
   lines).

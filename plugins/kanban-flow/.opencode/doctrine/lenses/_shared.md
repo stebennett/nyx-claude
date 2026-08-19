@@ -1,8 +1,8 @@
 # Review panel — lenses
 
-One `card-lens-reviewer` agent is dispatched per lens at the card's **review** phase, against the
+One lens is applied at the card's **accept** phase, against the
 branch diff in the card's worktree — **before any PR opens**. Together the panel is
-`card-implementer`'s checker: blocking findings feed the automatic rework loop, so the PR the human
+the builder's checker: blocking findings feed the automatic rework loop, so the PR the human
 eventually sees has already survived every lens. Each expert reads `templates/lenses/_shared.md`
 (this file — **Etiquette**, **Method**) plus **only its own lens file**,
 `templates/lenses/<lens>.md`. Checklists distil
@@ -28,7 +28,7 @@ line-by-line pass), **Red flags** (concrete patterns, greppable where possible),
 - Max 10 findings — but never pad toward it. Two verified findings beat ten speculative ones.
 - Mention one notable good thing in your phase doc when you see it. Reviews teach.
 - Your returned `phase_doc` must open with exactly one `## [<lens>]` heading — your lens's tag,
-  nothing else. The orchestrator merges the panel's docs into a single `review.md` by locating
+  nothing else. The conductor merges the panel's docs into a single `acceptance-review.md` by locating
   each lens's section **by that heading**, and on a rework replaces only the re-run lenses'
   sections. Two headings, a different level, or a renamed tag and your findings are lost — or
   another lens's are overwritten.

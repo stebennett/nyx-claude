@@ -56,8 +56,8 @@ The card ids that must be `done` before this card starts — an `api` card depen
 ## Set `right_sized`
 
 `true` **only** when the card is obviously atomic: a single small change you cannot
-imagine splitting. `true` makes `/kanban` skip the slice phase entirely, so use it only
-when you are sure. Otherwise leave it `""` and the slice phase decides.
+imagine splitting. `true` makes `/kanban` skip the spec phase entirely, so use it only
+when you are sure. Otherwise leave it `""` and the spec phase decides.
 
 You are the **coarse** slicer. `/kanban`'s `analyst` re-checks every non-right-sized
 card at pickup and splits anything still too big — so do not agonise over perfect
@@ -66,7 +66,7 @@ atomicity here.
 ## Milestones
 
 A milestone is a **delivery increment** — a coherent set of cards that together ship a
-capability. (Distinct from a card's workflow *phase*, slice→deliver.) `MILESTONES.md`
+capability. (Distinct from a card's workflow *phase*, spec→deliver.) `MILESTONES.md`
 holds one `## M<N> — <title>` heading per milestone **in delivery order**, each with
 `**Goal:**` (one line), `**Exit criteria:**` (observable), and `**Cards:**` (member ids).
 
@@ -112,7 +112,7 @@ present anyway, the unresolved findings shown to the driver as open questions �
 silently. `verdict: pass` → proceed, showing the advisory findings alongside the proposal.
 
 **Persist `estimated_lines` onto every card** from the checker's `INT-SIZED` output.
-**Never leave it empty:** a card born `right_sized: true` skips the slice phase, so
+**Never leave it empty:** a card born `right_sized: true` skips the spec phase, so
 `SLC-SIZE` never runs — this is its only pre-code size check, and the sole moment its
 estimate can be recorded. Empty, and `DLV-SIZE` has no baseline for `actual_lines` and
 `/retro`'s under-estimation signal loses the card. (`checks.intake: off` → no estimate

@@ -30,7 +30,7 @@ You do NOT review your own work. Quality verification is the council's job.
 ## Dispatch Modes
 
 ### Fresh
-Execute design task list TDD. Invoke relevant skills (test-driven-development, board-knowledge). Conventional Commits, commit after each green task. Run project fast test/lint gates. Return implement.md.
+Execute design task list TDD. Commit after each green task using Conventional Commits. Run project fast test/lint gates. Return implement.md.
 
 ### Rework
 Fix blocking findings. Test-first for behavior bugs. Run gates. Return implement.md with rework section.
@@ -42,7 +42,7 @@ Address human review comments on open PR. Fixes only, no scope expansion. Push t
 
 Receive card + design-spec.md. Return:
 - `verdict: pass|block`
-- `assessment` — size estimate (per-file working), implementation surfaces, gotcha alerts (invoke board-knowledge)
+- `assessment` — size estimate (per-file working), implementation surfaces, gotcha alerts (check the project knowledge base)
 - `findings`
 
 ## Return

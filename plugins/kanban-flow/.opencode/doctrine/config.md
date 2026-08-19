@@ -6,7 +6,6 @@ adr_dir: docs/adrs
 kanban_flow_version: "0.1.0"
 template_overrides: {}
 wip_limit: 3
-pump_gate: on
 gates:
   slice: auto
   design: pr
@@ -88,7 +87,7 @@ The single source of project-specific tunables. `/kanban-init` creates it;
 this file** — every value an agent needs arrives in its dispatch; only `/kanban`
 and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) read it.
 
-- **spec_path** — the requirements doc `/refine` and `card-slicer` read.
+- **spec_path** — the requirements doc `/refine` and the `analyst` read.
 - **gh_command** — the GitHub CLI, or a bot-identity wrapper; every `gh`/API call
   goes through it. Default `gh`.
 - **board_dir** / **adr_dir** — where the board (cards, templates, this file) and
@@ -102,11 +101,6 @@ and the intake skills (`/refine`, `/requirement`, `/kanban-init`, `/migrate`) re
   the plugin's. Empty (`{}`) → plugin templates; `/migrate` sets one for a customized
   template.
 - **wip_limit** — max cards in flight at once.
-- **pump_gate** — `on` (default; a missing key reads as `on`) runs the cheap
-  `pump-gate` haiku agent first each pump (SKILL.md §0.0), so a quiet board under
-  `/loop` decides idle-vs-run in a minimal context instead of loading the board.
-  `off` bypasses it and runs reconcile directly — a debugging escape hatch, not the
-  normal path.
 - **gates** — per-gate policy. `slice`: `auto` | `manual`. `design`: `pr` (design PR
   is the review) | `domain` (stop for `gate_layer` cards only) | `manual` (stop every
   card). `deliver`: `auto` | `manual`.

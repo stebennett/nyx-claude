@@ -1,6 +1,6 @@
 ---
 name: adr
-description: "Use when creating or managing Architecture Decision Records (ADRs) in a kanban-flow project. Sole authority for Cognitect ADR format (Title, Context, Decision, Status, Consequences), numbering (max+1 across main and card adrs: reservations), supersede handling (set superseded ADR status, update index), bidirectional card linking (append to card's adrs: list), and docs/adrs/ layout. Invoked only by the /kanban orchestrator when a phase agent proposes ADRs — never use standalone."
+description: "Use when creating or managing Architecture Decision Records (ADRs) in a kanban-flow project. Sole authority for Cognitect ADR format (Title, Context, Decision, Status, Consequences), numbering (max+1 across main and card adrs: reservations), supersede handling (set superseded ADR status, update index), bidirectional card linking (append to card's adrs: list), and docs/adrs/ layout. Invoked only by the conductor when a phase agent proposes ADRs — never use standalone."
 ---
 
 # adr — write an Architecture Decision Record
@@ -11,7 +11,7 @@ format (**Title · Context · Decision · Status · Consequences**) and link the
 
 ## Inputs you receive
 
-The `/kanban` orchestrator hands you a **vetted** set — you persist it, never deciding
+The **conductor** hands you a **vetted** set — you persist it, never deciding
 *whether* to write (gate timing and idempotency are the caller's, documented in the kanban
 skill):
 

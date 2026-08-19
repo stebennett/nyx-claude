@@ -11,9 +11,9 @@ if you do not check them, nobody does.
    finding, always. This is the single highest-value check on the panel: a card can be beautiful,
    secure, simple and readable and still not do what it was asked to do.
 2. **Falsifiability — a test that cannot fail is not traceability.** Naming a test is not enough; it
-   must be a test that *would break* if the criterion were violated. `card-designer` was required to
-   enumerate, for each criterion, the mutation that would break it (delete the line, flip the
-   constant, stub the component); your job is the other half of that contract — **confirm some test
+must be a test that *would break* if the criterion were violated. The design was required to
+    enumerate, for each criterion, the mutation that would break it (delete the line, flip the
+    constant, stub the component); your job is the other half of that contract — **confirm some test
    actually catches each named mutation.** A test that mirrors the implementation, restates the
    code's own formula, or asserts only key/shape presence certifies bugs rather than catching them,
    and a criterion "covered" only by such a test is a criterion with no test: **blocking**, exactly as

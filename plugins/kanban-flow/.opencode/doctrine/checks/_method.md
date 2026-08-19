@@ -14,8 +14,8 @@ its id. (`checks/ids.md` is the generated per-target index.)
 slice gates and the two PR merges. Never add one.
 
 The **return format below binds only the five dedicated `card-*-checker` agents** (intake, slice,
-design, split, deliver — one per producer, hence no `implement` value for `checks`). `card-implementer`
-is checked instead by `card-tester` and the `card-lens-reviewer` panel, which keep their own contract
+design, split, deliver — one per producer, hence no `implement` value for `checks`). The builder
+is checked instead by the `verifier` and the council panel, which keep their own contract
 (`status: blocked` + `blockers`). *The discipline* below binds every checker.
 
 ## The discipline (this is how you avoid rubber-stamping)

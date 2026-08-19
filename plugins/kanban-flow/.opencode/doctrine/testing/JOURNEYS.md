@@ -1,6 +1,6 @@
 # Journey (E2E) testing — doctrine
 
-Read by `card-designer` when a `journey` level is configured and the card touches
+Read by `architect` when a `journey` level is configured and the card touches
 `testing.harness_paths` — i.e. when the card's scope includes the journey harness or CI workflow
 itself. Journeys run in the implementation PR's CI; agents never run them and never provision
 their environments. CI owns lifecycles.

@@ -83,7 +83,7 @@ a migration branch, never the plugin.
 
    ```yaml
    reworks:
-     slice: 0
+     spec: 0
      design: 0
      implement: N     # the old counter only ever counted test/review→implement loops
      split: 0
@@ -125,11 +125,12 @@ a migration branch, never the plugin.
      gate predicates cannot read. `/kanban`'s legacy normalization deletes such a doc on an
      in-flight card so its checker re-runs and regenerates it in current form; done cards' merged
      docs stay, and `/retro` falls back to their body criteria tables.
-   - *0.5 → 0.6:* `pump_gate: on` — the pre-flight gate switch (command §0.0). `on` is the new
-     default and changes no card outcome: each pump first runs the cheap `conductor` haiku agent to
-     decide idle-vs-run, so a quiet board stops before loading the board instead of
-     after. Say that `off` bypasses the gate and reconciles directly (a debugging escape hatch), and
-     that the gate writes no state and errs toward running.
+   - *0.5 → 0.6:* `pump_gate` — removed. The pre-flight gate was previously a separate
+     `pump-gate` haiku agent. In the new architecture the **conductor** agent runs its own
+     §1 Pre-flight check (fetch main, scan merges, probe open PRs) inline before loading
+     the board. The `pump_gate` config key is no longer read — remove it from config.md.
+     The conductor's pre-flight produces the same run-vs-idle decision without a separate
+     agent dispatch.
    - *0.6 → 0.8:* the commented `testing:` block — test levels (opt-in; the switch is
      `testing.levels` non-empty). Since it ships commented, "adding the missing key" here means
      appending the commented block from the plugin's current `.opencode/doctrine/config.md` frontmatter,

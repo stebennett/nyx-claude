@@ -23,7 +23,7 @@ criterion and ask *what would I run to see this?* — "the system is robust" fai
 "a request with no auth header returns 401" passes. Build the `depends_on` graph by hand and walk it
 for cycles and milestone-order violations. Finally, size every card.
 
-**`INT-SIZED` — sizing.** A card the intake skill marks `right_sized: true` **skips the slice phase
+**`INT-SIZED` — sizing.** A card the intake skill marks `right_sized: true` **skips the spec phase
 entirely**: it never meets `SLC-SIZE`, never gets an `estimated_lines` there, and is never sized again
 before its code is written — only `DLV-SIZE` remains, advisory and after the fact on an open PR.
 **Intake is that card's only pre-code size check.** Size **every** proposed card by the method in

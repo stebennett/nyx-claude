@@ -10,7 +10,7 @@ wrote its check doc, and its absence is not a finding.
 | `DLV-BASE` | the PR targets `main` and was cut from the right branch | blocking |
 | `DLV-BODY-TRUE` | every claim in the PR body is supported by the diff; no claimed acceptance criterion is unimplemented | blocking |
 | `DLV-SIZE` | **actual changed lines are within `size_limit`** (implementation PRs only — see below) | **advisory, escalated** |
-| `DLV-DOCS` | the phase docs that should ride this PR are on it — design PR: `slice.md`, `design.md`, `slice-check.md`, `design-check.md`, ADRs; implementation PR: `implement.md`, `test.md`, `review.md`. **A check doc is expected only when its check is `on`**: a disabled check writes no doc, and a right-sized card never sliced, so neither absence is a finding | blocking |
+| `DLV-DOCS` | the phase docs that should ride this PR are on it — design PR: `slice.md`, `design.md`, `slice-check.md`, `design-check.md`, ADRs; implementation PR: `implement.md`, `verify.md`, `acceptance-review.md`. **A check doc is expected only when its check is `on`**: a disabled check writes no doc, and a right-sized card never sliced, so neither absence is a finding | blocking |
 | `DLV-PURITY` | a design PR carries no code; an implementation PR carries no unrelated changes | blocking |
 | `DLV-CI` | CI is green or running; the PR was not opened on a known-red branch | blocking |
 

@@ -24,7 +24,7 @@ You NEVER produce a phase document or write code. You manage state, not output.
 
 From the `/kanban` command dispatch:
 - `board_dir` — board directory (default `docs/cards`)
-- `config.md` → `pump_gate`, `wip_limit`, `gh_command`, `checks.*`, `size_limit`, `size_exclude`
+- `config.md` → `wip_limit`, `gh_command`, `checks.*`, `size_limit`, `size_exclude`
 
 ## Procedure (one pump cycle)
 
@@ -60,7 +60,7 @@ For each card in status where its next doc is absent, dispatch the appropriate a
 | design | design.md absent → architect re-dispatch | architect | gate |
 | design | design.md present, design PR not merged → skip | — | — |
 | implement | implement.md | builder | persist, status → verify |
-| verify | test.md | verifier | persist, fast-gate |
+| verify | verify.md | verifier | persist, fast-gate |
 | accept | acceptance-review.md | Council 2 | merge, gate |
 | deliver | deliver-check.md | pilot | persist, status → done |
 
@@ -184,7 +184,7 @@ You are the sole writer of:
 - `docs/cards/CARD-*/solution-review.md` (merged from Council 1)
 - `docs/cards/CARD-*/acceptance-review.md` (merged from Council 2)
 
-Phase documents on the PR (design.md, implement.md, test.md, security-audit.md, deliver-check.md) are written by their respective agents to the worktree.
+Phase documents on the PR (design.md, implement.md, verify.md, security-audit.md, deliver-check.md) are written by their respective agents to the worktree.
 
 ## Return
 

@@ -14,7 +14,7 @@ create no branches, and touch no GitHub.
 
 Read: `checks/_method.md` and `checks/split.md` (absolute paths in your dispatch; layer any
 `## Check criteria — split` addendum on top), `PROTOCOL-ADDENDUM.md` if present. Then your inputs: the **named original branch**, `split.md`, `design.md`,
-`implement.md`, `review.md`, and `size_limit` / `size_exclude`.
+`implement.md`, `acceptance-review.md`, and `size_limit` / `size_exclude`.
 
 ## Derive ground truth from the NAMED ORIGINAL BRANCH — never from `HEAD`
 

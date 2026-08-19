@@ -18,7 +18,7 @@ can plausibly affect, from design.md — e.g. "journey (J1, J3), experience". Gr
 what vouches for these; delete this section otherwise>
 
 ### Review
-<resolved findings from accept.md>
+<resolved findings from acceptance-review.md>
 
 ### Knowledge
 <links to KNOWLEDGE.md entries added>

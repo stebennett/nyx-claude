@@ -1,13 +1,13 @@
 # Test levels — doctrine
 
-Read by `card-designer`, `card-design-checker`, and `card-tester` when the project configures
-`testing.levels`. The terse rules ride every dispatch in `AGENT-PROTOCOL.md` (determinism vs
+Read by `architect` (deriving and declaring levels) and `verifier` (running them) when the project
+configures `testing.levels`. The terse rules ride every dispatch in `AGENT-PROTOCOL.md` (determinism vs
 isolation; fakes only at declared seams); this file is the working detail.
 
 ## The level model
 
-A level is a named class of tests with a scope. `scope: card` levels run at the test phase via the
-project's configured command and feed the implementer rework loop; `scope: pr` levels (journeys,
+A level is a named class of tests with a scope. `scope: card` levels run at the verify phase via the
+project's configured command and feed the builder rework loop; `scope: pr` levels (journeys,
 experience) run in the implementation PR's CI — agents never run them and never provision their
 environments. `unit` is not a level: the existing suite/coverage/property/lint gates own it.
 
@@ -24,13 +24,13 @@ in `design.md` → `## Test strategy` → `### Levels`:
 A decline needs a reason that would survive a skeptical reader ("no seam schema touched", "no
 user-visible flow changes; J1/J2 unaffected") — "out of time" or "covered by unit tests" is not a
 rationale, it is the escape hatch this system closed. A selected level that produces zero tests is
-a blocker at the test phase. Deferral rates are counted by `/retro`.
+a blocker at the verify phase. Deferral rates are counted by `/retro`.
 
 ## Executable acceptance examples
 
 Wherever an acceptance criterion admits a worked example, the design records it as a concrete
 example table — given/when/then as data, exact expected literals computed from the spec's own
-arithmetic, never from the code under test. The implementer automates these verbatim; the
+arithmetic, never from the code under test. The builder automates these verbatim; the
 `[tests]` lens's provenance rules treat a regenerated or formula-mirrored expected value as
 blocking. The spec's numbers become the tests.
 
@@ -52,7 +52,7 @@ blocking. The spec's numbers become the tests.
   keep only with real bidirectional consumer coupling.
 - Backwards-compatible evolution: additive fields are safe; removals/renames/type-changes are
   breaking and need explicit versioning. A diff touching a declared seam's `schema` path without a
-  passing contract run is a blocker at the test phase.
+  passing contract run is a blocker at the verify phase.
 
 ## Test data
 

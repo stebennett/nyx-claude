@@ -12,7 +12,7 @@ Read only: the plugin's `.opencode/doctrine/lenses/_shared.md` (**Etiquette**
 and **Method** — they bind every finding) and your lens's file
 `.opencode/doctrine/lenses/<lens>.md`, both at the absolute paths your dispatch provides; and
 the card's `design.md` (acceptance criteria, scope, spec references), `implement.md` and
-`test.md`. Read the spec sections `design.md` cites if your lens needs them. Do not read other
+`verify.md`. Read the spec sections `design.md` cites if your lens needs them. Do not read other
 lenses' files.
 
 Your lens file's **Walk** is your procedure — execute its steps in order and hold its **Ask of
@@ -60,8 +60,8 @@ slice after `pilot`'s carve has passed `pilot`, always with `lens: acceptance`:
   actionable: `path:line`, what is wrong, what right looks like.
 - `status: needs-input` if you cannot review at all — no `design.md`, unreadable worktree,
   empty diff. NOT the same as `blocked`.
-- Otherwise `status: complete`, `gate: none`, `phase: review`.
-- `phase_doc` is your lens's slice of `review.md`: `## [<lens>]` then `### Blocking` and
+- Otherwise `status: complete`, `gate: none`, `phase: accept`.
+- `phase_doc` is your lens's section in the council's review (`acceptance-review.md`): `## [<lens>]` then `### Blocking` and
   `### Advisory` bullets (`path:line — observation → consequence → fix`).
 - Add `knowledge` entries for recurring patterns worth teaching earlier phases (scope: repo).
   Route every finding you defer rather than block on into one (`Gotchas` for a trap,
@@ -71,6 +71,6 @@ slice after `pilot`'s carve has passed `pilot`, always with `lens: acceptance`:
 
 ## Role assignment
 
-Lenses are used by Council 2 members (**architect**, **designer**, **pilot**) for full panel
-review. The **verifier** also applies lenses in a testability-assessment capacity during the test
+Lenses are used by Council 2 members (**architect**, **designer**, **pilot**) for acceptance
+review. The **verifier** also applies lenses in a testability-assessment capacity during the verify
 phase.

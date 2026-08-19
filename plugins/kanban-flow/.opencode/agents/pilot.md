@@ -35,7 +35,7 @@ Return: `{verdict: pass|block, assessment: <PR sizing, dependency conflicts, mig
 
 ## Council 2 Participation (read-only worktree)
 
-Receive card, design-spec.md, design.md, implement.md, test.md, security-audit.md.
+Receive card, design-spec.md, design.md, implement.md, verify.md, security-audit.md.
 Review: PR size acceptable? Migration path clear? CI/CD config correct?
 Return: `{verdict: pass|block, assessment, findings}`
 

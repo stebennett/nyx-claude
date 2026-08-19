@@ -1,6 +1,6 @@
 # Failure diagnosis — prove it before you touch it
 
-Read by `card-tester` (classifying blockers) and `card-implementer` in rework mode (acting on
+Read by `verifier` (classifying blockers) and `builder` in rework mode (acting on
 them). The untrained default when a test fails is "make the test pass". This file inverts it:
 **prove which of the four it is before changing anything.**
 

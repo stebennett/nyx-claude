@@ -31,7 +31,7 @@ assert too weakly, or skip the boundaries are worse than missing — they certif
      value must differ between the branch under test and its sibling, or the assertion can't fail
      on a swap.
 7. **Level delivery (only when `design.md` has a `### Levels` block).** For each level that block
-   marks *selected*, confirm `test.md`'s `## Levels` shows it ran with a non-zero test count, and
+   marks *selected*, confirm `verify.md`'s `## Levels` shows it ran with a non-zero test count, and
    that the tests exist in the diff. A selected level with no tests is blocking — the tester should
    have caught it; you are the backstop.
 8. **Seam audit.** For every fake/mock/stub in the diff, name the declared seam it stands at (the
@@ -53,7 +53,7 @@ variants exercised; a multi-outcome error handler tested with a single failure s
 (skipping is quarantine's job, and quarantine is written by the orchestrator, not by a diff; a
 board with no `QUARANTINE.md` is judged by the pre-existing rules alone).
 
-**Don't flag:** coverage % by itself (card-tester owns the number — you own whether the tests
+**Don't flag:** coverage % by itself (the verifier owns the number — you own whether the tests
 *mean* anything). On a card whose `design.md` has a `### Levels` block: a gap at a level that block
 explicitly *declines* with a rationale — the design check verdicted it; your job is gaps the block
 does not account for. On a card whose `design.md` has **no** `### Levels` block (pre-opt-in design,

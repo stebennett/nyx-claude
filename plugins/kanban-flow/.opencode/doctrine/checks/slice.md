@@ -2,7 +2,7 @@
 
 Read `checks/_method.md` first (the discipline, the return format, and the size-estimate appendix);
 this file is your criterion set. Checks `analyst`. Your inputs: `card.md`, the spec, `slice.md`,
-the slicer's `proposed_cards` / `dependents_rewire` / `estimated_lines`, and the card's dependents.
+the analyst's `proposed_cards` / `dependents_rewire` / `estimated_lines`, and the card's dependents.
 
 | id | criterion | severity when failed |
 |---|---|---|
@@ -20,12 +20,12 @@ the union of the children's acceptance criteria covers every parent criterion �
 correct new deps. For `SLC-DAG`, build the child graph and walk it for cycles and forward references.
 
 **`SLC-SIZE` — sizing.** Size every card in scope (the parent on a keep-as-one verdict; each child on
-a split) by the method in `_method.md`'s appendix, then compare against the slicer's `estimated_lines`.
-Any estimate over `size_limit` → **blocking: the card must be split.** The slicer is re-dispatched to
+a split) by the method in `_method.md`'s appendix, then compare against the analyst's `estimated_lines`.
+Any estimate over `size_limit` → **blocking: the card must be split.** The analyst is re-dispatched to
 produce children, each subject to `SLC-SIZE` in turn, so a split into two over-budget children does
-not pass. A slicer estimate indefensible against yours is blocking even under the limit.
+not pass. An analyst estimate indefensible against yours is blocking even under the limit.
 
 **Don't flag:** an estimate that differs from yours by a modest margin and stays well under the limit
 (you check for a *ceiling breach* and *reasoning*, not arithmetic); a keep-as-one verdict on a
-genuinely atomic invariant — the slicer's own doctrine prefers right-sized when borderline, so respect
+genuinely atomic invariant — the analyst's own doctrine prefers right-sized when borderline, so respect
 it unless the size estimate says otherwise.

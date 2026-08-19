@@ -1,10 +1,10 @@
 # Phase Agent Protocol
 
-This document is read by the `/kanban` orchestrator, which distributes relevant fragments inline
+This document is read by the **conductor** agent, which distributes relevant fragments inline
 to each dispatched agent. Agents do not read this file directly — they receive their protocol
 instructions in the dispatch prompt. This file remains the canonical, auditable source.
 
-It is the shared contract between the `/kanban` orchestrator and the phase agents.
+It is the shared contract between the **conductor** and the other agents.
 
 ## On dispatch you receive
 - `card_id`, `card_dir` (e.g. docs/cards/CARD-001-slug), `worktree` (absolute path to this card's git
@@ -16,7 +16,7 @@ It is the shared contract between the `/kanban` orchestrator and the phase agent
 - **Doctrine paths:** the plugin's `AGENT-PROTOCOL.md` (this file) and the repo's
   `PROTOCOL-ADDENDUM.md`; `pilot` also receives `templates/lenses/_shared.md` +
   `<lens>.md`. Read the protocol here, then layer the addendum — never a `docs/cards/` copy.
-- Exception: the **slice** phase runs before any worktree exists, so `analyst` gets no `worktree`
+- Exception: the **spec** phase runs before any worktree exists, so `analyst` gets no `worktree`
   but instead the card's current **dependents** (ids that `depends_on` it).
 - Dispatch details for each phase (**rework**, **PR-comment**, **review**, **check**, **deliver**)
   are defined in the respective agent or checker definitions.
@@ -73,9 +73,6 @@ Emit exactly one fenced ```result block, valid YAML:
 
 ```result
 status: complete            # complete | blocked | needs-input
-phase: <spec|refine|design|implement|verify|accept|deliver|check>
-card: CARD-NNN
-gate: none                  # none | design | slice  (this phase's gate; never "deliver")
 summary:
   - "2–4 bullets a human reads at the gate or in the board"
 open_questions:             # required when status is needs-input; else []
@@ -96,14 +93,17 @@ phase_doc: |
   <full markdown body of this phase's doc — the orchestrator writes it to card_dir/<phase>.md>
 ```
 
+The conductor tracks `phase`, `card`, and the current gate externally from its dispatch table —
+they are not part of your result block. Return your `phase_doc`, findings, and knowledge only.
+
 **Phase-doc length budgets** (advisory — over-budget is an advisory finding): `design.md` ≤150 lines,
-`implement.md` ≤80, `test.md` ≤80 (per-level gate sections included); a checker's evidence is one
+`implement.md` ≤80, `verify.md` ≤80 (per-level gate sections included); a checker's evidence is one
 line per criterion; a review lens's section is ≤40 lines.
 
 - `status: needs-input` → orchestrator surfaces `open_questions` to the driver and re-dispatches you with answers.
 - `status: blocked` from the **tester or reviewer** with actionable findings → orchestrator auto-re-dispatches the implementer in rework mode, up to `check_budget.implement` loops (`config.md`; never assume a number), then parks the card.
 - `status: blocked` from any other phase → orchestrator parks the card with `blockers` shown on the board.
-- `status: complete` + `gate: slice` (slice phase only) → orchestrator applies the gate policy: auto-apply the split, or surface `proposed_cards` + `dependents_rewire` to the driver.
+- `status: complete` + `gate: slice` (spec phase only) → orchestrator applies the gate policy: auto-apply the split, or surface `proposed_cards` + `dependents_rewire` to the driver.
 - `status: complete` + `gate: design` → orchestrator applies gate policy: auto-approve, or stop for the driver (domain-layer cards by default).
 - The deliver gate triggers when a card reaches `deliver` status, not by any agent `gate` value; no agent emits `gate: deliver`.
 

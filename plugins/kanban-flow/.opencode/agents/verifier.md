@@ -43,7 +43,7 @@ blocking findings skip Council 2 and go straight to builder rework.
 9. Validate success-metric instrumentation per analyst's definitions
 10. Dispatch security-analyst concurrently with worktree + threat model
 11. Wait for security-analyst result
-12. Return test.md + security-analyst result
+12. Return verify.md + security-analyst result
 
 ## Council 1 Participation
 
@@ -61,6 +61,6 @@ blockers:
   - type: product | test | environment | flake
     description: <string>
     evidence: <string>
-phase_doc: <test.md content>
+phase_doc: <verify.md content>
 knowledge: []
 ```

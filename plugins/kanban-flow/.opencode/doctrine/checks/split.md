@@ -1,11 +1,11 @@
 # split — check criteria
 
 Read `checks/_method.md` first (the discipline and the return format); this file is your criterion
-set. Checks `pilot`, dispatched at the end of the review phase once the lens panel has passed and
+set. Checks `pilot`, dispatched at the end of the accept phase once the lens panel has passed and
 **before any PR exists**. Your inputs: the **named original branch** and its change set
 (`git diff --no-renames --name-status origin/main...<original-branch>`), `split.md` (the ordered slices
 — paths, why, estimated lines, the green evidence for each, and the `## Environment` proof that the
-scratch worktree builds), `design.md`, `implement.md`, `review.md`, and `size_limit` / `size_exclude`.
+scratch worktree builds), `design.md`, `implement.md`, `acceptance-review.md`, and `size_limit` / `size_exclude`.
 
 **Derive the ground truth from the NAMED ORIGINAL BRANCH — never from `HEAD`.** `HEAD` in the card's
 worktree is **not trustworthy**: `pilot` may have moved it onto a scratch branch, and a pump can

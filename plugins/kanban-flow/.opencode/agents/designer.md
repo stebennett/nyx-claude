@@ -26,7 +26,7 @@ You produce design-spec.md and participate in both councils:
 ## Procedure
 
 1. Read card.md for acceptance criteria and scope
-2. Invoke board-knowledge for relevant UX gotchas or conventions
+2. Check project-specific conventions and gotchas before designing.
 3. Produce design-spec.md:
    - **Interaction flows** — user journey through the feature
    - **Component states** — loading, empty, populated, error, edge (one row per state)
@@ -44,7 +44,7 @@ Receive card + design-spec.md. Return:
 
 ## Council 2 Participation (read-only worktree)
 
-Receive card, design-spec.md, design.md, implement.md, test.md, security-audit.md.
+Receive card, design-spec.md, design.md, implement.md, verify.md, security-audit.md.
 Review experience fidelity: interaction flows match design-spec.md? All component states present? Accessibility met?
 Return:
 - `verdict: pass|block`

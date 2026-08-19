@@ -7,15 +7,15 @@ _last rendered: never_
 
 ## Backlog
 
-## Slice
+## Spec
 
 ## Design
 
 ## Implement
 
-## Test
+## Verify
 
-## Review
+## Accept
 
 ## Deliver
 

@@ -15,7 +15,7 @@ in your dispatch; layer any `## Check criteria — deliver` addendum on top).
 
 Your dispatch gives you: `card.md`, the `pr_url`, the PR **mode** (`design` | `implementation`), the
 `worktree`, `gh_command`, `size_limit` and `size_exclude` (the ceiling and exclusions for `DLV-SIZE`),
-the card's `estimated_lines` (what the slicer projected — report actual against it), and the `checks`
+the card's `estimated_lines` (what the analyst projected — report actual against it), and the `checks`
 policy (which producers' checks are `on`). If an input a criterion needs is absent, say so in that
 criterion's evidence — never verdict `pass` on evidence you were never given.
 
@@ -55,8 +55,8 @@ so a still-oversized slice means the splitter failed. Report actual vs. limit, p
 split. **Never split a split.**
 
 **`DLV-DOCS`** — expected phase docs ride the PR (design PR: `slice.md`, `design.md`,
-`slice-check.md`, `design-check.md`, ADRs; implementation PR: `implement.md`, `test.md`,
-`review.md`), except a doc whose check is `off`. On a slice PR these ride only slice 1 — absence
+`slice-check.md`, `design-check.md`, ADRs; implementation PR: `implement.md`, `verify.md`,
+`acceptance-review.md`), except a doc whose check is `off`. On a slice PR these ride only slice 1 — absence
 from slice 2+ is expected, which is why your dispatch tells you `k`.
 
 Verdict every criterion with evidence — real command output, not a summary. Every id in your
