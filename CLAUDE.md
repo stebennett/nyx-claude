@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository is a **Claude Code plugin marketplace** — it hosts a collection of plugins authored by the owner for use with Claude Code. It is consumed via `/plugin marketplace add <this-repo>` followed by `/plugin install <name>@<marketplace>`.
 
-The marketplace manifest is defined and `code-safely-plugin` is the first working plugin. `plugins/kanban/` is a placeholder (empty, not yet registered).
+Registered plugins: `code-safely-plugin`, `kanban-flow`, `github-app-identity`, `productivity`, `devtools` and `engineering-standards`. Each has its own README; the sections below record only what is non-obvious.
 
 ## Repository layout
 
@@ -18,7 +18,12 @@ plugins/
     .claude-plugin/plugin.json
     hooks/hooks.json     # Wires the *.sh guards to PreToolUse/PostToolUse/Stop events
     hooks/*.sh           # 20 hook scripts
-  kanban/                # Placeholder — empty, not yet registered in marketplace.json
+  kanban-flow/           # Card-driven kanban orchestrator + specialist agents
+  github-app-identity/   # GitHub App identity: gh shim, token minter, credential helper (scripts/tests/)
+  productivity/          # handoff / continue / task-observer / token-usage skills
+  devtools/              # renovator and pr-reviewer skills + their agents
+  engineering-standards/ # Standards assessment: classify + assess skills, check scripts, rubric (scripts/tests/)
+scripts/check-plugin.sh  # Structural validation of a plugin directory (run in CI for every plugin)
 ```
 
 ### code-safely-plugin
@@ -30,6 +35,18 @@ Portability: scripts target both Linux and macOS. Avoid GNU-only constructs (`gr
 Dependencies: **`jq` is required** (every guard parses the hook payload with it). `python3`/`node`/`npx` are optional and used only by `syntax-check.sh`, guarded by `command -v`. Platform-specific tools are already guarded/branched: `findmnt` (Linux, `destructive-guard`), and `notify-send`/`osascript`/`powershell.exe` (`api-error-alert`).
 
 This plugin is the source of truth — the copies under `~/.claude/hooks/` are now unwired and may drift.
+
+### engineering-standards
+
+The assessment is split between deterministic bash (`scripts/`) and agents: `checks/group-N.sh` emit one JSON record per *script* criterion, the `es-assessor` agent scores *judgment* criteria, and `score.sh` does all arithmetic. `references/rubric.json` is the machine form of `references/standards.md` — `test_rubric_consistency.sh` fails if their criterion IDs, levels or versions diverge, so change both together. Applicability rules live once, in `scripts/lib/applicability.jq`.
+
+Gotchas these scripts already hit:
+- **No `pipefail` in `checks/*.sh` or `detect.sh`.** They pipe into `grep -q`, which exits on the first match and SIGPIPEs the producer; under `pipefail` that race intermittently reads as "no match". Each check block writes to a temp file instead, so `set -e` still catches real failures.
+- **Never let `cat`/`grep` see an empty file list** — they fall back to stdin and hang. Prefix with `/dev/null` (`cat /dev/null $(workflows)`), and run the scripts with `< /dev/null`.
+- **`yq`'s comma binds looser than `|`**: write `.on | (a, b, c)`, not `.on | a, b, c`.
+- **No apostrophes inside single-quoted jq programs** (comments included) — bash ends the string there.
+- **Monorepos are the norm** — read manifests with `manifests pyproject.toml package.json` (every workspace member), never a bare root `pyproject.toml`.
+- Every `.json` under a plugin must parse (`check-plugin.sh`), so test fixtures use plain JSON, not JSONC.
 
 ### Marketplace manifest (`.claude-plugin/marketplace.json`)
 
@@ -66,4 +83,4 @@ Component files are discovered by convention from these directory names, so the 
 ## Working in this repo
 
 - **RTK proxy**: This machine runs Rust Token Killer, which rewrites common shell commands (`ls`, `cat`, `grep`, `find`, `git`). `.claude/settings.local.json` pre-allows `Bash(rtk proxy *)`. If an `rtk`-wrapped command rejects a flag (e.g. `find -not`/`-exec`), fall back to `rtk proxy <command>` to run it unfiltered.
-- **No build/test tooling** exists yet. Plugin components (commands, agents, skills) are Markdown/JSON and are validated by installing the plugin into Claude Code and exercising it, not by a test runner. Add build/lint/test instructions here if and when tooling is introduced.
+- **Validation and tests.** `bash scripts/check-plugin.sh plugins/<name>/` checks a plugin's structure (manifest, JSON, agent/skill frontmatter, referenced files, orphan agents). Plugins with scripts keep plain-bash tests in `plugins/<name>/scripts/tests/test_*.sh`; CI (`.github/workflows/plugins.yml`) runs both on Ubuntu and macOS. Markdown components (commands, agents, skills) are otherwise validated by installing the plugin and exercising it.
