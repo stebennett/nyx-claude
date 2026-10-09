@@ -1,0 +1,11 @@
+repos:
+  - repo: local
+    hooks:
+      - id: fmt
+        entry: gofmt -l .
+      - id: lint
+        entry: golangci-lint run
+      - id: gitleaks
+        entry: gitleaks protect --staged
+      - id: commits
+        entry: conventional-pre-commit

@@ -1,0 +1,13 @@
+image:
+  tag: ""
+postgres:
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+resources:
+  requests: { cpu: 10m, memory: 32Mi }
+securityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }
+readinessProbe:
+  httpGet: { path: /readyz, port: 8080 }
