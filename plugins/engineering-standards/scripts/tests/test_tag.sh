@@ -32,6 +32,7 @@ assert_eq "other key preserved" "keep-me" "$(yq '.other_tool.setting' "$repo/.ny
 assert_contains "top comment preserved" "# top comment kept" "$(cat "$repo/.nyx.yml")"
 assert_contains "inline comment preserved" "# inline comment kept" "$(cat "$repo/.nyx.yml")"
 assert_eq "type written" "service" "$(yq '.engineering_standards.type' "$repo/.nyx.yml")"
+assert_contains "section written as block YAML" "  type: service" "$(cat "$repo/.nyx.yml")"
 assert_eq "framework version stamped" "1.4" "$(yq '.engineering_standards.framework_version' "$repo/.nyx.yml")"
 assert_eq "schema version stamped" "1" "$(yq '.engineering_standards.schema_version' "$repo/.nyx.yml")"
 assert_exit "gate passes on a fresh tag" 0 bash "$tag" gate "$repo"
