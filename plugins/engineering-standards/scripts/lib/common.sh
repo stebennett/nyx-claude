@@ -42,7 +42,8 @@ es_tag_json() { # <repo>
 es_tag_write() { # <repo> <json-file>
   local f="$1/$ES_TAG_FILE"
   [ -f "$f" ] || : > "$f"
-  ES_TAG_SRC="$2" yq -i ".$ES_TAG_KEY = load(strenv(ES_TAG_SRC))" "$f"
+  # load() keeps the JSON flow style; reset it so the section is written as block YAML.
+  ES_TAG_SRC="$2" yq -i ".$ES_TAG_KEY = load(strenv(ES_TAG_SRC)) | (.$ES_TAG_KEY | ...) style=\"\"" "$f"
 }
 
 # Print a list of problems with a tag (one per line); empty means valid.
