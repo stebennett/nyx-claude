@@ -1,0 +1,33 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567
+      - uses: docker/login-action@0123456789abcdef0123456789abcdef01234567
+        with:
+          registry: dhi.io
+      - uses: devcontainers/ci@0123456789abcdef0123456789abcdef01234567
+        with:
+          runCmd: just check
+      - run: just check
+      - run: just build
+      - run: govulncheck ./...
+      - run: go-test-coverage --config .testcoverage.yml
+      - run: helm lint charts/app
+      - run: helm template charts/app | kubeconform -strict
+      - uses: aquasecurity/trivy-action@0123456789abcdef0123456789abcdef01234567
+        with:
+          image-ref: exemplary
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: 1

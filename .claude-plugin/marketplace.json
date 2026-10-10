@@ -28,6 +28,11 @@
       "name": "devtools",
       "source": "./plugins/devtools",
       "description": "Developer-workflow automation. 'renovator' merges provably-safe green patch/minor Renovate dependency PRs and parks the rest; 'pr-reviewer' runs a three-lens agent panel over every other open PR and either requests changes with concrete recommendations or approves and merges."
+    },
+    {
+      "name": "engineering-standards",
+      "source": "./plugins/engineering-standards",
+      "description": "Assess a repository against the Home Projects Engineering Standards: classify it once (type, deployment target, database, recorded in .nyx.yml), then score every applicable criterion and write docs/assessment.md with category scores, maturity level, blocking gates and actions."
     }
   ]
 }

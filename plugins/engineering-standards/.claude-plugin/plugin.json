@@ -1,0 +1,8 @@
+{
+  "name": "engineering-standards",
+  "description": "Assess a repository against the Home Projects Engineering Standards. 'engineering-standards-classify' infers the project type, deployment target and database, confirms them with you, and records them in .nyx.yml. 'engineering-standards-assess' scores every applicable criterion — scripts for the mechanical checks, agents for the judgment calls — and writes docs/assessment.md with category scores, maturity level, blocking gates and actions.",
+  "version": "0.1.0",
+  "author": { "name": "Steve Bennett" },
+  "license": "MIT",
+  "keywords": ["engineering-standards", "assessment", "maturity", "rubric", "quality", "agents"]
+}

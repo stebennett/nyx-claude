@@ -1,0 +1,1178 @@
+{
+  "framework_version": "1.4",
+  "schema_version": 1,
+  "levels": [
+    {
+      "level": "L0",
+      "min_score": 0
+    },
+    {
+      "level": "L1",
+      "min_score": 40
+    },
+    {
+      "level": "L2",
+      "min_score": 65
+    },
+    {
+      "level": "L3",
+      "min_score": 85
+    }
+  ],
+  "categories": [
+    {
+      "id": "STK",
+      "name": "Technology stack",
+      "group": 1,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "O"
+      }
+    },
+    {
+      "id": "DOC",
+      "name": "Documentation",
+      "group": 1,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "HYG",
+      "name": "Repository hygiene",
+      "group": 1,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "VCS",
+      "name": "Version control",
+      "group": 2,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "QUA",
+      "name": "Code quality",
+      "group": 3,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "TST",
+      "name": "Testing",
+      "group": 3,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "O"
+      }
+    },
+    {
+      "id": "CI",
+      "name": "CI/CD",
+      "group": 2,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "DEP",
+      "name": "Dependency management",
+      "group": 2,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "SEC",
+      "name": "Security",
+      "group": 4,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "BLD",
+      "name": "Build and packaging",
+      "group": 3,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "-"
+      }
+    },
+    {
+      "id": "CFG",
+      "name": "Configuration and environment",
+      "group": 4,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "DPL",
+      "name": "Deployment",
+      "group": 5,
+      "applicability": {
+        "service": "R",
+        "library": "-",
+        "cli": "-",
+        "infrastructure": "O"
+      }
+    },
+    {
+      "id": "DAT",
+      "name": "Data",
+      "group": 5,
+      "applicability": {
+        "service": "R",
+        "library": "O",
+        "cli": "O",
+        "infrastructure": "O"
+      },
+      "applies_when": [
+        {
+          "field": "database",
+          "not_in": [
+            "none"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OBS",
+      "name": "Observability",
+      "group": 5,
+      "applicability": {
+        "service": "R",
+        "library": "-",
+        "cli": "O",
+        "infrastructure": "O"
+      }
+    },
+    {
+      "id": "OPS",
+      "name": "Operability and data",
+      "group": 5,
+      "applicability": {
+        "service": "R",
+        "library": "-",
+        "cli": "-",
+        "infrastructure": "R"
+      }
+    },
+    {
+      "id": "AGT",
+      "name": "AI agent context",
+      "group": 1,
+      "applicability": {
+        "service": "R",
+        "library": "R",
+        "cli": "R",
+        "infrastructure": "R"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "name": "default",
+      "applies_when": []
+    },
+    {
+      "name": "setup",
+      "applies_when": []
+    },
+    {
+      "name": "fmt",
+      "applies_when": []
+    },
+    {
+      "name": "lint",
+      "applies_when": []
+    },
+    {
+      "name": "test",
+      "applies_when": [
+        {
+          "field": "type",
+          "not_in": [
+            "infrastructure"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "check",
+      "applies_when": []
+    },
+    {
+      "name": "build",
+      "applies_when": [
+        {
+          "field": "type",
+          "in": [
+            "service",
+            "library",
+            "cli"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "applies_when": [
+        {
+          "field": "type",
+          "in": [
+            "service",
+            "cli"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "migrate",
+      "applies_when": [
+        {
+          "field": "type",
+          "in": [
+            "service",
+            "cli"
+          ]
+        },
+        {
+          "field": "database",
+          "in": [
+            "postgresql",
+            "sqlite",
+            "d1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "deploy",
+      "applies_when": [
+        {
+          "field": "type",
+          "in": [
+            "service"
+          ]
+        },
+        {
+          "field": "deployment_target",
+          "in": [
+            "fly",
+            "cloudflare"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "clean",
+      "applies_when": []
+    }
+  ],
+  "criteria": [
+    {
+      "id": "STK-1",
+      "category": "STK",
+      "level": "L1",
+      "text": "All backend code is Python or Go",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "STK-2",
+      "category": "STK",
+      "level": "L1",
+      "text": "All frontend code is TypeScript; no hand-written `.js` / `.jsx` source files",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "STK-3",
+      "category": "STK",
+      "level": "L1",
+      "text": "`tsconfig.json` has `\"strict\": true`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "STK-4",
+      "category": "STK",
+      "level": "L2",
+      "text": "Language toolchain versions pinned: `go` directive and `toolchain` in `go.mod`; `requires-python` in `pyproject.toml` plus `.python-version`; `engines.node` in `package.json` plus `.nvmrc` or `.node-version`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-1",
+      "category": "DOC",
+      "level": "L1",
+      "text": "The first paragraph of the README says what the project is and why it exists",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-2",
+      "category": "DOC",
+      "level": "L1",
+      "text": "The README documents how to get started by opening the Dev Container and running `just setup`, `just run` and `just test`",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-3",
+      "category": "DOC",
+      "level": "L1",
+      "text": "A licence file is present, or the README states explicitly that the repo is private and unlicensed",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-4",
+      "category": "DOC",
+      "level": "L2",
+      "text": "Significant design decisions are recorded as ADRs in `docs/adr/`",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-5",
+      "category": "DOC",
+      "level": "L2",
+      "text": "Projects with more than one component have an architecture overview (diagram or text)",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DOC-6",
+      "category": "DOC",
+      "level": "L3",
+      "text": "`CHANGELOG.md` is maintained, or release notes are generated from commits",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "HYG-1",
+      "category": "HYG",
+      "level": "L1",
+      "text": "`.gitignore` excludes build output, local environment files and editor files",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "HYG-2",
+      "category": "HYG",
+      "level": "L1",
+      "text": "No build artefacts, generated files or binaries over 1 MB are committed, unless required and documented",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "HYG-3",
+      "category": "HYG",
+      "level": "L1",
+      "text": "The README declares the project status: active, maintained or archived",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "HYG-4",
+      "category": "HYG",
+      "level": "L2",
+      "text": "Layout follows language conventions: Go uses `cmd/<name>/` and `internal/`; Python uses the `src/<package>/` layout with `pyproject.toml`; TypeScript code lives in `src/`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "HYG-5",
+      "category": "HYG",
+      "level": "L3",
+      "text": "`.editorconfig` present",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "VCS-1",
+      "category": "VCS",
+      "level": "L1",
+      "text": "The default branch is `main`, and it is always in a deployable or releasable state",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "VCS-2",
+      "category": "VCS",
+      "level": "L2",
+      "text": "Commit messages follow Conventional Commits",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "VCS-3",
+      "category": "VCS",
+      "level": "L2",
+      "text": "`main` is protected by a branch ruleset that blocks force-push and requires CI status checks to pass before merge",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "VCS-4",
+      "category": "VCS",
+      "level": "L2",
+      "text": "Releases are tagged with semantic version tags (`vX.Y.Z`)",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "VCS-5",
+      "category": "VCS",
+      "level": "L3",
+      "text": "The commit message format is enforced by a hook or a CI check",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "QUA-1",
+      "category": "QUA",
+      "level": "L1",
+      "text": "A formatter is configured and runs through `just fmt` (for example `gofmt`/`goimports`, `ruff format`, `prettier` or `biome`)",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "QUA-2",
+      "category": "QUA",
+      "level": "L1",
+      "text": "A linter is configured with its config committed, and runs through `just lint` (for example `golangci-lint`, `ruff`, `eslint` or `biome`)",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "QUA-3",
+      "category": "QUA",
+      "level": "L2",
+      "text": "CI runs `just lint`, and a violation fails the build",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "QUA-4",
+      "category": "QUA",
+      "level": "L2",
+      "text": "Pre-commit hooks run the formatter and linter locally",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "QUA-5",
+      "category": "QUA",
+      "level": "L3",
+      "text": "Python static type checking runs in `just lint` in strict mode (`pyright` or `mypy --strict`); TypeScript runs `tsc --noEmit`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "TST-1",
+      "category": "TST",
+      "level": "L1",
+      "text": "Automated tests exist",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "TST-2",
+      "category": "TST",
+      "level": "L1",
+      "text": "`just test` runs the full test suite",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "TST-3",
+      "category": "TST",
+      "level": "L2",
+      "text": "CI runs the tests on every push and pull request",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "TST-4",
+      "category": "TST",
+      "level": "L2",
+      "text": "Critical paths are identified and covered, or line coverage is at least 60%",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "TST-5",
+      "category": "TST",
+      "level": "L3",
+      "text": "CI reports coverage, with a threshold that fails the build",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "TST-6",
+      "category": "TST",
+      "level": "L3",
+      "text": "External interfaces (APIs, databases, CLIs) have integration or end-to-end tests",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CI-1",
+      "category": "CI",
+      "level": "L1",
+      "text": "GitHub Actions workflows are committed in `.github/workflows/`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CI-2",
+      "category": "CI",
+      "level": "L1",
+      "text": "CI runs `just check` and `just build` on every push and pull request; workflows call `just` recipes rather than duplicating their commands",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CI-3",
+      "category": "CI",
+      "level": "L2",
+      "text": "The pipeline completes in under 10 minutes",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CI-4",
+      "category": "CI",
+      "level": "L2",
+      "text": "Release and deployment are automated: Fly.io and Cloudflare targets deploy from a workflow; Kubernetes targets publish the image and chart, and ArgoCD syncs them",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CI-5",
+      "category": "CI",
+      "level": "L2",
+      "text": "Every third-party action is pinned to a full commit SHA",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CI-6",
+      "category": "CI",
+      "level": "L2",
+      "text": "Every workflow sets `permissions:` explicitly, with least privilege",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CI-7",
+      "category": "CI",
+      "level": "L3",
+      "text": "No manual step sits between merge and deploy or release",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-1",
+      "category": "DEP",
+      "level": "L1",
+      "text": "A lockfile is committed: `go.sum`, `uv.lock` (or `poetry.lock`), `package-lock.json` or `pnpm-lock.yaml`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-2",
+      "category": "DEP",
+      "level": "L1",
+      "text": "Renovate is configured with `renovate.json` (or `.github/renovate.json5`) and is opening PRs",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-3",
+      "category": "DEP",
+      "level": "L2",
+      "text": "Renovate covers every ecosystem in the repo: language packages, Dockerfile base images, GitHub Actions, Helm chart dependencies, Dev Container features, and the tool versions pinned in the `justfile`. Renovate has `hostRules` credentials for `dhi.io` so it can update hardened base images",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-4",
+      "category": "DEP",
+      "level": "L1",
+      "text": "Every dependency is pinned to an exact version: no `^`, `~`, `>=`, `*`, `latest`, bare major tags or unversioned entries. This covers language packages (`==` in `pyproject.toml`; exact versions in `package.json` with `save-exact=true` in `.npmrc`; Go `go.mod` versions are exact by design), Docker image tags, Helm chart dependencies, Dev Container images and features, and tool versions. Renovate sets `rangeStrategy: \"pin\"`. **Library exception:** published dependency metadata (`pyproject.toml` `dependencies`, `package.json` `dependencies` and `peerDependencies`) uses bounded ranges; dev dependencies and the lockfile are exact",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-5",
+      "category": "DEP",
+      "level": "L2",
+      "text": "The repo has no unused dependencies",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-6",
+      "category": "DEP",
+      "level": "L3",
+      "text": "Renovate automerges patch and minor updates once CI passes",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DEP-7",
+      "category": "DEP",
+      "level": "L3",
+      "text": "Base images are pinned by digest, and Renovate maintains the digests",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-1",
+      "category": "SEC",
+      "level": "L1",
+      "text": "Git history contains no secrets. Secrets are held in 1Password and injected through External Secrets Operator (Kubernetes), `fly secrets` (Fly.io), or Wrangler secrets (Cloudflare)",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-2",
+      "category": "SEC",
+      "level": "L2",
+      "text": "Secret scanning runs in CI or in pre-commit (for example `gitleaks`)",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-3",
+      "category": "SEC",
+      "level": "L2",
+      "text": "CI runs a dependency vulnerability scan: `govulncheck`, `pip-audit`, `npm audit` or Trivy",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-4",
+      "category": "SEC",
+      "level": "L2",
+      "text": "Containers run as a non-root user, with a read-only root filesystem wherever possible",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-5",
+      "category": "SEC",
+      "level": "L2",
+      "text": "Credentials, API tokens and service accounts are scoped to least privilege",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "SEC-6",
+      "category": "SEC",
+      "level": "L3",
+      "text": "CI scans container images, and the build fails on any critical vulnerability that has a fix available",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "BLD-1",
+      "category": "BLD",
+      "level": "L1",
+      "text": "`just build` produces the release artefact",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "BLD-2",
+      "category": "BLD",
+      "level": "L2",
+      "text": "Artefacts are versioned with semantic versioning",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "BLD-3",
+      "category": "BLD",
+      "level": "L2",
+      "text": "Container images are tagged with both the version and the commit SHA, and the deployed reference is never `latest`",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "BLD-4",
+      "category": "BLD",
+      "level": "L1",
+      "text": "A multi-stage Dockerfile builds the image, and the final (runtime) stage is `FROM` a Docker Hardened Images runtime variant on `dhi.io`, never a `-dev` variant. Go binaries use `dhi.io/static`; `scratch`, `distroless` and Docker Official Images are not used for the runtime stage. Build stages may use DHI `-dev` variants. CI authenticates to `dhi.io` with a Docker access token held as a GitHub Actions secret. N/A for Cloudflare targets",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "not_in": [
+            "cloudflare"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BLD-5",
+      "category": "BLD",
+      "level": "L3",
+      "text": "Builds are reproducible: the same commit produces the same artefact",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-1",
+      "category": "CFG",
+      "level": "L1",
+      "text": "Code contains no hard-coded hostnames, credentials or environment-specific values",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-2",
+      "category": "CFG",
+      "level": "L1",
+      "text": "Configuration comes from environment variables or config files",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-3",
+      "category": "CFG",
+      "level": "L1",
+      "text": "A `justfile` at the repo root defines every recipe that section 2.1 requires for the project type",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-4",
+      "category": "CFG",
+      "level": "L1",
+      "text": "`.devcontainer/devcontainer.json` is present, and the project builds and its tests pass inside the container",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-5",
+      "category": "CFG",
+      "level": "L2",
+      "text": "The Dev Container installs `just` and every tool the recipes call, at pinned versions, and `postCreateCommand` runs `just setup`",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-6",
+      "category": "CFG",
+      "level": "L2",
+      "text": "An example config file is committed (`.env.example` or `config.example.yaml`) that lists every setting",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "CFG-7",
+      "category": "CFG",
+      "level": "L3",
+      "text": "The application validates config at startup, and exits with a clear error if a value is missing or invalid",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DPL-1",
+      "category": "DPL",
+      "level": "L1",
+      "text": "The deployment target is Fly.io, Cloudflare Pages / Workers, or the local Kubernetes cluster, and the README names it",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DPL-2",
+      "category": "DPL",
+      "level": "L1",
+      "text": "Target configuration is committed: `fly.toml` for Fly.io; `wrangler.toml` or `wrangler.jsonc` for Cloudflare; a Helm chart in `charts/<app>/` for Kubernetes",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DPL-3",
+      "category": "DPL",
+      "level": "L2",
+      "text": "Kubernetes only: CI runs `helm lint` and `helm template` on the chart, validating the rendered output with `kubeconform`",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DPL-4",
+      "category": "DPL",
+      "level": "L2",
+      "text": "Kubernetes only: `Chart.yaml` `version` follows semver and is bumped on every chart change; `appVersion` tracks the application version; the image tag defaults to `appVersion`",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DPL-5",
+      "category": "DPL",
+      "level": "L2",
+      "text": "Kubernetes only: chart templates set resource requests and limits, `securityContext`, and liveness and readiness probes, all configurable through `values.yaml`",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DPL-6",
+      "category": "DPL",
+      "level": "L2",
+      "text": "Kubernetes only: an ArgoCD Application references the chart; ArgoCD deploys it, not `helm install` run by hand",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DPL-7",
+      "category": "DPL",
+      "level": "L3",
+      "text": "Every `values.yaml` key is documented, either with comments or with a generated README such as `helm-docs`",
+      "method": "judgment",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DPL-8",
+      "category": "DPL",
+      "level": "L3",
+      "text": "Cloudflare and Fly.io only: preview deployments are created for pull requests",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "in": [
+            "fly",
+            "cloudflare"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-1",
+      "category": "DAT",
+      "level": "L1",
+      "text": "Relational data is stored in PostgreSQL or SQLite. No other relational database is used (for example MySQL or MariaDB)",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DAT-2",
+      "category": "DAT",
+      "level": "L1",
+      "text": "SQLite, including Cloudflare D1, is used only for lightweight deployments, and the README states that the deployment qualifies. SQLite is also allowed for single-user local state in CLIs and for test fixtures",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DAT-3",
+      "category": "DAT",
+      "level": "L1",
+      "text": "Schema changes go through versioned migrations committed to the repo, and `just migrate` applies them. Example tools: `goose` or `golang-migrate` for Go, Alembic for Python, `wrangler d1 migrations` for D1",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DAT-4",
+      "category": "DAT",
+      "level": "L2",
+      "text": "Deployment runs migrations automatically before the new version serves traffic: a Helm `pre-upgrade` hook Job on Kubernetes, `release_command` on Fly.io, or a workflow step on Cloudflare",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "DAT-5",
+      "category": "DAT",
+      "level": "L3",
+      "text": "Every migration has a tested down path, or is documented as forward-only with its recovery procedure",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "DAT-6",
+      "category": "DAT",
+      "level": "L1",
+      "text": "*PostgreSQL only:* the major version is pinned, and is the same in the Dev Container, in CI and in production",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "postgresql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-7",
+      "category": "DAT",
+      "level": "L2",
+      "text": "*PostgreSQL only:* the connection string comes from `DATABASE_URL`, which is sourced from the secret store. The application uses a connection pool: `pgxpool` for Go, `psycopg_pool` or the SQLAlchemy pool for Python, Hyperdrive for Cloudflare Workers",
+      "method": "judgment",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "postgresql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-8",
+      "category": "DAT",
+      "level": "L2",
+      "text": "*PostgreSQL only:* the Dev Container provides PostgreSQL as a Docker Compose service, and integration tests run against a real PostgreSQL instance (that service, or Testcontainers)",
+      "method": "judgment",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "postgresql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-9",
+      "category": "DAT",
+      "level": "L1",
+      "text": "*SQLite only:* the database file is on persistent storage, and only one instance can run at a time. On Kubernetes that means a Longhorn PVC, `replicas: 1` and the `Recreate` deployment strategy. On Fly.io it means a Fly volume with the app scaled to one Machine",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "sqlite"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-10",
+      "category": "DAT",
+      "level": "L2",
+      "text": "*SQLite only:* the application sets WAL mode, `busy_timeout` and `foreign_keys = ON` on every connection",
+      "method": "judgment",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "sqlite"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DAT-11",
+      "category": "DAT",
+      "level": "L2",
+      "text": "*SQLite only:* backups use Litestream, or a scheduled `sqlite3 .backup` or `VACUUM INTO`. The live database file is never copied directly. D1 databases use Time Travel plus a scheduled `wrangler d1 export`",
+      "method": "judgment",
+      "applies_when": [
+        {
+          "field": "database",
+          "in": [
+            "sqlite",
+            "d1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OBS-1",
+      "category": "OBS",
+      "level": "L1",
+      "text": "Logs go to stdout/stderr with log levels",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OBS-2",
+      "category": "OBS",
+      "level": "L2",
+      "text": "Logs are structured: JSON or logfmt (`log/slog` for Go, `structlog` or `logging` with a JSON formatter for Python)",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OBS-3",
+      "category": "OBS",
+      "level": "L2",
+      "text": "Long-running services expose health (liveness) and readiness endpoints; Cloudflare Workers are N/A",
+      "method": "script",
+      "applies_when": [
+        {
+          "field": "deployment_target",
+          "not_in": [
+            "cloudflare"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OBS-4",
+      "category": "OBS",
+      "level": "L2",
+      "text": "Metrics are exposed in Prometheus format",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "OBS-5",
+      "category": "OBS",
+      "level": "L3",
+      "text": "The repo defines alert rules or dashboards for key failure modes, and failures route to Apprise",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OPS-1",
+      "category": "OPS",
+      "level": "L1",
+      "text": "The deploy and rollback procedure for the target platform is documented",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OPS-2",
+      "category": "OPS",
+      "level": "L1",
+      "text": "Stateful data is backed up on a schedule",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OPS-3",
+      "category": "OPS",
+      "level": "L3",
+      "text": "A backup restore has been tested within the last 6 months, and the date is recorded",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "OPS-4",
+      "category": "OPS",
+      "level": "L3",
+      "text": "A runbook covers the most likely failure modes",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "AGT-1",
+      "category": "AGT",
+      "level": "L1",
+      "text": "`CLAUDE.md` (or an equivalent) is present",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "AGT-2",
+      "category": "AGT",
+      "level": "L1",
+      "text": "The agent file tells the agent to use `just` recipes for build, test, lint and run",
+      "method": "script",
+      "applies_when": []
+    },
+    {
+      "id": "AGT-3",
+      "category": "AGT",
+      "level": "L2",
+      "text": "The agent file sets out coding conventions and project-specific patterns",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "AGT-4",
+      "category": "AGT",
+      "level": "L2",
+      "text": "The agent file lists the files, directories or operations the agent must not change or run",
+      "method": "judgment",
+      "applies_when": []
+    },
+    {
+      "id": "AGT-5",
+      "category": "AGT",
+      "level": "L3",
+      "text": "The agent file is reviewed whenever recipes or conventions change, and its contents match the current repo",
+      "method": "judgment",
+      "applies_when": []
+    }
+  ]
+}

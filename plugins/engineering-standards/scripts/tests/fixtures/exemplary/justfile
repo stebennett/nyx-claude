@@ -1,0 +1,29 @@
+default:
+    @just --list
+
+setup:
+    go mod download
+
+fmt:
+    gofmt -w .
+
+lint:
+    test -z "$(gofmt -l .)"
+    golangci-lint run
+
+test:
+    go test -coverprofile=cover.out ./...
+
+check: lint test
+
+build:
+    docker build -t exemplary .
+
+run:
+    go run ./cmd/app
+
+migrate:
+    goose -dir migrations postgres "$DATABASE_URL" up
+
+clean:
+    rm -rf bin dist

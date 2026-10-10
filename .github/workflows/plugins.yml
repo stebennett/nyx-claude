@@ -43,6 +43,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure mikefarah yq v4
+        run: |
+          # engineering-standards needs mikefarah yq v4 alongside jq. Runner
+          # images usually ship it; install it where they do not.
+          if ! yq --version 2>/dev/null | grep -q 'mikefarah.* v4\.'; then
+            if [ "$RUNNER_OS" = macOS ]; then brew install yq; else sudo snap install yq; fi
+          fi
+          yq --version
+
       - name: Run every plugin's script tests
         run: |
           # Both platforms matter: this repo targets bash 3.2 (macOS default)
