@@ -1,14 +1,70 @@
 # engineering-standards
 
-Assess a repository against the **Home Projects Engineering Standards** and get a scored report:
-category percentages, an overall score, a maturity level (L0–L3), the criteria blocking the next
-level, and a concrete action for every gap.
+Apply the **Home Projects Engineering Standards** from the first spec onwards. Check a spec's
+technology decisions before anything is built, scaffold a new repository that meets the standards,
+and assess any repository to get a scored report: category percentages, an overall score, a
+maturity level (L0–L3), the criteria blocking the next level, and a concrete action for every gap.
 
 The standards are bundled at
 [`skills/engineering-standards-assess/references/standards.md`](skills/engineering-standards-assess/references/standards.md)
 (framework **v1.4**). The plugin always scores against the bundled version.
 
 ## Usage
+
+### New projects: advise, then scaffold
+
+These two skills are model-invoked: Claude uses them on its own at the right moment, and you can
+also run them by hand.
+
+```
+/engineering-standards-advise      # while a spec is being written, or to check an existing one
+/engineering-standards-scaffold    # in an empty or docs-only repo, before implementation starts
+```
+
+1. **Advise.** Whenever a spec or design document chooses languages, frameworks, databases or
+   deployment targets (for example during brainstorming or kanban-flow `/refine`), the advisor
+   checks each choice against the standards:
+   - **Mandated** choices are recorded without asking.
+   - **Constrained** choices (Go or Python, Fly/Cloudflare/Kubernetes, PostgreSQL or SQLite/D1):
+     it asks you to pick, and explains what each brings with it.
+   - **Open** choices (frameworks, ORMs): it asks or suggests.
+   - **Conflicts**, where the spec breaks a standard: it names the criteria that would fail, and
+     you decide whether to change the spec or keep the choice as an exemption with a reason.
+
+   The result is a `## Technology decisions` section in the spec, in the format in
+   [`decisions-format.md`](skills/engineering-standards-advise/references/decisions-format.md).
+   It writes only the spec and commits nothing.
+2. **Scaffold.** When Claude is asked to start implementing in a repository that holds nothing but
+   documentation, scaffold:
+   - refuses repositories that already have code, and secondary git worktrees;
+   - runs the advise flow first if the spec has no current decisions section;
+   - shows you what it will build and waits for go-ahead;
+   - writes `.nyx.yml` first;
+   - generates the files listed in
+     [`scaffold-checklist.md`](skills/engineering-standards-scaffold/references/scaffold-checklist.md),
+     at versions looked up at the time: the `justfile`, Dev Container, CI, Renovate, pre-commit,
+     Dockerfile and deploy config, `README.md`, `CLAUDE.md`, an ADR of the technology choices,
+     and a walking skeleton (for a service: config, structured logging, health endpoints and one
+     test);
+   - checks the result with the standards check scripts (`scripts/scaffold-verify.sh`) and, when
+     the toolchain is available, `just check`;
+   - commits locally: the initial commit on `main`, or a `chore/scaffold` branch if `main` already
+     has commits. It never pushes and never overwrites a file.
+
+   If you keep an exemption that changes the stack (another backend language or database),
+   scaffold builds only the parts that don't depend on it and leaves the rest to you. Run scaffold
+   in the main session, before `/kanban` starts implementing: it is not meant to run inside a
+   kanban-flow card worktree.
+
+   Afterwards, these steps are yours:
+   - push and open a PR
+   - add the `main` branch ruleset
+   - add the `DHI_USERNAME`/`DHI_TOKEN` Actions secrets for `dhi.io`
+   - install the Renovate app
+   - add the ArgoCD Application (Kubernetes)
+   - add platform deploy tokens (Fly.io/Cloudflare)
+
+### Existing projects: classify, then assess
 
 Both skills run on the current working directory and are invoked by hand. Neither one commits
 anything.
@@ -109,7 +165,9 @@ To update the standards:
    `method` and `applies_when` updated. A new script criterion also needs a check in the right
    `checks/group-N.sh`.
 3. Run the tests. `test_rubric_consistency.sh` fails if the markdown and the rubric disagree.
-4. Bump the plugin version. Repositories then need re-classifying: assess refuses tags stamped
+4. Review `skills/engineering-standards-scaffold/references/scaffold-checklist.md`: its entries cite
+   criterion IDs, so a changed criterion may change what scaffold generates.
+5. Bump the plugin version. Repositories then need re-classifying: assess refuses tags stamped
    with any other framework version.
 
 If the shape of the `.nyx.yml` section changes, bump `schema_version` in `rubric.json`.
@@ -127,6 +185,8 @@ The tests are plain bash, bash 3.2 compatible, and run on Linux and macOS in CI.
   a bare repo
 - scoring arithmetic and gates
 - rendering and the delta
+- scaffold preflight (empty / docs-only / populated, untracked and ignored files, worktrees) and
+  scaffold verify (applicable script criteria on a staged, uncommitted repo)
 
 The fixture holds its own `go.mod`, `Dockerfile` and workflow. If this repository adopts
 Renovate, add `plugins/*/scripts/tests/fixtures/**` to `ignorePaths`.
