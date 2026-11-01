@@ -31,9 +31,9 @@ leave committing to whoever owns the spec (the user, or the skill that is writin
 
    | Class | Meaning | Action |
    |---|---|---|
-   | Mandated | Fixed by the standards (`just`, GitHub Actions, Renovate, Docker Hardened Images, Dev Container, Helm for Kubernetes, exact pinning) | Record; do not ask |
-   | Constrained | The standards allow a short list: project type; backend Go or Python; deployment Fly.io, Cloudflare or Kubernetes; database PostgreSQL or SQLite/D1 | Ask, explaining what each option brings with it |
-   | Open | The standards are silent (web framework, ORM, migration tool, frontend framework, queue, auth library) | Ask, or suggest when the user hands it over |
+   | Mandated | Fixed by the standards (`just`, GitHub Actions, Renovate, Docker Hardened Images, Dev Container, Helm for Kubernetes, exact pinning, TypeScript for any frontend) | Nothing to record or ask; mandated choices get no rows |
+   | Constrained | The standards allow a short list: project type; backend Go or Python (or none); frontend TypeScript or none; deployment Fly.io, Cloudflare, Kubernetes or none; database PostgreSQL, SQLite/D1 or none | If the spec states a compliant value, record it with Source `spec` and do not re-ask. Otherwise ask, explaining what each option brings with it |
+   | Open | The standards are silent (web framework, HTTP router, migration tool, frontend framework …) | Raise only those listed in `decisions-format.md` (stated in the spec, or needed for the walking skeleton). Ask, or suggest when the user hands it over |
    | Conflict | The spec states a choice the standards forbid | Step 4 |
 
    Consequences to explain for Constrained options, from the standards:
@@ -45,23 +45,27 @@ leave committing to whoever owns the spec (the user, or the skill that is writin
      persistent storage; Litestream or scheduled backups. Anything else is PostgreSQL.
    - **Library** → bounded ranges in published dependency metadata, no deployment.
 
-4. **Raise conflicts.** For each conflict, tell the user the choice, the criterion IDs it would
-   fail (e.g. "Express backend → STK-1", "MySQL → DAT-1", "Dependabot → DEP-2") and the compliant
-   alternatives with their trade-offs. Then ask with `AskUserQuestion`:
-   - **Change the spec** to a compliant alternative (list the alternatives as options), or
-   - **Keep it as an exemption** — the user's "Other" answer supplies the reason. An exemption is
-     recorded per criterion ID, and the user should know it makes assess score that criterion N/A
-     and that scaffold will build only the stack-neutral parts if it changes the language or
-     database.
+4. **Raise conflicts** before any other question, since later choices (an HTTP router, a
+   migration tool) depend on the answers. For each conflict, tell the user the choice, every
+   criterion ID it would fail (e.g. "Express backend → STK-1", "MySQL → DAT-1", "Dependabot →
+   DEP-2, DEP-3, DEP-6") and the compliant alternatives with their trade-offs. Ask with
+   `AskUserQuestion` (conflicts may share one call, up to four). The options are:
+   - each compliant alternative ("Change the spec to …"), recommended one first;
+   - **"Keep <choice> as an exemption"**, as an explicit option, whose description says it makes
+     assess score those criteria N/A, and that scaffold will build only the stack-neutral parts if
+     it changes the backend language or database.
+   For every kept exemption, ask for the reason in a follow-up (free text through "Other"), and
+   record one exemption line per failing criterion with that reason.
 
    The step is done when every conflict has the user's answer.
 
 5. **Ask the rest.** Use `AskUserQuestion` for Constrained and Open decisions, up to four per
    call. Put your recommendation first, labelled "(Recommended)", with a one-line reason drawn from
    the spec. When the user says "you pick", record your suggestion as `advisor-suggestion-accepted`
-   — a choice they never heard is one they could not reject, so always name it. For `lightweight`,
-   ask each of the three DAT conditions explicitly. The step is done when every required row has a
-   value.
+   — a choice they never heard is one they could not reject, so always name it. `status` and, unless
+   the database is SQLite or D1, `lightweight` are not asked (see `decisions-format.md`); for SQLite
+   or D1, ask each of the three DAT conditions explicitly. The step is done when every required row
+   has a value.
 
 6. **Record.** Write or update `## Technology decisions` in the spec exactly per
    `references/decisions-format.md`, stamped with the standards version from step 1.
