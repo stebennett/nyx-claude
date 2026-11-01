@@ -9,7 +9,13 @@ the entries that cite it.
 **Worked example.** `${CLAUDE_PLUGIN_ROOT}/scripts/tests/fixtures/exemplary/` is a Go service on
 Kubernetes with PostgreSQL that the check scripts score as meeting every offline script criterion.
 Use it for the *shape* of the `justfile`, CI workflow, pre-commit, Renovate, Dockerfile and chart.
-Its SHAs, digests and versions are placeholders — never copy them.
+Its SHAs, digests and versions are placeholders — never copy them. Where it differs from this
+checklist, the checklist wins: it uses `AGENTS.md` (write `CLAUDE.md`), ships an ArgoCD Application
+(out of scope here), omits `# <tag>` comments on actions and a `USER` line, and installs `just`
+through an unpinnable feature.
+Criteria that `scaffold-verify.sh` never reports (CI-4, CI-7, DPL-7, DOC-1 …) are judgment criteria;
+`/engineering-standards-assess` scores them. Write files with the file-writing tool, not shell
+heredocs, which some hosts rewrite.
 
 ## Conditions
 
@@ -24,13 +30,14 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 
 | What | How |
 |---|---|
-| Go modules | `go list -m -versions <module>` (last entry), or `curl -s https://proxy.golang.org/<module>/@latest` |
+| Go modules | `curl -s https://proxy.golang.org/<module>/@latest`, or `go list -m -versions <module>` (last entry) |
 | npm packages | `npm view <pkg> version` |
 | PyPI packages | `curl -s https://pypi.org/pypi/<pkg>/json \| jq -r .info.version` |
-| Tools (just, golangci-lint, gitleaks, helm, kubeconform …) | `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name`, or `git ls-remote --tags --refs https://github.com/<owner>/<repo>` |
-| GitHub Actions | resolve the latest release tag, then `git ls-remote https://github.com/<owner>/<repo> refs/tags/<tag>` for the full SHA; write `uses: <owner>/<repo>@<sha> # <tag>` (CI-5) |
-| Image digests | `docker buildx imagetools inspect <image>:<tag>` when Docker is available. `dhi.io` needs a login; if a digest cannot be resolved, pin the tag and report DEP-7 as a gap |
-| Toolchains | Go: latest stable from `https://go.dev/dl/?mode=json`; Python: latest stable minor; Node: current LTS |
+| Tools (just, golangci-lint, gitleaks, helm, kubeconform …) | `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name`. Do not sort `git ls-remote` tags to find the latest: mixed `v`/no-`v` tags sort wrongly, and `https://github.com` URLs can hang on hosts that rewrite them to SSH |
+| GitHub Actions | the latest exact release tag (`v4.0.0`, never a floating `v4`), then `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha` for the commit SHA (this peels annotated tags); write `uses: <owner>/<repo>@<sha> # <tag>` (CI-5) |
+| Public image digests | `docker buildx imagetools inspect <image>:<tag>` |
+| `dhi.io` images | Need `docker login dhi.io`; without it tags and digests cannot be resolved (and `imagetools inspect` hangs rather than failing, so do not try). If the user has no login (step 3), write the best-known tag with a `# TODO(dhi): pin tag and digest after docker login dhi.io` comment and report DEP-4/DEP-7 as gaps. DEP-4 accepts only `vX.Y`-style tags or a digest, so date-tagged DHI images need the digest |
+| Toolchains | Go: latest stable from `https://go.dev/dl/?mode=json` (`go X.Y.0` directive + `toolchain goX.Y.Z`); Python: latest stable release, exact in `.python-version`, `requires-python = ">=X.Y"`; Node: current LTS, exact in `.nvmrc` |
 
 ## Root and tooling
 
@@ -46,7 +53,7 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 ### `.devcontainer/devcontainer.json` (+ `.devcontainer/compose.yaml` with PostgreSQL)
 - **Applies when:** always; the compose file when `database: postgresql`. **Stack-neutral:** yes.
 - **Satisfies:** CFG-4, CFG-5, DAT-6, DAT-8.
-- **Requirements:** image or features pinned to exact versions (DEP-4); installs `just` and every tool the recipes call at pinned versions; `"postCreateCommand": "just setup"`. With PostgreSQL: compose service `postgres:<major.minor>` with the same major as CI and production, and `DATABASE_URL` set for the app container.
+- **Requirements:** image or features pinned to exact versions (DEP-4); installs `just` and every tool the recipes call at pinned versions — most reliably a `.devcontainer/Dockerfile` with one pinned `ARG` per tool, or features that expose a `version` option (check the feature's metadata); `"postCreateCommand": "just setup"`. With PostgreSQL: compose service `postgres:<major.minor>` with the same major as CI and production, and `DATABASE_URL` set for the app container.
 
 ### `.gitignore`
 - **Applies when:** always. **Stack-neutral:** yes. **Satisfies:** HYG-1, HYG-2.
@@ -58,19 +65,19 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 ### `.pre-commit-config.yaml`
 - **Applies when:** always. **Stack-neutral:** yes (formatter/linter hooks only for generated stacks).
 - **Satisfies:** QUA-4, SEC-2, VCS-5.
-- **Requirements:** hooks for the formatter and linter of each language; `gitleaks`; a Conventional Commits commit-msg hook (e.g. `conventional-pre-commit`). Pin each hook `rev` exactly. `just setup` installs the hooks.
+- **Requirements:** hooks for the formatter and linter of each language; `gitleaks`; a Conventional Commits commit-msg hook (e.g. `conventional-pre-commit`). Pin each hook `rev` exactly. Type checkers that need the project's dependencies (pyright, `tsc`) run as `repo: local` hooks through the project environment (`uv run pyright`, `npx tsc --noEmit`) with `pass_filenames: false`, not isolated remote hooks. `just setup` installs the hooks.
 
 ## Languages
 
 ### Go — `go.mod`, `go.sum`, `cmd/<name>/main.go`, `internal/`, `.golangci.yml`
 - **Applies when:** `backend: go`. **Stack-neutral:** no.
 - **Satisfies:** STK-1, STK-4, HYG-4, QUA-1, QUA-2, DEP-1, DEP-4.
-- **Requirements:** `go` directive and `toolchain` line; module path from the GitHub repo if known, else ask; `cmd/<name>/` entry point and code under `internal/`; `golangci-lint` config committed; `go.sum` produced by `go mod tidy`. Library type: packages at the root or `pkg/`, no `cmd/` unless it ships a binary.
+- **Requirements:** `go` directive and `toolchain` line; module path from step 3; `cmd/<name>/` entry point and code under `internal/`; `golangci-lint` config committed (`version: "2"` plus the linters you enable); `go.sum` produced by `go mod tidy`. Pin Go-based tools (golangci-lint, goose, govulncheck, go-test-coverage) as `tool` dependencies in `go.mod` and call them with `go tool <name>`, so recipes need no global installs. With a database: embed the migrations (`embed.FS`) and add a `<name> migrate` subcommand using the migration library, so the runtime image can run the migration Job and `just migrate` calls the same code. Library type: packages at the root or `pkg/`, no `cmd/` unless it ships a binary.
 
 ### Python — `pyproject.toml`, `.python-version`, `src/<package>/`, `uv.lock`
 - **Applies when:** `backend: python`. **Stack-neutral:** no.
 - **Satisfies:** STK-1, STK-4, HYG-4, QUA-1, QUA-2, QUA-5, DEP-1, DEP-4.
-- **Requirements:** `requires-python` and `.python-version`; `src/<package>/` layout; `ruff` (format + lint) and `pyright` in strict mode configured in `pyproject.toml`; dependencies pinned with `==` (library type: bounded ranges for published `dependencies`, exact dev dependencies); `uv.lock` committed.
+- **Requirements:** `requires-python` and `.python-version`; `src/<package>/` layout (package name from step 3); with a database, Alembic in the runtime image so the migration Job and `just migrate` run the same command; `ruff` (format + lint) and `pyright` in strict mode configured in `pyproject.toml`; dependencies pinned with `==` (library type: bounded ranges for published `dependencies`, exact dev dependencies); `uv.lock` committed.
 
 ### TypeScript — `package.json`, lockfile, `.nvmrc`, `.npmrc`, `tsconfig.json`, linter/formatter config, `src/`
 - **Applies when:** `frontend` is not `none`, or a TypeScript-only library/CLI. **Stack-neutral:** no.
@@ -86,9 +93,9 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 - **Requirements:**
   - Triggers: `push` to `main` and `pull_request`. Top-level `permissions: contents: read`; widen per job only where needed.
   - Every action pinned to a full SHA with the tag as a comment.
-  - Steps call recipes: `just check`, `just build` — never duplicate their commands.
+  - Steps call recipes: `just check`, `just build` — never duplicate their commands. Run `just check` once, inside the Dev Container (`devcontainers/ci` with `runCmd: just check`), which also satisfies CFG-4.
   - Coverage reported with a failing threshold (e.g. `go-test-coverage`, `pytest --cov-fail-under`, vitest thresholds); start at 60%.
-  - `gitleaks` scan; a vulnerability scan per ecosystem (`govulncheck`, `pip-audit`, `npm audit --audit-level=high`).
+  - A `gitleaks` scan and a vulnerability scan per ecosystem (`govulncheck`, `pip-audit`, `npm audit --audit-level=high`) as explicit workflow steps: the checks look for the scanner's name in the workflow, so these are the exception to "call recipes". Run gitleaks through pre-commit (`pre-commit run gitleaks --all-files`) or its pinned binary, not `gitleaks-action`, which needs a licence for organisation repos.
   - Container builds: log in to `dhi.io` with `docker/login-action` using secrets `DHI_USERNAME`/`DHI_TOKEN` (not created by scaffold), and scan the built image with Trivy, `severity: CRITICAL`, `ignore-unfixed: true`, `exit-code: 1`.
   - PostgreSQL: a `postgres:<same major.minor>` service for integration tests.
   - Kubernetes: `helm lint charts/<app>` and `helm template charts/<app> | kubeconform -strict`.
@@ -101,14 +108,14 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 ### Kubernetes release workflow (in `ci.yml` or `release.yml`)
 - **Applies when:** `deployment_target: kubernetes`. **Stack-neutral:** yes.
 - **Satisfies:** CI-4, BLD-2, BLD-3.
-- **Requirements:** on a `vX.Y.Z` tag, build and push the image tagged with the version and the commit SHA, and package/push the chart; `packages: write` only on that job.
+- **Requirements:** on a `vX.Y.Z` tag, build and push the image tagged with the version and the commit SHA to `ghcr.io/<owner>/<app>` (unless the user named another registry), and package the chart with `--app-version` from the tag and push it as an OCI artefact to `ghcr.io/<owner>/charts`; `packages: write` only on that job.
 
 ## Dependencies
 
 ### `renovate.json`
 - **Applies when:** always. **Stack-neutral:** yes.
 - **Satisfies:** DEP-2 (config only), DEP-3, DEP-4, DEP-6, DEP-7.
-- **Requirements:** `"rangeStrategy": "pin"`; managers for every ecosystem present (language packages, Dockerfile, GitHub Actions, Helm, Dev Container features, and a `customManagers` regex for tool versions pinned in the `justfile`/Dev Container); `hostRules` for `dhi.io` referencing an encrypted or app-level secret, never a literal credential; `packageRules` automerging `minor` and `patch`; digest pinning enabled for Docker. Library type: `rangeStrategy: "widen"` scoped to published dependencies.
+- **Requirements:** `"rangeStrategy": "pin"`; managers for every ecosystem present (language packages, Dockerfile, GitHub Actions, Helm, Dev Container features), plus `customManagers` regexes for every tool version pinned outside a manifest (`justfile`, Dev Container `ARG`s, workflow `with: version:` inputs); `packageRules` automerging `minor` and `patch`; digest pinning enabled for Docker. Only when a `dhi.io` image is used: `hostRules` for `dhi.io` with `"username": "{{ secrets.DHI_USERNAME }}"`, `"password": "{{ secrets.DHI_TOKEN }}"`, never a literal credential. Library type: `rangeStrategy: "widen"` for published dependencies only (`matchDepTypes`: `project.dependencies` for PEP 621, `dependencies`/`peerDependencies` for npm).
 
 ## Container and deploy
 
@@ -120,7 +127,7 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 ### `charts/<app>/` — `Chart.yaml`, `values.yaml`, `templates/`
 - **Applies when:** `deployment_target: kubernetes`. **Stack-neutral:** yes, except the image reference.
 - **Satisfies:** DPL-2, DPL-4, DPL-5, DPL-7, SEC-4, DAT-4, DAT-9, OBS-3.
-- **Requirements:** `Chart.yaml` `version: 0.1.0`, `appVersion` equal to the app version; image tag defaults to `.Chart.AppVersion`; Deployment with resource requests/limits, pod and container `securityContext` (`runAsNonRoot`, `readOnlyRootFilesystem: true`), liveness on `/healthz` and readiness on `/readyz`, all set from `values.yaml`; every `values.yaml` key commented. Database: a migration Job annotated `helm.sh/hook: pre-install,pre-upgrade`, and `DATABASE_URL` from an `ExternalSecret`. SQLite: a Longhorn PVC, `replicas: 1`, `strategy: Recreate`.
+- **Requirements:** `Chart.yaml` `version: 0.1.0`, `appVersion` equal to the app version; image tag defaults to `.Chart.AppVersion`; Deployment with resource requests/limits, pod and container `securityContext` (`runAsNonRoot`, `readOnlyRootFilesystem: true`), liveness on `/healthz` and readiness on `/readyz`, all set from `values.yaml`; every `values.yaml` key commented. Database: a migration Job annotated `helm.sh/hook: pre-install,pre-upgrade` running the image's migrate command, and `DATABASE_URL` from an `ExternalSecret` that is itself a `pre-install,pre-upgrade` hook with a lower `hook-weight` (e.g. `-10`), so the Secret exists before the Job on first install. Record the production PostgreSQL major in `values.yaml` as a documented key whose value contains `postgres:<major>` (e.g. `database.image: postgres:18`), matching the Dev Container and CI (DAT-6). SQLite: a Longhorn PVC, `replicas: 1`, `strategy: Recreate`.
 
 ### `fly.toml`
 - **Applies when:** `deployment_target: fly`. **Stack-neutral:** yes.
@@ -161,7 +168,7 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 ### `README.md`
 - **Applies when:** always. **Stack-neutral:** yes.
 - **Satisfies:** DOC-1, DOC-2, DOC-3 (if unlicensed), HYG-3, DPL-1, DAT-2, OPS-1.
-- **Requirements:** first paragraph says what the project is and why it exists, taken from the spec; `Status: active` (or the decided status); "Getting started": open the Dev Container, then `just setup`, `just run`, `just test`; the deployment target by name; for SQLite/D1, a statement that the deployment meets the three lightweight conditions; a "Deploy and rollback" section for the target (ArgoCD sync/rollback; `fly deploy` / `fly releases` rollback; `wrangler deploy` / rollback); a link to the spec.
+- **Requirements:** first paragraph says what the project is and why it exists, taken from the spec; `Status: active` (or the decided status); "Getting started": open the Dev Container, then `just setup`, `just run` (only where the recipe exists — a library uses `just build`), `just test`; the deployment target by name (`none`: say it is not deployed, and how it is released); for SQLite/D1, a statement that the deployment meets the three lightweight conditions; a "Deploy and rollback" section for the target (ArgoCD sync/rollback; `fly deploy` / `fly releases` rollback; `wrangler deploy` / rollback); a link to the spec.
 
 ### `LICENSE`
 - **Applies when:** the user chose a licence (ask: a named licence, or private and unlicensed). If unlicensed, the README states it and no file is written. **Satisfies:** DOC-3.
@@ -172,6 +179,7 @@ Pin everything to an exact, current, stable version looked up now (DEP-4). Never
 
 ### `CLAUDE.md`
 - **Applies when:** always. **Stack-neutral:** yes. **Satisfies:** AGT-1, AGT-2, AGT-3, AGT-4.
+- **Blocked writes:** some hooks (e.g. code-safely's `protect-claudemd.sh`) block agents from writing any `CLAUDE.md`. Do not work around them: show the user the content and ask them to create the file or allow the write.
 - **Requirements:** tells the agent to use `just` recipes for build, test, lint and run (list them); coding conventions for the chosen languages and frameworks (layout, logging, config, error handling, test placement); project-specific patterns from the spec; a "Do not change" list (`.nyx.yml` engineering_standards section — use classify; `migrations/` already applied; `charts/<app>/Chart.yaml` version without bumping; lockfiles by hand); a pointer to the spec and to `docs/adr/`.
 
 ### `docs/adr/0001-technology-choices.md`
