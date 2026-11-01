@@ -11,7 +11,9 @@ with the user, write `.nyx.yml` first, generate the skeleton, verify it with the
 and commit it locally. You build no features: those come afterwards, through kanban-flow or a plan.
 
 Work on the current working directory. Never create or overwrite a file that already exists, never
-delete anything, and never push. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT}`.
+delete anything, and never push. If a hook blocks a write or command (for example code-safely's
+`protect-claudemd.sh` on `CLAUDE.md`), do not work around it: show the user what you meant to write
+and ask them to create it or allow it. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Steps
 
@@ -43,9 +45,15 @@ delete anything, and never push. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT}`.
    decisions; the files and directories you will create (the entries that apply); any entries you
    will skip because a kept exemption changes the stack; and any path that already exists and will
    be left alone. Ask with `AskUserQuestion`:
-   - the licence: a named licence (recommend MIT for public code) or private and unlicensed;
-   - which optional categories to adopt, if any beyond those the decisions imply (see the mapping
-     in `decisions-format.md`);
+   - the licence: a named licence (recommend MIT for public code) and its copyright holder, or
+     private and unlicensed;
+   - the module path or package name:
+     - Go: `github.com/<owner>/<repo>`, recommended from the git remote or the `gh` login;
+     - Python/npm: the package name from the spec;
+   - when a `dhi.io` image is needed: whether they are logged in to `dhi.io` (`docker login dhi.io`)
+     so its tags and digests can be pinned now;
+   - which optional categories to adopt, asked only when the section 3 matrix offers `O`
+     categories beyond those the decisions already imply (see `decisions-format.md`);
    - go ahead, or change something.
 
    Nothing is written until the user says go ahead.
@@ -70,17 +78,22 @@ delete anything, and never push. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT}`.
       a checklist entry should have satisfied it → fix the file and re-run; it needs GitHub, a
       secret, a real CI run or a human (marked `unverified`, or listed in the checklist's "Out of
       scope") → report it, do not fake it. Repeat until only reportable gaps remain.
-   3. If `just` and the language toolchains are on the host, run `just setup` then `just check`,
-      and fix failures until it passes. If they are not, say plainly that `just check` was not run
-      and must be run inside the Dev Container — never claim it passes.
+   3. If `just` and the language toolchain (Go, uv/Python or Node) are on the host, run
+      `just setup` then `just check`, and fix failures until it passes. Do not install global
+      tools to make this work. If a recipe step needs a tool only the Dev Container provides
+      (e.g. `pre-commit install`), report it rather than forcing it. If `just check` cannot run,
+      say plainly that it was not run and must be run inside the Dev Container — never claim it
+      passes.
 
-   The step is done when every remaining gap has a reason you can state.
+   VCS-2 ("no git history") stays a gap until step 7's commit. The step is done when every
+   remaining gap has a reason you can state.
 
-7. **Commit locally.** If the repo has no commits (`commits: false` from preflight), make the
-   initial commit on `main`. Otherwise create the branch first with `git switch -c chore/scaffold`.
+7. **Commit locally.** If the repo had no commits at step 1 (`commits: false`), make the initial
+   commit on `main`. Otherwise create the branch first with `git switch -c chore/scaffold`.
    Commit everything you generated plus the updated spec with a Conventional Commit message,
-   `chore: scaffold <repo name> per engineering standards`, ending with the session's attribution
-   trailer. Never push.
+   `chore: scaffold <project name from the spec> per engineering standards`, with the session's
+   attribution trailer once, at the end. Never push. Then re-run `scaffold-verify.sh` for the
+   report.
 
 8. **Hand off.** Report:
    - what was created, and anything skipped (existing paths, stack-neutral skips) and why;
