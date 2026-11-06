@@ -22,7 +22,7 @@ plugins/
   github-app-identity/   # GitHub App identity: gh shim, token minter, credential helper (scripts/tests/)
   productivity/          # handoff / continue / task-observer / token-usage skills
   devtools/              # renovator and pr-reviewer skills + their agents
-  engineering-standards/ # Standards assessment: classify + assess skills, check scripts, rubric (scripts/tests/)
+  engineering-standards/ # Standards: advise + scaffold + classify + assess skills, check scripts, rubric (scripts/tests/)
 scripts/check-plugin.sh  # Structural validation of a plugin directory (run in CI for every plugin)
 ```
 
@@ -38,7 +38,7 @@ This plugin is the source of truth — the copies under `~/.claude/hooks/` are n
 
 ### engineering-standards
 
-The assessment is split between deterministic bash (`scripts/`) and agents: `checks/group-N.sh` emit one JSON record per *script* criterion, the `es-assessor` agent scores *judgment* criteria, and `score.sh` does all arithmetic. `references/rubric.json` is the machine form of `references/standards.md` — `test_rubric_consistency.sh` fails if their criterion IDs, levels or versions diverge, so change both together. Applicability rules live once, in `scripts/lib/applicability.jq`.
+The assessment is split between deterministic bash (`scripts/`) and agents: `checks/group-N.sh` emit one JSON record per *script* criterion, the `es-assessor` agent scores *judgment* criteria, and `score.sh` does all arithmetic. `references/rubric.json` is the machine form of `references/standards.md` — `test_rubric_consistency.sh` fails if their criterion IDs, levels or versions diverge, so change both together. Applicability rules live once, in `scripts/lib/applicability.jq`. Scaffold generates files from `skills/engineering-standards-scaffold/references/scaffold-checklist.md`, not templates; the checklist cites criterion IDs, so change it along with the standards.
 
 Gotchas these scripts already hit:
 - **No `pipefail` in `checks/*.sh` or `detect.sh`.** They pipe into `grep -q`, which exits on the first match and SIGPIPEs the producer; under `pipefail` that race intermittently reads as "no match". Each check block writes to a temp file instead, so `set -e` still catches real failures.

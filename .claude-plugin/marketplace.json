@@ -32,7 +32,7 @@
     {
       "name": "engineering-standards",
       "source": "./plugins/engineering-standards",
-      "description": "Assess a repository against the Home Projects Engineering Standards: classify it once (type, deployment target, database, recorded in .nyx.yml), then score every applicable criterion and write docs/assessment.md with category scores, maturity level, blocking gates and actions."
+      "description": "Apply the Home Projects Engineering Standards: check a spec's technology decisions (advise), scaffold a new repo to the standards (scaffold), classify a repo in .nyx.yml, then score every applicable criterion and write docs/assessment.md with category scores, maturity level, blocking gates and actions."
     }
   ]
 }
