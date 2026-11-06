@@ -67,6 +67,21 @@ out="$(run "$d")"
 assert_eq "main worktree" '"main"' "$(field "$out" worktree)"
 assert_eq "main has commits" "true" "$(field "$out" commits)"
 
+# --- OS and editor cruft does not block -----------------------------------------------
+d="$work/cruft"; mkdir -p "$d/docs" "$d/.vscode"; git -C "$d" init -q -b main
+echo s > "$d/docs/spec.md"; echo x > "$d/.DS_Store"; echo '{}' > "$d/.vscode/settings.json"
+out="$(run "$d")"
+assert_eq "OS/editor cruft verdict" '"docs-only"' "$(field "$out" verdict)"
+
+# --- new project nested inside an existing repo ---------------------------------------
+mkdir -p "$d/newproj/docs"; echo s > "$d/newproj/docs/spec.md"
+out="$(run "$d/newproj")"
+assert_eq "nested project flagged" "true" "$(field "$out" nested)"
+out="$(run "$d")"
+assert_eq "repo root not nested" "false" "$(field "$out" nested)"
+out="$(run "$work/plain")"
+assert_eq "non-git dir not nested" "false" "$(field "$out" nested)"
+
 # --- usage --------------------------------------------------------------------------
 assert_exit "missing argument" 2 bash "$pre"
 

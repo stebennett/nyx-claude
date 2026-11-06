@@ -21,8 +21,12 @@ heredocs, which some hosts rewrite.
 
 `type`, `deployment_target`, `database`, `backend` and `frontend` are the decisions-section values.
 "Service with a container" means `type: service` and `deployment_target` is `fly` or `kubernetes`.
-**Stack-neutral: no** entries are skipped when a kept exemption changes the stack (backend other
-than Go/Python, or a database outside the enum); list them as left to the user.
+**Stack-neutral: no** entries are skipped, and listed as left to the user, in two cases:
+- a kept exemption changes the stack (a backend other than Go/Python, or a database outside the
+  enum);
+- no entry below covers the combination (e.g. a Go or Python backend on Cloudflare Workers).
+
+Never improvise guidance this checklist does not give.
 
 ## Version lookup
 

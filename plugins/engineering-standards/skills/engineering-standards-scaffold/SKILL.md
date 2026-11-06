@@ -24,7 +24,11 @@ and ask them to create it or allow it. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT
      `/engineering-standards-assess` for existing ones.
    - `worktree: secondary` — stop. Say scaffold runs in the main checkout, before any kanban-flow
      card work starts.
-   - `git: false` — run `git init -b main`.
+   - `nested: true`: the directory sits inside another git repository, and scaffolding there
+     would stage and commit that repository's changes. Stop, and ask whether to make this
+     directory its own repository (`git init -b main` here, then re-run preflight) or to
+     scaffold elsewhere.
+   - `git: false`: run `git init -b main`.
 
    The step is done when the verdict is `empty` or `docs-only` and you are in a main checkout.
 
@@ -67,14 +71,18 @@ and ask them to create it or allow it. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT
 5. **Generate the skeleton.** Work through every checklist entry that applies, in the checklist's
    order. Look up each version per its "Version lookup" table at the moment you write it; never
    guess a version or copy one from the worked example. Before writing each path, check it does
-   not exist; if it does, skip it and note it for the report. When a kept exemption changes the
-   stack, write only `Stack-neutral: yes` entries and note the rest as left to the user. Generate
+   not exist; if it does, skip it and note it for the report. Write only `Stack-neutral: yes`
+   entries, and note the rest as left to the user, in two cases: a kept exemption changes the
+   stack, or the checklist has no entry for the combination (e.g. a Go or Python backend on
+   Cloudflare Workers). Never improvise a stack the checklist doesn't cover. Generate
    lockfiles with the real tool (`go mod tidy`, `uv lock`, `npm install`) when it is available on
    the host; otherwise note DEP-1 as pending until `just setup` runs in the Dev Container.
 
 6. **Verify.**
-   1. `git add -A` — the checks read only tracked files.
-   2. `bash "$P/scripts/scaffold-verify.sh" . < /dev/null`. For each entry in `gaps`, decide:
+   1. `git add -A .`, because the checks read only tracked files.
+   2. `bash "$P/scripts/scaffold-verify.sh" . < /dev/null`. Exit 6 means a check group crashed,
+      usually on a file you generated (e.g. invalid YAML). Fix that file and re-run, and never
+      report a result from a failed run. For each entry in `gaps`, decide:
       a checklist entry should have satisfied it → fix the file and re-run; it needs GitHub, a
       secret, a real CI run or a human (marked `unverified`, or listed in the checklist's "Out of
       scope") → report it, do not fake it. Repeat until only reportable gaps remain.
@@ -85,8 +93,9 @@ and ask them to create it or allow it. Throughout, `$P` is `${CLAUDE_PLUGIN_ROOT
       say plainly that it was not run and must be run inside the Dev Container — never claim it
       passes.
 
-   VCS-2 ("no git history") stays a gap until step 7's commit. The step is done when every
-   remaining gap has a reason you can state.
+   VCS-2 ("no git history") stays a gap until step 7's commit. VCS-1 reads the current branch, so
+   it shows as a gap whenever the commit lands on `chore/scaffold`; that is expected, and it clears
+   once the branch merges. The step is done when every remaining gap has a reason you can state.
 
 7. **Commit locally.** If the repo had no commits at step 1 (`commits: false`), make the initial
    commit on `main`. Otherwise create the branch first with `git switch -c chore/scaffold`.

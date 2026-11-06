@@ -34,6 +34,14 @@ out="$(bash "$verify" "$work/ex" < /dev/null)"
 assert_eq "exempt BLD-4 not met" "false" "$(has "$out" met BLD-4)"
 assert_eq "exempt BLD-4 not a gap" "false" "$(has "$out" gaps BLD-4)"
 
+# --- a crashing check group fails verify instead of reporting no gaps -------------------
+cp -R "$here/fixtures/exemplary" "$work/broken"
+printf 'on: [push\n  bad: : yaml\n' > "$work/broken/.github/workflows/ci.yml"
+stage "$work/broken"
+assert_exit "crashing check group fails verify" 6 bash "$verify" "$work/broken"
+msg="$(bash "$verify" "$work/broken" 2>&1 < /dev/null || true)"
+assert_contains "failure names the group" "group-2" "$msg"
+
 # --- bare repo with only a tag --------------------------------------------------------
 mkdir -p "$work/bare"
 printf '{"type":"service","status":"active","deployment_target":"kubernetes","database":"postgresql","lightweight":false}' > "$work/bare.json"
