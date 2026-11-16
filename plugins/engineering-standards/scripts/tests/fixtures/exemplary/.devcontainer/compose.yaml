@@ -2,4 +2,4 @@ services:
   app:
     image: mcr.microsoft.com/devcontainers/go:1.23.4
   db:
-    image: postgres:16.4
+    image: postgres:16.16
